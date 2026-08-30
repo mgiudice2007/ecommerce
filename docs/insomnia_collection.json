@@ -1,0 +1,290 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-08-29T00:00:00.000Z",
+  "__export_source": "insomnia.manual:ecommerce-vuelos",
+  "resources": [
+    {
+      "_id": "wrk_ecommerce_vuelos",
+      "_type": "workspace",
+      "name": "Ecommerce Vuelos API",
+      "description": "Coleccion para probar la API de pasajes de avion",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_ecommerce_vuelos",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080"
+      }
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_ecommerce_vuelos",
+      "name": "Auth"
+    },
+    {
+      "_id": "fld_aerolineas",
+      "_type": "request_group",
+      "parentId": "wrk_ecommerce_vuelos",
+      "name": "Aerolineas"
+    },
+    {
+      "_id": "fld_vuelos",
+      "_type": "request_group",
+      "parentId": "wrk_ecommerce_vuelos",
+      "name": "Vuelos"
+    },
+    {
+      "_id": "fld_carrito",
+      "_type": "request_group",
+      "parentId": "wrk_ecommerce_vuelos",
+      "name": "Carrito"
+    },
+    {
+      "_id": "fld_reservas",
+      "_type": "request_group",
+      "parentId": "wrk_ecommerce_vuelos",
+      "name": "Reservas"
+    },
+    {
+      "_id": "req_registro_pasajero",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Registro pasajero",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/registro/pasajero",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"mile\",\n  \"mail\": \"mile@test.com\",\n  \"password\": \"123456\",\n  \"nombre\": \"Milena\",\n  \"apellido\": \"Giudice\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_registro_admin",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Registro administrador",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/registro/administrador",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"admin2\",\n  \"mail\": \"admin2@test.com\",\n  \"password\": \"123456\",\n  \"nombre\": \"Ana\",\n  \"apellido\": \"Admin\",\n  \"permisos\": [\"GESTION_VUELOS\"]\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_logout",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/logout"
+    },
+    {
+      "_id": "req_me",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Me",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me"
+    },
+    {
+      "_id": "req_aerolineas_listar",
+      "_type": "request",
+      "parentId": "fld_aerolineas",
+      "name": "Listar aerolineas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/aerolineas"
+    },
+    {
+      "_id": "req_aerolineas_obtener",
+      "_type": "request",
+      "parentId": "fld_aerolineas",
+      "name": "Obtener aerolinea por id",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/aerolineas/1"
+    },
+    {
+      "_id": "req_aerolineas_crear",
+      "_type": "request",
+      "parentId": "fld_aerolineas",
+      "name": "Crear aerolinea (ADMIN)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/aerolineas",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nombre\": \"Aerolineas Argentinas\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_aerolineas_actualizar",
+      "_type": "request",
+      "parentId": "fld_aerolineas",
+      "name": "Actualizar aerolinea (ADMIN)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/aerolineas/1",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nombre\": \"Aerolineas Argentinas Actualizada\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_aerolineas_eliminar",
+      "_type": "request",
+      "parentId": "fld_aerolineas",
+      "name": "Eliminar aerolinea (ADMIN)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/aerolineas/1"
+    },
+    {
+      "_id": "req_vuelos_buscar",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "Buscar vuelos",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/vuelos",
+      "parameters": [
+        { "name": "origen", "value": "Buenos Aires", "disabled": true },
+        { "name": "destino", "value": "Madrid", "disabled": true },
+        { "name": "clase", "value": "ECONOMICA", "disabled": true },
+        { "name": "precioMin", "value": "100", "disabled": true },
+        { "name": "precioMax", "value": "1000", "disabled": true }
+      ]
+    },
+    {
+      "_id": "req_vuelos_obtener",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "Obtener vuelo por id",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/vuelos/1"
+    },
+    {
+      "_id": "req_vuelos_crear",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "Crear vuelo (ADMIN)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/vuelos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"origen\": \"Buenos Aires\",\n  \"destino\": \"Madrid\",\n  \"fechaSalida\": \"2026-12-01T10:00:00\",\n  \"precio\": 500.00,\n  \"asientosDisponibles\": 100,\n  \"descuento\": 0,\n  \"clase\": \"ECONOMICA\",\n  \"aerolineaId\": 1\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_vuelos_actualizar",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "Actualizar vuelo (ADMIN)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/vuelos/1",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"origen\": \"Buenos Aires\",\n  \"destino\": \"Madrid\",\n  \"fechaSalida\": \"2026-12-01T10:00:00\",\n  \"precio\": 550.00,\n  \"asientosDisponibles\": 90,\n  \"descuento\": 5,\n  \"clase\": \"ECONOMICA\",\n  \"aerolineaId\": 1\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_vuelos_eliminar",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "Eliminar vuelo (ADMIN)",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/vuelos/1"
+    },
+    {
+      "_id": "req_carrito_obtener",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "Obtener carrito",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/carrito"
+    },
+    {
+      "_id": "req_carrito_agregar_item",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "Agregar item al carrito",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/carrito/items",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": 1,\n  \"cantidad\": 2\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_carrito_actualizar_item",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "Actualizar cantidad de item",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/carrito/items/1",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cantidad\": 3\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "_id": "req_carrito_eliminar_item",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "Eliminar item del carrito",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/carrito/items/1"
+    },
+    {
+      "_id": "req_carrito_checkout",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "Checkout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/carrito/checkout"
+    },
+    {
+      "_id": "req_reservas_historial",
+      "_type": "request",
+      "parentId": "fld_reservas",
+      "name": "Historial de reservas",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/reservas"
+    },
+    {
+      "_id": "req_reservas_obtener",
+      "_type": "request",
+      "parentId": "fld_reservas",
+      "name": "Obtener reserva por id",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/reservas/1"
+    },
+    {
+      "_id": "req_reservas_cancelar",
+      "_type": "request",
+      "parentId": "fld_reservas",
+      "name": "Cancelar reserva",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/reservas/1/cancelar"
+    }
+  ]
+}
