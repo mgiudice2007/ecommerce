@@ -32,15 +32,16 @@ public abstract class IntegrationTestSupport {
         return login("admin", "admin123");
     }
 
-    protected String registrarYLoguearPasajero(String username) throws Exception {
+    protected String registrarYLoguearComprador(String username) throws Exception {
         Map<String, String> body = Map.of(
                 "username", username,
                 "mail", username + "@test.com",
                 "password", "123456",
                 "nombre", "Test",
-                "apellido", "Pasajero"
+                "apellido", "Comprador",
+                "rol", "COMPRADOR"
         );
-        mockMvc.perform(post("/api/auth/registro/pasajero")
+        mockMvc.perform(post("/api/auth/registro")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated());

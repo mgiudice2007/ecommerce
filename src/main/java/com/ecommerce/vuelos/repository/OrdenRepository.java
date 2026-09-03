@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface OrdenRepository extends JpaRepository<Orden, Long> {
 
-    List<Orden> findByPasajeroIdOrderByFechaDesc(Long pasajeroId);
+    List<Orden> findByUsuarioIdOrderByFechaDesc(Long usuarioId);
 }

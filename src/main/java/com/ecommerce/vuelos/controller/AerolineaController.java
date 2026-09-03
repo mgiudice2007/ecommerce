@@ -30,19 +30,19 @@ public class AerolineaController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AerolineaResponse> crear(@Valid @RequestBody AerolineaRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(aerolineaService.crear(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AerolineaResponse> actualizar(@PathVariable Long id, @Valid @RequestBody AerolineaRequest request) {
         return ResponseEntity.ok(aerolineaService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         aerolineaService.eliminar(id);
         return ResponseEntity.noContent().build();

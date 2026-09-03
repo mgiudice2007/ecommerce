@@ -24,19 +24,19 @@ public class OrdenService {
     private final OrdenRepository ordenRepository;
     private final VueloRepository vueloRepository;
 
-    public List<OrdenResponse> historial(Long pasajeroId) {
-        return ordenRepository.findByPasajeroIdOrderByFechaDesc(pasajeroId).stream()
+    public List<OrdenResponse> historial(Long usuarioId) {
+        return ordenRepository.findByUsuarioIdOrderByFechaDesc(usuarioId).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public OrdenResponse obtener(Long pasajeroId, Long ordenId) {
-        return toResponse(buscarOrdenDelPasajero(pasajeroId, ordenId));
+    public OrdenResponse obtener(Long usuarioId, Long ordenId) {
+        return toResponse(buscarOrdenDelPasajero(usuarioId, ordenId));
     }
 
     @Transactional
-    public OrdenResponse cancelar(Long pasajeroId, Long ordenId) {
-        Orden orden = buscarOrdenDelPasajero(pasajeroId, ordenId);
+    public OrdenResponse cancelar(Long usuarioId, Long ordenId) {
+        Orden orden = buscarOrdenDelPasajero(usuarioId, ordenId);
 
         if (orden.getEstado() == EstadoOrden.CANCELADA) {
             throw new BadRequestException("La orden ya se encuentra cancelada");
@@ -53,11 +53,11 @@ public class OrdenService {
         return toResponse(guardada);
     }
 
-    private Orden buscarOrdenDelPasajero(Long pasajeroId, Long ordenId) {
+    private Orden buscarOrdenDelPasajero(Long usuarioId, Long ordenId) {
         Orden orden = ordenRepository.findById(ordenId)
                 .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada: " + ordenId));
 
-        if (!orden.getPasajero().getId().equals(pasajeroId)) {
+        if (!orden.getUsuario().getId().equals(usuarioId)) {
             throw new ResourceNotFoundException("Orden no encontrada: " + ordenId);
         }
 

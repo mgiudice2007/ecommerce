@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/ordenes")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('PASAJERO')")
+@PreAuthorize("hasRole('COMPRADOR')")
 public class OrdenController {
 
     private final OrdenService ordenService;

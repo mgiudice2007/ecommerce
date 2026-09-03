@@ -1,20 +1,20 @@
 package com.ecommerce.vuelos.dto.auth;
 
+import com.ecommerce.vuelos.entity.Rol;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Set;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterAdministradorRequest {
+public class RegisterRequest {
 
     @NotBlank
     private String username;
@@ -33,5 +33,6 @@ public class RegisterAdministradorRequest {
     @NotBlank
     private String apellido;
 
-    private Set<String> permisos;
+    @NotNull(message = "El rol es obligatorio: COMPRADOR o VENDEDOR")
+    private Rol rol;
 }

@@ -26,8 +26,8 @@ public class Orden {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pasajero_id", nullable = false)
-    private Pasajero pasajero;
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 
     @Column(nullable = false)
     private BigDecimal total;

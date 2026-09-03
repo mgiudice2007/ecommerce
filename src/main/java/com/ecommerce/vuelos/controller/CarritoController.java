@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/carrito")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('PASAJERO')")
+@PreAuthorize("hasRole('COMPRADOR')")
 public class CarritoController {
 
     private final CarritoService carritoService;

@@ -1,7 +1,6 @@
 package com.ecommerce.vuelos.security;
 
-import com.ecommerce.vuelos.entity.Administrador;
-import com.ecommerce.vuelos.entity.Pasajero;
+import com.ecommerce.vuelos.entity.Rol;
 import com.ecommerce.vuelos.entity.Usuario;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,18 +25,17 @@ public class UsuarioPrincipal implements UserDetails {
         return usuario.getId();
     }
 
-    public boolean isAdministrador() {
-        return usuario instanceof Administrador;
+    public Rol getRol() {
+        return usuario.getRol();
     }
 
-    public boolean isPasajero() {
-        return usuario instanceof Pasajero;
+    public boolean esAdmin() {
+        return usuario.getRol() == Rol.ADMIN;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String rol = usuario instanceof Administrador ? "ROLE_ADMINISTRADOR" : "ROLE_PASAJERO";
-        return List.of(new SimpleGrantedAuthority(rol));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
     }
 
     @Override

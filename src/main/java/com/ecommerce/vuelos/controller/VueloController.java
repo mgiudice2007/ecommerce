@@ -37,19 +37,19 @@ public class VueloController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VueloResponse> crear(@Valid @RequestBody VueloRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(vueloService.crear(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VueloResponse> actualizar(@PathVariable Long id, @Valid @RequestBody VueloRequest request) {
         return ResponseEntity.ok(vueloService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         vueloService.eliminar(id);
         return ResponseEntity.noContent().build();

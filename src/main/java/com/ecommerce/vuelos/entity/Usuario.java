@@ -2,20 +2,22 @@ package com.ecommerce.vuelos.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "usuarios")
-@Inheritance(strategy = InheritanceType.JOINED)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public abstract class Usuario {
+@Builder
+public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,4 +37,15 @@ public abstract class Usuario {
 
     @Column(nullable = false)
     private String apellido;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Rol rol;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Carrito carrito;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Orden> ordenes = new ArrayList<>();
 }

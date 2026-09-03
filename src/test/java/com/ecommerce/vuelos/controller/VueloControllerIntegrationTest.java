@@ -58,7 +58,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     void crearVuelo_comoPasajero_devuelve403() throws Exception {
         String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Sin Permiso");
-        String pasajero = registrarYLoguearPasajero("pasajerovuelo");
+        String pasajero = registrarYLoguearComprador("pasajerovuelo");
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("origen", "A");

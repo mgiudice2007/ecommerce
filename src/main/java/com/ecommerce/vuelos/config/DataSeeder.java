@@ -1,7 +1,9 @@
 package com.ecommerce.vuelos.config;
 
 import com.ecommerce.vuelos.entity.*;
-import com.ecommerce.vuelos.repository.AdministradorRepository;
+import com.ecommerce.vuelos.entity.Rol;
+import com.ecommerce.vuelos.entity.Usuario;
+import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.AerolineaRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,29 +13,28 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
-    private final AdministradorRepository administradorRepository;
+    private final UsuarioRepository usuarioRepository;
     private final AerolineaRepository aerolineaRepository;
     private final VueloRepository vueloRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
-        if (administradorRepository.count() == 0) {
-            Administrador admin = Administrador.builder()
+        if (usuarioRepository.count() == 0) {
+            Usuario admin = Usuario.builder()
                     .username("admin")
                     .mail("admin@vuelos.com")
                     .password(passwordEncoder.encode("admin123"))
                     .nombre("Admin")
                     .apellido("Sistema")
-                    .permisos(Set.of("GESTION_VUELOS", "GESTION_AEROLINEAS"))
+                    .rol(Rol.ADMIN)
                     .build();
-            administradorRepository.save(admin);
+            usuarioRepository.save(admin);
         }
 
         if (aerolineaRepository.count() == 0) {

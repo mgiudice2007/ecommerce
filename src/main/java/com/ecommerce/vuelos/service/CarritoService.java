@@ -28,13 +28,13 @@ public class CarritoService {
     private final OrdenRepository ordenRepository;
     private final OrdenService ordenService;
 
-    public CarritoResponse obtenerCarrito(Long pasajeroId) {
-        return toResponse(buscarCarrito(pasajeroId));
+    public CarritoResponse obtenerCarrito(Long usuarioId) {
+        return toResponse(buscarCarrito(usuarioId));
     }
 
     @Transactional
-    public CarritoResponse agregarItem(Long pasajeroId, ItemCarritoRequest request) {
-        Carrito carrito = buscarCarrito(pasajeroId);
+    public CarritoResponse agregarItem(Long usuarioId, ItemCarritoRequest request) {
+        Carrito carrito = buscarCarrito(usuarioId);
         Vuelo vuelo = vueloRepository.findById(request.getVueloId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vuelo no encontrado: " + request.getVueloId()));
 
@@ -67,8 +67,8 @@ public class CarritoService {
     }
 
     @Transactional
-    public CarritoResponse actualizarItem(Long pasajeroId, Long itemId, Integer cantidad) {
-        Carrito carrito = buscarCarrito(pasajeroId);
+    public CarritoResponse actualizarItem(Long usuarioId, Long itemId, Integer cantidad) {
+        Carrito carrito = buscarCarrito(usuarioId);
         ItemCarrito item = obtenerItemDelCarrito(carrito, itemId);
 
         if (cantidad > item.getVuelo().getAsientosDisponibles()) {
@@ -81,8 +81,8 @@ public class CarritoService {
     }
 
     @Transactional
-    public CarritoResponse eliminarItem(Long pasajeroId, Long itemId) {
-        Carrito carrito = buscarCarrito(pasajeroId);
+    public CarritoResponse eliminarItem(Long usuarioId, Long itemId) {
+        Carrito carrito = buscarCarrito(usuarioId);
         ItemCarrito item = obtenerItemDelCarrito(carrito, itemId);
 
         carrito.getItems().remove(item);
@@ -91,8 +91,8 @@ public class CarritoService {
     }
 
     @Transactional
-    public OrdenResponse checkout(Long pasajeroId) {
-        Carrito carrito = buscarCarrito(pasajeroId);
+    public OrdenResponse checkout(Long usuarioId) {
+        Carrito carrito = buscarCarrito(usuarioId);
 
         if (carrito.getItems().isEmpty()) {
             throw new BadRequestException("El carrito esta vacio");
@@ -128,7 +128,7 @@ public class CarritoService {
         }
 
         Orden orden = Orden.builder()
-                .pasajero(carrito.getPasajero())
+                .usuario(carrito.getUsuario())
                 .total(total)
                 .fecha(LocalDateTime.now())
                 .estado(EstadoOrden.CONFIRMADA)
@@ -155,9 +155,9 @@ public class CarritoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Item no encontrado en el carrito: " + itemId));
     }
 
-    private Carrito buscarCarrito(Long pasajeroId) {
-        return carritoRepository.findByPasajeroId(pasajeroId)
-                .orElseThrow(() -> new ResourceNotFoundException("Carrito no encontrado para el pasajero: " + pasajeroId));
+    private Carrito buscarCarrito(Long usuarioId) {
+        return carritoRepository.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Carrito no encontrado para el pasajero: " + usuarioId));
     }
 
     private CarritoResponse toResponse(Carrito carrito) {

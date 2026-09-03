@@ -14,11 +14,11 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Historial");
         Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
 
-        String pasajero1 = registrarYLoguearPasajero("pasajerohist1");
+        String pasajero1 = registrarYLoguearComprador("pasajerohist1");
         agregarAlCarrito(pasajero1, vueloId, 1);
         mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero1)).andExpect(status().isCreated());
 
-        String pasajero2 = registrarYLoguearPasajero("pasajerohist2");
+        String pasajero2 = registrarYLoguearComprador("pasajerohist2");
 
         mockMvc.perform(get("/api/ordenes").header("Authorization", "Bearer " + pasajero1))
                 .andExpect(status().isOk())
@@ -34,7 +34,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Cancelar");
         Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
-        String pasajero = registrarYLoguearPasajero("pasajerocancela");
+        String pasajero = registrarYLoguearComprador("pasajerocancela");
         agregarAlCarrito(pasajero, vueloId, 4);
 
         String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
@@ -56,7 +56,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Doble Cancel");
         Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
-        String pasajero = registrarYLoguearPasajero("pasajerodoblecancel");
+        String pasajero = registrarYLoguearComprador("pasajerodoblecancel");
         agregarAlCarrito(pasajero, vueloId, 1);
 
         String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
@@ -75,13 +75,13 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Ajena");
         Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
 
-        String dueno = registrarYLoguearPasajero("pasajerodueno");
+        String dueno = registrarYLoguearComprador("pasajerodueno");
         agregarAlCarrito(dueno, vueloId, 1);
         String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + dueno))
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
 
-        String otro = registrarYLoguearPasajero("pasajerointruso");
+        String otro = registrarYLoguearComprador("pasajerointruso");
 
         mockMvc.perform(post("/api/ordenes/" + ordenId + "/cancelar").header("Authorization", "Bearer " + otro))
                 .andExpect(status().isNotFound());

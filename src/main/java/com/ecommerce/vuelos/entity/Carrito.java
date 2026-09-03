@@ -24,8 +24,8 @@ public class Carrito {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pasajero_id", nullable = false, unique = true)
-    private Pasajero pasajero;
+    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
+    private Usuario usuario;
 
     @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
