@@ -2,11 +2,12 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
-import com.ecommerce.vuelos.entity.ClaseVuelo;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.VueloService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/vuelos")
@@ -31,17 +31,28 @@ public class VueloController {
 
     private final VueloService vueloService;
 
+    /**
+     * Catalogo publico. Si no mandan page y size devuelve todo en una sola
+     * pagina; si los mandan, pagina de verdad.
+     */
     @GetMapping
-    public ResponseEntity<List<VueloResponse>> buscar(
+    public ResponseEntity<Page<VueloResponse>> buscar(
             @RequestParam(required = false) String origen,
             @RequestParam(required = false) String destino,
             @RequestParam(required = false) Long categoriaId,
-            @RequestParam(required = false) ClaseVuelo clase,
+            @RequestParam(required = false) Long claseId,
             @RequestParam(required = false) BigDecimal precioMin,
             @RequestParam(required = false) BigDecimal precioMax,
-            @RequestParam(required = false) Long vendedorId) {
-        return ResponseEntity.ok(
-                vueloService.buscar(origen, destino, categoriaId, clase, precioMin, precioMax, vendedorId));
+            @RequestParam(required = false) Long vendedorId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+
+        PageRequest pageRequest = (page == null || size == null)
+                ? PageRequest.of(0, Integer.MAX_VALUE)
+                : PageRequest.of(page, size);
+
+        return ResponseEntity.ok(vueloService.buscar(
+                origen, destino, categoriaId, claseId, precioMin, precioMax, vendedorId, pageRequest));
     }
 
     @GetMapping("/{id}")

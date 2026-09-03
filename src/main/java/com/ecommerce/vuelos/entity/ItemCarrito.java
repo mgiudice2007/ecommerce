@@ -25,8 +25,8 @@ public class ItemCarrito {
     private Carrito carrito;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vuelo_id", nullable = false)
-    private Vuelo vuelo;
+    @JoinColumn(name = "disponibilidad_id", nullable = false)
+    private Disponibilidad disponibilidad;
 
     @Column(nullable = false)
     private Integer cantidad;

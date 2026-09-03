@@ -1,6 +1,5 @@
 package com.ecommerce.vuelos.service;
 
-import com.ecommerce.vuelos.entity.ClaseVuelo;
 import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.Vuelo;
 import org.springframework.data.jpa.domain.Specification;
@@ -51,8 +50,15 @@ public final class VueloSpecifications {
                 : cb.equal(root.get("vendedor").get("id"), vendedorId);
     }
 
-    public static Specification<Vuelo> esClase(ClaseVuelo clase) {
-        return (root, query, cb) -> clase == null ? null : cb.equal(root.get("clase"), clase);
+    /** Filtra por clase navegando hacia las disponibilidades del vuelo. */
+    public static Specification<Vuelo> deClase(Long claseId) {
+        return (root, query, cb) -> {
+            if (claseId == null) {
+                return null;
+            }
+            query.distinct(true);
+            return cb.equal(root.join("disponibilidades").get("clase").get("id"), claseId);
+        };
     }
 
     public static Specification<Vuelo> precioMinimo(BigDecimal precioMin) {

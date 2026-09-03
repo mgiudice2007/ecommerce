@@ -2,13 +2,16 @@ package com.ecommerce.vuelos.config;
 
 import com.ecommerce.vuelos.entity.Aeropuerto;
 import com.ecommerce.vuelos.entity.Categoria;
-import com.ecommerce.vuelos.entity.ClaseVuelo;
+import com.ecommerce.vuelos.entity.Clase;
+import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.Rol;
 import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.entity.Vuelo;
 import com.ecommerce.vuelos.repository.AeropuertoRepository;
 import com.ecommerce.vuelos.repository.CategoriaRepository;
+import com.ecommerce.vuelos.repository.ClaseRepository;
+import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,8 @@ public class DataSeeder implements CommandLineRunner {
     private final AeropuertoRepository aeropuertoRepository;
     private final CategoriaRepository categoriaRepository;
     private final VueloRepository vueloRepository;
+    private final ClaseRepository claseRepository;
+    private final DisponibilidadRepository disponibilidadRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -49,6 +54,13 @@ public class DataSeeder implements CommandLineRunner {
                     categoria("Internacional", "Vuelos intercontinentales")));
         }
 
+        if (claseRepository.count() == 0) {
+            claseRepository.saveAll(List.of(
+                    clase("Economica", "Asiento estandar", false),
+                    clase("Ejecutiva", "Mayor espacio y comidas", true),
+                    clase("Primera", "Cabina privada", true)));
+        }
+
         if (usuarioRepository.count() == 0) {
             usuarioRepository.save(usuario("admin", "admin@vuelos.com", "Admin", "Sistema", Rol.ADMIN));
             usuarioRepository.save(usuario("vendedor", "vendedor@vuelos.com", "Vane", "Vendedora", Rol.VENDEDOR));
@@ -64,7 +76,7 @@ public class DataSeeder implements CommandLineRunner {
             Aeropuerto aep = aeropuertoRepository.findById("AEP").orElseThrow();
             Aeropuerto cor = aeropuertoRepository.findById("COR").orElseThrow();
 
-            vueloRepository.save(Vuelo.builder()
+            Vuelo aMadrid = vueloRepository.save(Vuelo.builder()
                     .vendedor(vendedor)
                     .categoria(internacional)
                     .origen(eze)
@@ -74,14 +86,12 @@ public class DataSeeder implements CommandLineRunner {
                     .fechaSalida(LocalDateTime.now().plusDays(30))
                     .fechaLlegada(LocalDateTime.now().plusDays(30).plusHours(12))
                     .precio(new BigDecimal("950.00"))
-                    .asientosDisponibles(120)
                     .descuento(BigDecimal.ZERO)
-                    .clase(ClaseVuelo.ECONOMICA)
                     .estado(EstadoVuelo.ACTIVO)
                     .fechaAlta(LocalDateTime.now())
                     .build());
 
-            vueloRepository.save(Vuelo.builder()
+            Vuelo aCordoba = vueloRepository.save(Vuelo.builder()
                     .vendedor(vendedor)
                     .categoria(cabotaje)
                     .origen(aep)
@@ -91,13 +101,37 @@ public class DataSeeder implements CommandLineRunner {
                     .fechaSalida(LocalDateTime.now().plusDays(15))
                     .fechaLlegada(LocalDateTime.now().plusDays(15).plusHours(2))
                     .precio(new BigDecimal("700.00"))
-                    .asientosDisponibles(80)
                     .descuento(new BigDecimal("10"))
-                    .clase(ClaseVuelo.EJECUTIVA)
                     .estado(EstadoVuelo.ACTIVO)
                     .fechaAlta(LocalDateTime.now())
                     .build());
+
+            Clase economica = claseRepository.findByNombre("Economica").orElseThrow();
+            Clase ejecutiva = claseRepository.findByNombre("Ejecutiva").orElseThrow();
+
+            disponibilidadRepository.saveAll(List.of(
+                    cupo(aMadrid, economica, 120, new BigDecimal("950.00")),
+                    cupo(aMadrid, ejecutiva, 20, new BigDecimal("2100.00")),
+                    cupo(aCordoba, economica, 80, new BigDecimal("700.00"))));
         }
+    }
+
+    private Clase clase(String nombre, String descripcion, boolean equipajeBodega) {
+        return Clase.builder()
+                .nombre(nombre)
+                .descripcion(descripcion)
+                .equipajeBodega(equipajeBodega)
+                .build();
+    }
+
+    private Disponibilidad cupo(Vuelo vuelo, Clase clase, int asientos, BigDecimal precio) {
+        return Disponibilidad.builder()
+                .vuelo(vuelo)
+                .clase(clase)
+                .asientosTotales(asientos)
+                .asientosDisponibles(asientos)
+                .precio(precio)
+                .build();
     }
 
     private Aeropuerto aeropuerto(String iata, String nombre, String ciudad, String provincia, String pais) {

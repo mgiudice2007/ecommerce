@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/vuelos/**", "/api/categorias/**", "/api/aeropuertos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/vuelos/**", "/api/categorias/**", "/api/aeropuertos/**", "/api/clases", "/api/disponibilidades/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

@@ -11,10 +11,10 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
     @Test
     void historial_devuelveSoloLasOrdenesDelPasajeroLogueado() throws Exception {
         String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
-        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
 
         String pasajero1 = registrarYLoguearComprador("pasajerohist1");
-        agregarAlCarrito(pasajero1, vueloId, 1);
+        agregarAlCarrito(pasajero1, cupoId, 1);
         mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero1)).andExpect(status().isCreated());
 
         String pasajero2 = registrarYLoguearComprador("pasajerohist2");
@@ -31,9 +31,9 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
     @Test
     void cancelarOrden_devuelveElStockAlVuelo() throws Exception {
         String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
-        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajerocancela");
-        agregarAlCarrito(pasajero, vueloId, 4);
+        agregarAlCarrito(pasajero, cupoId, 4);
 
         String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
                 .andExpect(status().isCreated())
@@ -44,7 +44,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("CANCELADA"));
 
-        mockMvc.perform(get("/api/vuelos/" + vueloId))
+        mockMvc.perform(get("/api/disponibilidades/" + cupoId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.asientosDisponibles").value(10));
     }
@@ -52,9 +52,9 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
     @Test
     void cancelarOrden_yaCancelada_devuelve400() throws Exception {
         String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
-        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajerodoblecancel");
-        agregarAlCarrito(pasajero, vueloId, 1);
+        agregarAlCarrito(pasajero, cupoId, 1);
 
         String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
                 .andReturn().getResponse().getContentAsString();
@@ -69,10 +69,10 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
     @Test
     void cancelarOrden_deOtroPasajero_devuelve404() throws Exception {
         String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
-        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
 
         String dueno = registrarYLoguearComprador("pasajerodueno");
-        agregarAlCarrito(dueno, vueloId, 1);
+        agregarAlCarrito(dueno, cupoId, 1);
         String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + dueno))
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();

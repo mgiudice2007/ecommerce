@@ -1,6 +1,5 @@
 package com.ecommerce.vuelos.dto.vuelo;
 
-import com.ecommerce.vuelos.entity.ClaseVuelo;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -42,14 +41,7 @@ public class VueloRequest {
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal precio;
 
-    @NotNull
-    @Min(0)
-    private Integer asientosDisponibles;
-
     @DecimalMin(value = "0.0")
     @DecimalMax(value = "100.0")
     private BigDecimal descuento;
-
-    @NotNull
-    private ClaseVuelo clase;
 }

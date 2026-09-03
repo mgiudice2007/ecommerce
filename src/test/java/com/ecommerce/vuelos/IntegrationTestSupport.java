@@ -70,7 +70,7 @@ public abstract class IntegrationTestSupport {
         MvcResult r = mockMvc.perform(get("/api/vuelos"))
                 .andExpect(status().isOk())
                 .andReturn();
-        return objectMapper.readTree(r.getResponse().getContentAsString()).get(0).get("categoriaId").asLong();
+        return objectMapper.readTree(r.getResponse().getContentAsString()).get("content").get(0).get("categoriaId").asLong();
     }
 
     protected String login(String username, String password) throws Exception {
@@ -83,10 +83,11 @@ public abstract class IntegrationTestSupport {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
     }
 
+    /** Publica un vuelo. Devuelve el id del vuelo, sin cupos todavia. */
     protected Long crearVuelo(String vendedorToken, String origenIata, String destinoIata,
-                              double precio, int asientos, String clase) throws Exception {
+                              double precio) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("numeroVuelo", "TS" + System.nanoTime() % 10000);
+        body.put("numeroVuelo", "TS" + System.nanoTime() % 100000);
         body.put("descripcion", "Vuelo de prueba");
         body.put("categoriaId", categoriaPorDefecto());
         body.put("origenIata", origenIata);
@@ -94,9 +95,7 @@ public abstract class IntegrationTestSupport {
         body.put("fechaSalida", LocalDateTime.now().plusDays(10).withNano(0).toString());
         body.put("fechaLlegada", LocalDateTime.now().plusDays(10).plusHours(3).withNano(0).toString());
         body.put("precio", precio);
-        body.put("asientosDisponibles", asientos);
         body.put("descuento", 0);
-        body.put("clase", clase);
 
         MvcResult result = mockMvc.perform(post("/api/vuelos")
                         .header("Authorization", "Bearer " + vendedorToken)
@@ -107,10 +106,43 @@ public abstract class IntegrationTestSupport {
         return idDe(result);
     }
 
-    protected Long agregarAlCarrito(String pasajeroToken, Long vueloId, int cantidad) throws Exception {
-        Map<String, Object> body = Map.of("vueloId", vueloId, "cantidad", cantidad);
+    /** Carga el cupo de una clase para un vuelo. Devuelve el id de la disponibilidad. */
+    protected Long crearDisponibilidad(String vendedorToken, Long vueloId, Long claseId,
+                                       int asientos, double precio) throws Exception {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("vueloId", vueloId);
+        body.put("claseId", claseId);
+        body.put("asientosTotales", asientos);
+        body.put("precio", precio);
+
+        MvcResult result = mockMvc.perform(post("/api/disponibilidades")
+                        .header("Authorization", "Bearer " + vendedorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return idDe(result);
+    }
+
+    /** Atajo: publica un vuelo con un unico cupo en Economica. Devuelve la disponibilidad. */
+    protected Long crearVueloConCupo(String vendedorToken, String origenIata, String destinoIata,
+                                     double precio, int asientos) throws Exception {
+        Long vueloId = crearVuelo(vendedorToken, origenIata, destinoIata, precio);
+        return crearDisponibilidad(vendedorToken, vueloId, clasePorDefecto(), asientos, precio);
+    }
+
+    /** El seeder deja siempre las clases Economica, Ejecutiva y Primera. */
+    protected Long clasePorDefecto() throws Exception {
+        MvcResult r = mockMvc.perform(get("/api/clases"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(r.getResponse().getContentAsString()).get(0).get("id").asLong();
+    }
+
+    protected Long agregarAlCarrito(String compradorToken, Long disponibilidadId, int cantidad) throws Exception {
+        Map<String, Object> body = Map.of("disponibilidadId", disponibilidadId, "cantidad", cantidad);
         MvcResult result = mockMvc.perform(post("/api/carrito/items")
-                        .header("Authorization", "Bearer " + pasajeroToken)
+                        .header("Authorization", "Bearer " + compradorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())

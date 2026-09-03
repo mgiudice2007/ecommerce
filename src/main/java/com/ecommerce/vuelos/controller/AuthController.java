@@ -46,7 +46,7 @@ public class AuthController {
         UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
         String token = jwtService.generateToken(principal);
 
-        return ResponseEntity.ok(new LoginResponse(token, AuthService.toResponse(principal.getUsuario())));
+        return ResponseEntity.ok(new LoginResponse(token, UsuarioResponse.desde(principal.getUsuario())));
     }
 
     @PostMapping("/logout")
@@ -57,6 +57,6 @@ public class AuthController {
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponse> me(@AuthenticationPrincipal UsuarioPrincipal principal) {
-        return ResponseEntity.ok(AuthService.toResponse(principal.getUsuario()));
+        return ResponseEntity.ok(UsuarioResponse.desde(principal.getUsuario()));
     }
 }

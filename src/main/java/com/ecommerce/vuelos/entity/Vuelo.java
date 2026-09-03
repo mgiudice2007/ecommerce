@@ -10,6 +10,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "vuelos")
@@ -56,17 +58,14 @@ public class Vuelo {
     @Column(nullable = false)
     private BigDecimal precio;
 
-    @Column(nullable = false)
-    private Integer asientosDisponibles;
-
     /** Porcentaje de descuento, de 0 a 100. Pasa a la entidad Descuento en la fase 4. */
     @Column(nullable = false)
     @Builder.Default
     private BigDecimal descuento = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ClaseVuelo clase;
+    @OneToMany(mappedBy = "vuelo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Disponibilidad> disponibilidades = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -95,8 +94,10 @@ public class Vuelo {
         return (int) Duration.between(fechaSalida, fechaLlegada).toMinutes();
     }
 
+    /** Hay stock si el vuelo esta activo y al menos una clase tiene asientos. */
     @Transient
     public boolean isDisponible() {
-        return estado == EstadoVuelo.ACTIVO && asientosDisponibles != null && asientosDisponibles > 0;
+        return estado == EstadoVuelo.ACTIVO
+                && disponibilidades.stream().anyMatch(Disponibilidad::hayStock);
     }
 }
