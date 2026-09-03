@@ -2,9 +2,9 @@
 
 Base URL: `http://localhost:8080`
 
-Autenticación por **sesión (cookie JSESSIONID)**, no JWT. En Insomnia dejá activado
-el manejo de cookies (por defecto, dentro del mismo workspace) para que la sesión
-se mantenga entre requests después del login.
+Autenticación por **JWT** (`Authorization: Bearer <token>`), stateless. El token se obtiene
+en `POST /api/auth/login` y expira a las 24hs. No hay cookies de sesión ni estado en el servidor:
+cada request protegido debe mandar el header `Authorization`.
 
 ## Usuarios de prueba (seed inicial, solo si la base está vacía al arrancar)
 
@@ -28,7 +28,7 @@ Vuelos de ejemplo ya cargados (aerolínea id 1 "Aerolineas Demo"):
 }
 ```
 
-### POST `/api/auth/registro/administrador` (requiere sesión con rol ADMINISTRADOR)
+### POST `/api/auth/registro/administrador` (requiere token con rol ADMINISTRADOR)
 ```json
 {
   "username": "admin2",
@@ -44,18 +44,28 @@ Vuelos de ejemplo ya cargados (aerolínea id 1 "Aerolineas Demo"):
 ```json
 { "username": "mile", "password": "123456" }
 ```
+Devuelve:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "usuario": { "id": 1, "username": "mile", "mail": "mile@test.com", "nombre": "Milena", "apellido": "Giudice", "rol": "PASAJERO" }
+}
+```
+Guardar `token` y mandarlo como `Authorization: Bearer <token>` en los siguientes requests.
 
 ### POST `/api/auth/logout`
-Sin body.
+Requiere token. Sin body. Con JWT stateless es un no-op del lado servidor (devuelve 204):
+no hay invalidación real, el token sigue siendo válido hasta que expira. El "logout" real
+es que el cliente descarte el token.
 
 ### GET `/api/auth/me`
-Requiere sesión.
+Requiere token.
 
 ## Aerolíneas — `/api/aerolineas`
 
 - `GET /api/aerolineas` — público
 - `GET /api/aerolineas/{id}` — público
-- `POST /api/aerolineas` — ADMIN
+- `POST /api/aerolineas` — requiere token con rol ADMINISTRADOR
   ```json
   { "nombre": "Aerolineas Argentinas" }
   ```
@@ -66,12 +76,12 @@ Requiere sesión.
 
 - `GET /api/vuelos?origen=BUE&destino=MAD&clase=ECONOMICA&precioMin=100&precioMax=1000` — público, todos los query params opcionales
 - `GET /api/vuelos/{id}` — público
-- `POST /api/vuelos` — ADMIN
+- `POST /api/vuelos` — requiere token con rol ADMINISTRADOR
   ```json
   {
     "origen": "Buenos Aires",
     "destino": "Madrid",
-    "fechaSalida": "2026-12-01T10:00:00",
+    "fechaSalida": "2026-12-15T10:00:00",
     "precio": 500.00,
     "asientosDisponibles": 100,
     "descuento": 0,
@@ -79,11 +89,11 @@ Requiere sesión.
     "aerolineaId": 1
   }
   ```
-  Valores de `clase`: `ECONOMICA`, `EJECUTIVA`, `PRIMERA`
+  Valores de `clase`: `ECONOMICA`, `EJECUTIVA`, `PRIMERA`. `fechaSalida` debe ser una fecha futura.
 - `PUT /api/vuelos/{id}` — ADMIN, mismo body
 - `DELETE /api/vuelos/{id}` — ADMIN
 
-## Carrito — `/api/carrito` (requiere sesión con rol PASAJERO)
+## Carrito — `/api/carrito` (requiere token con rol PASAJERO)
 
 - `GET /api/carrito`
 - `POST /api/carrito/items`
@@ -97,7 +107,7 @@ Requiere sesión.
 - `DELETE /api/carrito/items/{itemId}`
 - `POST /api/carrito/checkout` — sin body, genera la reserva
 
-## Reservas — `/api/reservas` (requiere sesión con rol PASAJERO)
+## Reservas — `/api/reservas` (requiere token con rol PASAJERO)
 
 - `GET /api/reservas` — historial
 - `GET /api/reservas/{id}`
@@ -105,6 +115,14 @@ Requiere sesión.
 
 ## Flujo típico de prueba
 
-1. `POST /api/auth/login` con `admin` / `admin123` → probar endpoints ADMIN (crear vuelos/aerolíneas).
-2. `POST /api/auth/registro/pasajero` con un usuario nuevo, luego `POST /api/auth/login` con ese usuario → probar carrito y reservas usando `vueloId` 1 o 2.
+1. `POST /api/auth/login` con `admin` / `admin123` → guardar el `token` → probar endpoints ADMIN (crear vuelos/aerolíneas) mandando `Authorization: Bearer <token>`.
+2. `POST /api/auth/registro/pasajero` con un usuario nuevo, luego `POST /api/auth/login` con ese usuario → guardar su `token` → probar carrito y reservas usando `vueloId` 1 o 2.
 3. `POST /api/carrito/items` → `POST /api/carrito/checkout` → `GET /api/reservas`
+
+## Colección de Insomnia
+
+`docs/insomnia_collection.json` trae el flujo completo de arriba ya armado en requests
+organizados en carpetas (Auth → Aerolíneas → Vuelos → Carrito → Reservas → Casos de error →
+Cleanup), con los tokens e IDs encadenados automáticamente entre requests vía variables de
+entorno (`token_admin`, `token_pasajero`, `aerolinea_id`, `vuelo_id`, `item_id`, `reserva_id`).
+Importarlo en Insomnia con File → Import.
