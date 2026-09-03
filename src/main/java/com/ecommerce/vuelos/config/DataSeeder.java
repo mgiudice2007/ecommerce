@@ -1,6 +1,6 @@
 package com.ecommerce.vuelos.config;
 
-import com.ecommerce.vuelos.model.*;
+import com.ecommerce.vuelos.entity.*;
 import com.ecommerce.vuelos.repository.AdministradorRepository;
 import com.ecommerce.vuelos.repository.AerolineaRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;

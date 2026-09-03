@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.model;
+package com.ecommerce.vuelos.entity;
 
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -23,5 +23,5 @@ public class Pasajero extends Usuario {
 
     @OneToMany(mappedBy = "pasajero", cascade = CascadeType.ALL)
     @Builder.Default
-    private List<Reserva> reservas = new ArrayList<>();
+    private List<Orden> ordenes = new ArrayList<>();
 }

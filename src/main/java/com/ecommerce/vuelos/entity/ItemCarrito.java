@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.model;
+package com.ecommerce.vuelos.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,24 +7,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Entity
-@Table(name = "items_reserva")
+@Table(name = "items_carrito")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ItemReserva {
+public class ItemCarrito {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reserva_id", nullable = false)
-    private Reserva reserva;
+    @JoinColumn(name = "carrito_id", nullable = false)
+    private Carrito carrito;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vuelo_id", nullable = false)
@@ -32,8 +30,4 @@ public class ItemReserva {
 
     @Column(nullable = false)
     private Integer cantidad;
-
-    /** Precio unitario ya con descuento aplicado, tomado al momento de la reserva. */
-    @Column(nullable = false)
-    private BigDecimal precioUnitario;
 }

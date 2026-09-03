@@ -1,6 +1,6 @@
 package com.ecommerce.vuelos.dto.vuelo;
 
-import com.ecommerce.vuelos.model.ClaseVuelo;
+import com.ecommerce.vuelos.entity.ClaseVuelo;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -3,12 +3,12 @@ package com.ecommerce.vuelos.service;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoResponse;
-import com.ecommerce.vuelos.dto.reserva.ReservaResponse;
+import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
-import com.ecommerce.vuelos.model.*;
+import com.ecommerce.vuelos.entity.*;
 import com.ecommerce.vuelos.repository.CarritoRepository;
-import com.ecommerce.vuelos.repository.ReservaRepository;
+import com.ecommerce.vuelos.repository.OrdenRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,8 +25,8 @@ public class CarritoService {
 
     private final CarritoRepository carritoRepository;
     private final VueloRepository vueloRepository;
-    private final ReservaRepository reservaRepository;
-    private final ReservaService reservaService;
+    private final OrdenRepository ordenRepository;
+    private final OrdenService ordenService;
 
     public CarritoResponse obtenerCarrito(Long pasajeroId) {
         return toResponse(buscarCarrito(pasajeroId));
@@ -91,7 +91,7 @@ public class CarritoService {
     }
 
     @Transactional
-    public ReservaResponse checkout(Long pasajeroId) {
+    public OrdenResponse checkout(Long pasajeroId) {
         Carrito carrito = buscarCarrito(pasajeroId);
 
         if (carrito.getItems().isEmpty()) {
@@ -107,7 +107,7 @@ public class CarritoService {
             }
         }
 
-        List<ItemReserva> itemsReserva = new ArrayList<>();
+        List<ItemOrden> itemsOrden = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
 
         for (ItemCarrito item : carrito.getItems()) {
@@ -117,35 +117,35 @@ public class CarritoService {
             vuelo.setAsientosDisponibles(vuelo.getAsientosDisponibles() - item.getCantidad());
             vueloRepository.save(vuelo);
 
-            ItemReserva itemReserva = ItemReserva.builder()
+            ItemOrden itemOrden = ItemOrden.builder()
                     .vuelo(vuelo)
                     .cantidad(item.getCantidad())
                     .precioUnitario(precioUnitario)
                     .build();
-            itemsReserva.add(itemReserva);
+            itemsOrden.add(itemOrden);
 
             total = total.add(precioUnitario.multiply(BigDecimal.valueOf(item.getCantidad())));
         }
 
-        Reserva reserva = Reserva.builder()
+        Orden orden = Orden.builder()
                 .pasajero(carrito.getPasajero())
                 .total(total)
                 .fecha(LocalDateTime.now())
-                .estado(EstadoReserva.CONFIRMADA)
+                .estado(EstadoOrden.CONFIRMADA)
                 .items(new ArrayList<>())
                 .build();
 
-        itemsReserva.forEach(ir -> {
-            ir.setReserva(reserva);
-            reserva.getItems().add(ir);
+        itemsOrden.forEach(ir -> {
+            ir.setOrden(orden);
+            orden.getItems().add(ir);
         });
 
-        Reserva guardada = reservaRepository.save(reserva);
+        Orden guardada = ordenRepository.save(orden);
 
         carrito.getItems().clear();
         carritoRepository.save(carrito);
 
-        return reservaService.toResponse(guardada);
+        return ordenService.toResponse(guardada);
     }
 
     private ItemCarrito obtenerItemDelCarrito(Carrito carrito, Long itemId) {

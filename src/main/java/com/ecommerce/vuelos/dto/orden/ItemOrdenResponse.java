@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.dto.reserva;
+package com.ecommerce.vuelos.dto.orden;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Getter
 @Builder
 @AllArgsConstructor
-public class ItemReservaResponse {
+public class ItemOrdenResponse {
 
     private Long id;
     private Long vueloId;

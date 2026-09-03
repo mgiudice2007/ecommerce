@@ -1,6 +1,6 @@
 package com.ecommerce.vuelos.repository;
 
-import com.ecommerce.vuelos.model.Usuario;
+import com.ecommerce.vuelos.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

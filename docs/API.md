@@ -105,24 +105,24 @@ Requiere token.
   { "cantidad": 3 }
   ```
 - `DELETE /api/carrito/items/{itemId}`
-- `POST /api/carrito/checkout` — sin body, genera la reserva
+- `POST /api/carrito/checkout` — sin body, genera la orden
 
-## Reservas — `/api/reservas` (requiere token con rol PASAJERO)
+## Ordenes — `/api/ordenes` (requiere token con rol PASAJERO)
 
-- `GET /api/reservas` — historial
-- `GET /api/reservas/{id}`
-- `POST /api/reservas/{id}/cancelar` — sin body
+- `GET /api/ordenes` — historial
+- `GET /api/ordenes/{id}`
+- `POST /api/ordenes/{id}/cancelar` — sin body
 
 ## Flujo típico de prueba
 
 1. `POST /api/auth/login` con `admin` / `admin123` → guardar el `token` → probar endpoints ADMIN (crear vuelos/aerolíneas) mandando `Authorization: Bearer <token>`.
-2. `POST /api/auth/registro/pasajero` con un usuario nuevo, luego `POST /api/auth/login` con ese usuario → guardar su `token` → probar carrito y reservas usando `vueloId` 1 o 2.
-3. `POST /api/carrito/items` → `POST /api/carrito/checkout` → `GET /api/reservas`
+2. `POST /api/auth/registro/pasajero` con un usuario nuevo, luego `POST /api/auth/login` con ese usuario → guardar su `token` → probar carrito y ordenes usando `vueloId` 1 o 2.
+3. `POST /api/carrito/items` → `POST /api/carrito/checkout` → `GET /api/ordenes`
 
 ## Colección de Insomnia
 
 `docs/insomnia_collection.json` trae el flujo completo de arriba ya armado en requests
-organizados en carpetas (Auth → Aerolíneas → Vuelos → Carrito → Reservas → Casos de error →
+organizados en carpetas (Auth → Aerolíneas → Vuelos → Carrito → Ordenes → Casos de error →
 Cleanup), con los tokens e IDs encadenados automáticamente entre requests vía variables de
-entorno (`token_admin`, `token_pasajero`, `aerolinea_id`, `vuelo_id`, `item_id`, `reserva_id`).
+entorno (`token_admin`, `token_pasajero`, `aerolinea_id`, `vuelo_id`, `item_id`, `orden_id`).
 Importarlo en Insomnia con File → Import.

@@ -62,7 +62,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void checkout_generaReservaYDescuentaStock() throws Exception {
+    void checkout_generaOrdenYDescuentaStock() throws Exception {
         String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Checkout");
         Long vueloId = crearVuelo(admin, aerolineaId, "BUE", "MIA", 200.0, 10, "ECONOMICA");

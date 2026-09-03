@@ -8,7 +8,7 @@
       "_id": "wrk_ecommerce_vuelos",
       "_type": "workspace",
       "name": "Ecommerce Vuelos API",
-      "description": "Coleccion para probar la API de pasajes de avion. Autenticacion JWT (Authorization: Bearer <token>). Los folders estan numerados en el orden pensado para correrlos de punta a punta: Auth -> Aerolineas -> Vuelos -> Carrito -> Reservas. Los requests de login y de creacion (aerolinea/vuelo/item/checkout) tienen un script 'after-response' que guarda automaticamente el token/id devuelto en las variables de entorno (token_admin, token_pasajero, aerolinea_id, vuelo_id, item_id, reserva_id). Si tu version de Insomnia no ejecuta esos scripts, copia el valor manualmente desde la respuesta a Manage Environments.",
+      "description": "Coleccion para probar la API de pasajes de avion. Autenticacion JWT (Authorization: Bearer <token>). Los folders estan numerados en el orden pensado para correrlos de punta a punta: Auth -> Aerolineas -> Vuelos -> Carrito -> Ordenes. Los requests de login y de creacion (aerolinea/vuelo/item/checkout) tienen un script 'after-response' que guarda automaticamente el token/id devuelto en las variables de entorno (token_admin, token_pasajero, aerolinea_id, vuelo_id, item_id, orden_id). Si tu version de Insomnia no ejecuta esos scripts, copia el valor manualmente desde la respuesta a Manage Environments.",
       "scope": "collection"
     },
     {
@@ -23,7 +23,7 @@
         "aerolinea_id": "",
         "vuelo_id": "",
         "item_id": "",
-        "reserva_id": ""
+        "orden_id": ""
       }
     },
     {
@@ -51,10 +51,10 @@
       "name": "4. Carrito (Pasajero)"
     },
     {
-      "_id": "fld_reservas",
+      "_id": "fld_ordenes",
       "_type": "request_group",
       "parentId": "wrk_ecommerce_vuelos",
-      "name": "5. Reservas (Pasajero)"
+      "name": "5. Ordenes (Pasajero)"
     },
     {
       "_id": "fld_errores",
@@ -347,39 +347,39 @@
       "method": "POST",
       "url": "{{ _.base_url }}/api/carrito/checkout",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('reserva_id', String(body.id));",
-      "description": "Requiere token de PASAJERO y un carrito con items. Genera la reserva y guarda su id en reserva_id."
+      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('orden_id', String(body.id));",
+      "description": "Requiere token de PASAJERO y un carrito con items. Genera la orden y guarda su id en orden_id."
     },
 
     {
-      "_id": "req_reservas_historial",
+      "_id": "req_ordenes_historial",
       "_type": "request",
-      "parentId": "fld_reservas",
-      "name": "1. Historial de reservas",
+      "parentId": "fld_ordenes",
+      "name": "1. Historial de ordenes",
       "method": "GET",
-      "url": "{{ _.base_url }}/api/reservas",
+      "url": "{{ _.base_url }}/api/ordenes",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
       "description": "Requiere token de PASAJERO."
     },
     {
-      "_id": "req_reservas_obtener",
+      "_id": "req_ordenes_obtener",
       "_type": "request",
-      "parentId": "fld_reservas",
-      "name": "2. Obtener reserva por id",
+      "parentId": "fld_ordenes",
+      "name": "2. Obtener orden por id",
       "method": "GET",
-      "url": "{{ _.base_url }}/api/reservas/{{ _.reserva_id }}",
+      "url": "{{ _.base_url }}/api/ordenes/{{ _.orden_id }}",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO. Solo el dueno de la reserva puede verla."
+      "description": "Requiere token de PASAJERO. Solo el dueno de la orden puede verla."
     },
     {
-      "_id": "req_reservas_cancelar",
+      "_id": "req_ordenes_cancelar",
       "_type": "request",
-      "parentId": "fld_reservas",
-      "name": "3. Cancelar reserva",
+      "parentId": "fld_ordenes",
+      "name": "3. Cancelar orden",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/reservas/{{ _.reserva_id }}/cancelar",
+      "url": "{{ _.base_url }}/api/ordenes/{{ _.orden_id }}/cancelar",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO. Devuelve la reserva con asientos liberados."
+      "description": "Requiere token de PASAJERO. Devuelve la orden con asientos liberados."
     },
 
     {
@@ -431,7 +431,7 @@
       "method": "DELETE",
       "url": "{{ _.base_url }}/api/vuelos/{{ _.vuelo_id }}",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }],
-      "description": "Correr al final, despues de terminar el flujo de Carrito/Reservas (si borras el vuelo antes, esos pasos van a fallar). Si el vuelo tiene una reserva asociada (como en este flujo, salvo que la hayas cancelado antes) devuelve 400 'No se puede eliminar un vuelo con reservas asociadas'."
+      "description": "Correr al final, despues de terminar el flujo de Carrito/Ordenes (si borras el vuelo antes, esos pasos van a fallar). Si el vuelo tiene una orden asociada (como en este flujo, salvo que la hayas cancelado antes) devuelve 400 'No se puede eliminar un vuelo con ordenes asociadas'."
     },
     {
       "_id": "req_aerolineas_eliminar",

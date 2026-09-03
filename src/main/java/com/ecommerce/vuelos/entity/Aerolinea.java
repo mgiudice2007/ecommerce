@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.model;
+package com.ecommerce.vuelos.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

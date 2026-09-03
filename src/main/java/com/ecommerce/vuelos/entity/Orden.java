@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.model;
+package com.ecommerce.vuelos.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -13,13 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "reservas")
+@Table(name = "ordenes")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Reserva {
+public class Orden {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,9 +37,9 @@ public class Reserva {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EstadoReserva estado;
+    private EstadoOrden estado;
 
-    @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<ItemReserva> items = new ArrayList<>();
+    private List<ItemOrden> items = new ArrayList<>();
 }

@@ -1,8 +1,8 @@
 package com.ecommerce.vuelos.security;
 
-import com.ecommerce.vuelos.model.Administrador;
-import com.ecommerce.vuelos.model.Pasajero;
-import com.ecommerce.vuelos.model.Usuario;
+import com.ecommerce.vuelos.entity.Administrador;
+import com.ecommerce.vuelos.entity.Pasajero;
+import com.ecommerce.vuelos.entity.Usuario;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

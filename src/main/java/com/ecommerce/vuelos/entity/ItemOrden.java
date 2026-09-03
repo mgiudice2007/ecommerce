@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.model;
+package com.ecommerce.vuelos.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,22 +7,24 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
-@Table(name = "items_carrito")
+@Table(name = "items_orden")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ItemCarrito {
+public class ItemOrden {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "carrito_id", nullable = false)
-    private Carrito carrito;
+    @JoinColumn(name = "orden_id", nullable = false)
+    private Orden orden;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vuelo_id", nullable = false)
@@ -30,4 +32,8 @@ public class ItemCarrito {
 
     @Column(nullable = false)
     private Integer cantidad;
+
+    /** Precio unitario ya con descuento aplicado, tomado al momento de la orden. */
+    @Column(nullable = false)
+    private BigDecimal precioUnitario;
 }

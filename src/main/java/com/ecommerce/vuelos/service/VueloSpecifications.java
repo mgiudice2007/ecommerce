@@ -1,7 +1,7 @@
 package com.ecommerce.vuelos.service;
 
-import com.ecommerce.vuelos.model.ClaseVuelo;
-import com.ecommerce.vuelos.model.Vuelo;
+import com.ecommerce.vuelos.entity.ClaseVuelo;
+import com.ecommerce.vuelos.entity.Vuelo;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;

@@ -2,7 +2,7 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
-import com.ecommerce.vuelos.model.ClaseVuelo;
+import com.ecommerce.vuelos.entity.ClaseVuelo;
 import com.ecommerce.vuelos.service.VueloService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -4,7 +4,7 @@ import com.ecommerce.vuelos.dto.aerolinea.AerolineaRequest;
 import com.ecommerce.vuelos.dto.aerolinea.AerolineaResponse;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
-import com.ecommerce.vuelos.model.Aerolinea;
+import com.ecommerce.vuelos.entity.Aerolinea;
 import com.ecommerce.vuelos.repository.AerolineaRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import lombok.RequiredArgsConstructor;

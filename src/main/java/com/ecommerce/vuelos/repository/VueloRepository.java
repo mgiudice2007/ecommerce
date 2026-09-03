@@ -1,6 +1,6 @@
 package com.ecommerce.vuelos.repository;
 
-import com.ecommerce.vuelos.model.Vuelo;
+import com.ecommerce.vuelos.entity.Vuelo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
