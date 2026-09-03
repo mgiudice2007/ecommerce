@@ -101,9 +101,12 @@ public class CarritoService {
         // Validar stock de todos los items antes de descontar nada
         for (ItemCarrito item : carrito.getItems()) {
             Vuelo vuelo = item.getVuelo();
+            if (vuelo.getEstado() != EstadoVuelo.ACTIVO) {
+                throw new BadRequestException("El vuelo " + vuelo.getNumeroVuelo() + " ya no esta disponible");
+            }
             if (item.getCantidad() > vuelo.getAsientosDisponibles()) {
                 throw new BadRequestException("No hay suficientes asientos disponibles para el vuelo "
-                        + vuelo.getOrigen() + " - " + vuelo.getDestino());
+                        + vuelo.getNumeroVuelo());
             }
         }
 
@@ -165,8 +168,8 @@ public class CarritoService {
                 .map(item -> ItemCarritoResponse.builder()
                         .id(item.getId())
                         .vueloId(item.getVuelo().getId())
-                        .origen(item.getVuelo().getOrigen())
-                        .destino(item.getVuelo().getDestino())
+                        .origen(item.getVuelo().getOrigen().getCiudad())
+                        .destino(item.getVuelo().getDestino().getCiudad())
                         .precioUnitario(item.getVuelo().getPrecioConDescuento())
                         .cantidad(item.getCantidad())
                         .subtotal(item.getVuelo().getPrecioConDescuento().multiply(BigDecimal.valueOf(item.getCantidad())))

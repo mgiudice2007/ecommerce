@@ -10,9 +10,8 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void historial_devuelveSoloLasOrdenesDelPasajeroLogueado() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Historial");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
 
         String pasajero1 = registrarYLoguearComprador("pasajerohist1");
         agregarAlCarrito(pasajero1, vueloId, 1);
@@ -31,9 +30,8 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_devuelveElStockAlVuelo() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Cancelar");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
         String pasajero = registrarYLoguearComprador("pasajerocancela");
         agregarAlCarrito(pasajero, vueloId, 4);
 
@@ -53,9 +51,8 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_yaCancelada_devuelve400() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Doble Cancel");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
         String pasajero = registrarYLoguearComprador("pasajerodoblecancel");
         agregarAlCarrito(pasajero, vueloId, 1);
 
@@ -71,9 +68,8 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_deOtroPasajero_devuelve404() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Ajena");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
 
         String dueno = registrarYLoguearComprador("pasajerodueno");
         agregarAlCarrito(dueno, vueloId, 1);

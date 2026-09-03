@@ -3,6 +3,8 @@ package com.ecommerce.vuelos.controller;
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -12,9 +14,8 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void agregarItem_superandoElStockDisponible_devuelve400() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Stock");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 2, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 2, "ECONOMICA");
         String pasajero = registrarYLoguearComprador("pasajerostock");
 
         mockMvc.perform(json(post("/api/carrito/items").header("Authorization", "Bearer " + pasajero), Map.of("vueloId", vueloId, "cantidad", 3)))
@@ -23,9 +24,8 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void agregarElMismoVueloDosVeces_acumulaLaCantidad() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Acumula");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
         String pasajero = registrarYLoguearComprador("pasajeroacumula");
 
         agregarAlCarrito(pasajero, vueloId, 2);
@@ -38,9 +38,8 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void actualizarYEliminarItemDelCarrito() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Update Item");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
         String pasajero = registrarYLoguearComprador("pasajeroupdateitem");
         Long itemId = agregarAlCarrito(pasajero, vueloId, 1);
 
@@ -63,9 +62,8 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_generaOrdenYDescuentaStock() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Checkout");
-        Long vueloId = crearVuelo(admin, aerolineaId, "BUE", "MIA", 200.0, 10, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 200.0, 10, "ECONOMICA");
         String pasajero = registrarYLoguearComprador("pasajerocheckout");
         agregarAlCarrito(pasajero, vueloId, 4);
 
@@ -85,19 +83,30 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_siElStockBajaDespuesDeAgregarAlCarrito_fallaYNoDescuentaNadaDeNingunVuelo() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Atomicidad");
-        Long vueloOk = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
-        Long vueloSinStock = crearVuelo(admin, aerolineaId, "C", "D", 100.0, 5, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloOk = crearVuelo(vendedor, "EZE", "MAD", 100.0, 10, "ECONOMICA");
+        Long vueloSinStock = crearVuelo(vendedor, "EZE", "MAD", 100.0, 5, "ECONOMICA");
 
         String pasajero = registrarYLoguearComprador("pasajeroatomico");
         agregarAlCarrito(pasajero, vueloOk, 2);
         agregarAlCarrito(pasajero, vueloSinStock, 3);
 
         // Se vende el stock de vueloSinStock por otro medio despues de que ya estaba en el carrito
-        mockMvc.perform(json(put("/api/vuelos/" + vueloSinStock).header("Authorization", "Bearer " + admin), Map.of(
-                "origen", "C", "destino", "D", "fechaSalida", "2027-01-01T10:00:00",
-                "precio", 100.0, "asientosDisponibles", 1, "clase", "ECONOMICA", "aerolineaId", aerolineaId)))
+        Map<String, Object> bajaDeStock = new LinkedHashMap<>();
+        bajaDeStock.put("numeroVuelo", "TSATOMICO");
+        bajaDeStock.put("descripcion", "Se quedo casi sin lugar");
+        bajaDeStock.put("categoriaId", categoriaPorDefecto());
+        bajaDeStock.put("origenIata", "EZE");
+        bajaDeStock.put("destinoIata", "MAD");
+        bajaDeStock.put("fechaSalida", LocalDateTime.now().plusDays(10).withNano(0).toString());
+        bajaDeStock.put("fechaLlegada", LocalDateTime.now().plusDays(10).plusHours(3).withNano(0).toString());
+        bajaDeStock.put("precio", 100.0);
+        bajaDeStock.put("asientosDisponibles", 1);
+        bajaDeStock.put("descuento", 0);
+        bajaDeStock.put("clase", "ECONOMICA");
+
+        mockMvc.perform(json(put("/api/vuelos/" + vueloSinStock)
+                        .header("Authorization", "Bearer " + vendedor), bajaDeStock))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))

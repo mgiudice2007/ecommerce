@@ -2,21 +2,26 @@ package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
+import com.ecommerce.vuelos.entity.Aeropuerto;
+import com.ecommerce.vuelos.entity.Categoria;
+import com.ecommerce.vuelos.entity.ClaseVuelo;
+import com.ecommerce.vuelos.entity.EstadoVuelo;
+import com.ecommerce.vuelos.entity.Usuario;
+import com.ecommerce.vuelos.entity.Vuelo;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
-import com.ecommerce.vuelos.entity.Aerolinea;
-import com.ecommerce.vuelos.entity.ClaseVuelo;
-import com.ecommerce.vuelos.entity.Vuelo;
-import com.ecommerce.vuelos.repository.AerolineaRepository;
-import com.ecommerce.vuelos.repository.ItemCarritoRepository;
-import com.ecommerce.vuelos.repository.ItemOrdenRepository;
+import com.ecommerce.vuelos.repository.AeropuertoRepository;
+import com.ecommerce.vuelos.repository.CategoriaRepository;
+import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
+import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -24,19 +29,22 @@ import java.util.List;
 public class VueloService {
 
     private final VueloRepository vueloRepository;
-    private final AerolineaRepository aerolineaRepository;
-    private final ItemOrdenRepository itemOrdenRepository;
-    private final ItemCarritoRepository itemCarritoRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final AeropuertoRepository aeropuertoRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public List<VueloResponse> buscar(String origen, String destino, ClaseVuelo clase,
-                                       BigDecimal precioMin, BigDecimal precioMax) {
+    public List<VueloResponse> buscar(String origen, String destino, Long categoriaId, ClaseVuelo clase,
+                                      BigDecimal precioMin, BigDecimal precioMax, Long vendedorId) {
         Specification<Vuelo> spec = Specification.allOf(
+                VueloSpecifications.soloPublicados(),
                 VueloSpecifications.origenContiene(origen),
                 VueloSpecifications.destinoContiene(destino),
+                VueloSpecifications.deCategoria(categoriaId),
                 VueloSpecifications.esClase(clase),
                 VueloSpecifications.precioMinimo(precioMin),
-                VueloSpecifications.precioMaximo(precioMax)
-        );
+                VueloSpecifications.precioMaximo(precioMax),
+                VueloSpecifications.delVendedor(vendedorId));
+
         return vueloRepository.findAll(spec).stream()
                 .map(this::toResponse)
                 .toList();
@@ -47,48 +55,80 @@ public class VueloService {
     }
 
     @Transactional
-    public VueloResponse crear(VueloRequest request) {
-        Aerolinea aerolinea = buscarAerolinea(request.getAerolineaId());
+    public VueloResponse crear(VueloRequest request, Long vendedorId) {
+        Usuario vendedor = usuarioRepository.findById(vendedorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + vendedorId));
+
         Vuelo vuelo = Vuelo.builder()
-                .origen(request.getOrigen())
-                .destino(request.getDestino())
+                .vendedor(vendedor)
+                .categoria(buscarCategoria(request.getCategoriaId()))
+                .origen(buscarAeropuerto(request.getOrigenIata()))
+                .destino(buscarAeropuerto(request.getDestinoIata()))
+                .numeroVuelo(request.getNumeroVuelo())
+                .descripcion(request.getDescripcion())
                 .fechaSalida(request.getFechaSalida())
+                .fechaLlegada(request.getFechaLlegada())
                 .precio(request.getPrecio())
                 .asientosDisponibles(request.getAsientosDisponibles())
                 .descuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO)
                 .clase(request.getClase())
-                .aerolinea(aerolinea)
+                .estado(EstadoVuelo.ACTIVO)
+                .fechaAlta(LocalDateTime.now())
                 .build();
+
+        validarFechas(vuelo);
         return toResponse(vueloRepository.save(vuelo));
     }
 
     @Transactional
-    public VueloResponse actualizar(Long id, VueloRequest request) {
+    public VueloResponse actualizar(Long id, VueloRequest request, UsuarioPrincipal principal) {
         Vuelo vuelo = buscarPorId(id);
-        Aerolinea aerolinea = buscarAerolinea(request.getAerolineaId());
+        validarPropiedad(vuelo, principal);
 
-        vuelo.setOrigen(request.getOrigen());
-        vuelo.setDestino(request.getDestino());
+        vuelo.setCategoria(buscarCategoria(request.getCategoriaId()));
+        vuelo.setOrigen(buscarAeropuerto(request.getOrigenIata()));
+        vuelo.setDestino(buscarAeropuerto(request.getDestinoIata()));
+        vuelo.setNumeroVuelo(request.getNumeroVuelo());
+        vuelo.setDescripcion(request.getDescripcion());
         vuelo.setFechaSalida(request.getFechaSalida());
+        vuelo.setFechaLlegada(request.getFechaLlegada());
         vuelo.setPrecio(request.getPrecio());
         vuelo.setAsientosDisponibles(request.getAsientosDisponibles());
         vuelo.setDescuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO);
         vuelo.setClase(request.getClase());
-        vuelo.setAerolinea(aerolinea);
 
+        validarFechas(vuelo);
         return toResponse(vueloRepository.save(vuelo));
     }
 
+    /**
+     * Baja logica: el vuelo queda en ELIMINADO en vez de borrarse, para no
+     * romper las ordenes que ya lo referencian.
+     */
     @Transactional
-    public void eliminar(Long id) {
+    public void eliminar(Long id, UsuarioPrincipal principal) {
         Vuelo vuelo = buscarPorId(id);
-        if (itemOrdenRepository.existsByVueloId(id)) {
-            throw new BadRequestException("No se puede eliminar un vuelo con ordenes asociadas");
+        validarPropiedad(vuelo, principal);
+
+        vuelo.setEstado(EstadoVuelo.ELIMINADO);
+        vuelo.setFechaBaja(LocalDateTime.now());
+        vueloRepository.save(vuelo);
+    }
+
+    /** Solo el vendedor que publico el vuelo, o un ADMIN, pueden tocarlo. */
+    private void validarPropiedad(Vuelo vuelo, UsuarioPrincipal principal) {
+        if (principal.esAdmin()) {
+            return;
         }
-        if (itemCarritoRepository.existsByVueloId(id)) {
-            throw new BadRequestException("No se puede eliminar un vuelo que esta en carritos de compra");
+        if (!vuelo.getVendedor().getId().equals(principal.getId())) {
+            throw new BadRequestException("Solo el vendedor que publico el vuelo puede modificarlo");
         }
-        vueloRepository.delete(vuelo);
+    }
+
+    private void validarFechas(Vuelo vuelo) {
+        if (!vuelo.getFechaLlegada().isAfter(vuelo.getFechaSalida())) {
+            throw new BadRequestException("La fecha de llegada debe ser posterior a la de salida");
+        }
     }
 
     private Vuelo buscarPorId(Long id) {
@@ -96,24 +136,39 @@ public class VueloService {
                 .orElseThrow(() -> new ResourceNotFoundException("Vuelo no encontrado: " + id));
     }
 
-    private Aerolinea buscarAerolinea(Long id) {
-        return aerolineaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Aerolinea no encontrada: " + id));
+    private Categoria buscarCategoria(Long id) {
+        return categoriaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada: " + id));
+    }
+
+    private Aeropuerto buscarAeropuerto(String iata) {
+        return aeropuertoRepository.findById(iata.toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Aeropuerto no encontrado: " + iata));
     }
 
     private VueloResponse toResponse(Vuelo vuelo) {
         return VueloResponse.builder()
                 .id(vuelo.getId())
-                .origen(vuelo.getOrigen())
-                .destino(vuelo.getDestino())
+                .numeroVuelo(vuelo.getNumeroVuelo())
+                .descripcion(vuelo.getDescripcion())
+                .categoriaId(vuelo.getCategoria().getId())
+                .categoriaNombre(vuelo.getCategoria().getNombre())
+                .origenIata(vuelo.getOrigen().getCodigoIata())
+                .origenCiudad(vuelo.getOrigen().getCiudad())
+                .destinoIata(vuelo.getDestino().getCodigoIata())
+                .destinoCiudad(vuelo.getDestino().getCiudad())
                 .fechaSalida(vuelo.getFechaSalida())
+                .fechaLlegada(vuelo.getFechaLlegada())
+                .duracionMinutos(vuelo.getDuracionMinutos())
                 .precio(vuelo.getPrecio())
                 .descuento(vuelo.getDescuento())
                 .precioConDescuento(vuelo.getPrecioConDescuento())
                 .asientosDisponibles(vuelo.getAsientosDisponibles())
+                .hayStock(vuelo.isDisponible())
                 .clase(vuelo.getClase())
-                .aerolineaId(vuelo.getAerolinea().getId())
-                .aerolineaNombre(vuelo.getAerolinea().getNombre())
+                .estado(vuelo.getEstado())
+                .vendedorId(vuelo.getVendedor().getId())
+                .vendedorUsername(vuelo.getVendedor().getUsername())
                 .build();
     }
 }

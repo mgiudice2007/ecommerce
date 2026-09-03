@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +49,30 @@ public abstract class IntegrationTestSupport {
         return login(username, "123456");
     }
 
+    protected String registrarYLoguearVendedor(String username) throws Exception {
+        Map<String, String> body = Map.of(
+                "username", username,
+                "mail", username + "@test.com",
+                "password", "123456",
+                "nombre", "Test",
+                "apellido", "Vendedor",
+                "rol", "VENDEDOR"
+        );
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated());
+        return login(username, "123456");
+    }
+
+    /** El seeder deja siempre una categoria "Cabotaje" y los aeropuertos EZE/MAD/AEP/COR. */
+    protected Long categoriaPorDefecto() throws Exception {
+        MvcResult r = mockMvc.perform(get("/api/vuelos"))
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(r.getResponse().getContentAsString()).get(0).get("categoriaId").asLong();
+    }
+
     protected String login(String username, String password) throws Exception {
         Map<String, String> body = Map.of("username", username, "password", password);
         MvcResult result = mockMvc.perform(post("/api/auth/login")
@@ -58,30 +83,23 @@ public abstract class IntegrationTestSupport {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
     }
 
-    protected Long crearAerolinea(String adminToken, String nombre) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/aerolineas")
-                        .header("Authorization", "Bearer " + adminToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("nombre", nombre))))
-                .andExpect(status().isCreated())
-                .andReturn();
-        return idDe(result);
-    }
-
-    protected Long crearVuelo(String adminToken, Long aerolineaId, String origen, String destino,
-                               double precio, int asientos, String clase) throws Exception {
+    protected Long crearVuelo(String vendedorToken, String origenIata, String destinoIata,
+                              double precio, int asientos, String clase) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("origen", origen);
-        body.put("destino", destino);
+        body.put("numeroVuelo", "TS" + System.nanoTime() % 10000);
+        body.put("descripcion", "Vuelo de prueba");
+        body.put("categoriaId", categoriaPorDefecto());
+        body.put("origenIata", origenIata);
+        body.put("destinoIata", destinoIata);
         body.put("fechaSalida", LocalDateTime.now().plusDays(10).withNano(0).toString());
+        body.put("fechaLlegada", LocalDateTime.now().plusDays(10).plusHours(3).withNano(0).toString());
         body.put("precio", precio);
         body.put("asientosDisponibles", asientos);
         body.put("descuento", 0);
         body.put("clase", clase);
-        body.put("aerolineaId", aerolineaId);
 
         MvcResult result = mockMvc.perform(post("/api/vuelos")
-                        .header("Authorization", "Bearer " + adminToken)
+                        .header("Authorization", "Bearer " + vendedorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())

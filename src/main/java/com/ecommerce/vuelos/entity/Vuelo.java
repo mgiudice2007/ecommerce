@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,14 +24,34 @@ public class Vuelo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String origen;
+    /** El vendedor que publico este vuelo. Es su dueño. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vendedor_id", nullable = false)
+    private Usuario vendedor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private Categoria categoria;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "origen_iata", nullable = false)
+    private Aeropuerto origen;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destino_iata", nullable = false)
+    private Aeropuerto destino;
 
     @Column(nullable = false)
-    private String destino;
+    private String numeroVuelo;
+
+    @Column(length = 1000)
+    private String descripcion;
 
     @Column(nullable = false)
     private LocalDateTime fechaSalida;
+
+    @Column(nullable = false)
+    private LocalDateTime fechaLlegada;
 
     @Column(nullable = false)
     private BigDecimal precio;
@@ -38,7 +59,7 @@ public class Vuelo {
     @Column(nullable = false)
     private Integer asientosDisponibles;
 
-    /** Porcentaje de descuento, de 0 a 100. */
+    /** Porcentaje de descuento, de 0 a 100. Pasa a la entidad Descuento en la fase 4. */
     @Column(nullable = false)
     @Builder.Default
     private BigDecimal descuento = BigDecimal.ZERO;
@@ -47,13 +68,35 @@ public class Vuelo {
     @Column(nullable = false)
     private ClaseVuelo clase;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "aerolinea_id", nullable = false)
-    private Aerolinea aerolinea;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private EstadoVuelo estado = EstadoVuelo.ACTIVO;
 
+    @Column(nullable = false)
+    private LocalDateTime fechaAlta;
+
+    @Column
+    private LocalDateTime fechaBaja;
+
+    /** Derivado: se calcula, no se persiste. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
         BigDecimal factor = BigDecimal.ONE.subtract(descuento.divide(BigDecimal.valueOf(100)));
         return precio.multiply(factor);
+    }
+
+    /** Derivado: la diferencia entre salida y llegada. */
+    @Transient
+    public Integer getDuracionMinutos() {
+        if (fechaSalida == null || fechaLlegada == null) {
+            return null;
+        }
+        return (int) Duration.between(fechaSalida, fechaLlegada).toMinutes();
+    }
+
+    @Transient
+    public boolean isDisponible() {
+        return estado == EstadoVuelo.ACTIVO && asientosDisponibles != null && asientosDisponibles > 0;
     }
 }

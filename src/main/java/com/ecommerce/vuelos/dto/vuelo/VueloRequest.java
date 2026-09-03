@@ -17,14 +17,26 @@ import java.time.LocalDateTime;
 public class VueloRequest {
 
     @NotBlank
-    private String origen;
+    private String numeroVuelo;
+
+    private String descripcion;
+
+    @NotNull
+    private Long categoriaId;
 
     @NotBlank
-    private String destino;
+    private String origenIata;
+
+    @NotBlank
+    private String destinoIata;
 
     @NotNull
     @Future(message = "La fecha de salida debe ser futura")
     private LocalDateTime fechaSalida;
+
+    @NotNull
+    @Future(message = "La fecha de llegada debe ser futura")
+    private LocalDateTime fechaLlegada;
 
     @NotNull
     @DecimalMin(value = "0.0", inclusive = false)
@@ -40,7 +52,4 @@ public class VueloRequest {
 
     @NotNull
     private ClaseVuelo clase;
-
-    @NotNull
-    private Long aerolineaId;
 }
