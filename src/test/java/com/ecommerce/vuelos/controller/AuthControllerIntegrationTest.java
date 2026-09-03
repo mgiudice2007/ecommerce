@@ -3,7 +3,6 @@ package com.ecommerce.vuelos.controller;
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 
 import java.util.Map;
 
@@ -94,7 +93,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void registrarAdministrador_comoAdmin_devuelveCreated() throws Exception {
-        MockHttpSession adminSession = loginAdmin();
+        String adminSession = loginAdmin();
 
         Map<String, Object> body = Map.of(
                 "username", "nuevoadmin2",
@@ -104,7 +103,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "apellido", "B"
         );
         mockMvc.perform(post("/api/auth/registro/administrador")
-                        .session(adminSession)
+                        .header("Authorization", "Bearer " + adminSession)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
@@ -113,21 +112,23 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void me_conSesionActiva_devuelveElUsuarioLogueado() throws Exception {
-        MockHttpSession session = registrarYLoguearPasajero("mepasajero");
+        String session = registrarYLoguearPasajero("mepasajero");
 
-        mockMvc.perform(get("/api/auth/me").session(session))
+        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("mepasajero"));
     }
 
     @Test
-    void logout_invalidaLaSesion() throws Exception {
-        MockHttpSession session = registrarYLoguearPasajero("logoutuser");
+    void logout_devuelveNoContent() throws Exception {
+        String token = registrarYLoguearPasajero("logoutuser");
 
-        mockMvc.perform(post("/api/auth/logout").session(session))
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/carrito").session(session))
-                .andExpect(status().isUnauthorized());
+        // Con JWT stateless el logout es un no-op del lado servidor: el token
+        // sigue siendo valido hasta que expira, no hay invalidacion server-side.
+        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
     }
 }

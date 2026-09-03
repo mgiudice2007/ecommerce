@@ -2,7 +2,6 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockHttpSession;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -21,7 +20,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void buscarVuelos_filtraPorClaseYRangoDePrecio() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Filtros");
         crearVuelo(admin, aerolineaId, "Rosario", "Salta", 100.0, 10, "ECONOMICA");
         crearVuelo(admin, aerolineaId, "Rosario", "Ushuaia", 900.0, 10, "PRIMERA");
@@ -37,7 +36,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void crearVuelo_comoAdmin_devuelveCreated() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Crear Vuelo");
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -50,16 +49,16 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
         body.put("clase", "ECONOMICA");
         body.put("aerolineaId", aerolineaId);
 
-        mockMvc.perform(json(post("/api/vuelos").session(admin), body))
+        mockMvc.perform(json(post("/api/vuelos").header("Authorization", "Bearer " + admin), body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.precioConDescuento").value(142.5));
     }
 
     @Test
     void crearVuelo_comoPasajero_devuelve403() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Sin Permiso");
-        MockHttpSession pasajero = registrarYLoguearPasajero("pasajerovuelo");
+        String pasajero = registrarYLoguearPasajero("pasajerovuelo");
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("origen", "A");
@@ -70,13 +69,13 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
         body.put("clase", "ECONOMICA");
         body.put("aerolineaId", aerolineaId);
 
-        mockMvc.perform(json(post("/api/vuelos").session(pasajero), body))
+        mockMvc.perform(json(post("/api/vuelos").header("Authorization", "Bearer " + pasajero), body))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void actualizarYEliminarVuelo_comoAdmin() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Aerolinea Update Delete");
         Long vueloId = crearVuelo(admin, aerolineaId, "X", "Y", 200.0, 5, "ECONOMICA");
 
@@ -89,12 +88,12 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
         body.put("clase", "EJECUTIVA");
         body.put("aerolineaId", aerolineaId);
 
-        mockMvc.perform(json(put("/api/vuelos/" + vueloId).session(admin), body))
+        mockMvc.perform(json(put("/api/vuelos/" + vueloId).header("Authorization", "Bearer " + admin), body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.destino").value("Z"))
                 .andExpect(jsonPath("$.clase").value("EJECUTIVA"));
 
-        mockMvc.perform(delete("/api/vuelos/" + vueloId).session(admin))
+        mockMvc.perform(delete("/api/vuelos/" + vueloId).header("Authorization", "Bearer " + admin))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))

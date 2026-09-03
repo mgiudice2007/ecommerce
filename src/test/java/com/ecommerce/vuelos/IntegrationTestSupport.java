@@ -9,7 +9,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.mock.web.MockHttpSession;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -29,11 +28,11 @@ public abstract class IntegrationTestSupport {
     @Autowired
     protected ObjectMapper objectMapper;
 
-    protected MockHttpSession loginAdmin() throws Exception {
+    protected String loginAdmin() throws Exception {
         return login("admin", "admin123");
     }
 
-    protected MockHttpSession registrarYLoguearPasajero(String username) throws Exception {
+    protected String registrarYLoguearPasajero(String username) throws Exception {
         Map<String, String> body = Map.of(
                 "username", username,
                 "mail", username + "@test.com",
@@ -48,20 +47,19 @@ public abstract class IntegrationTestSupport {
         return login(username, "123456");
     }
 
-    protected MockHttpSession login(String username, String password) throws Exception {
-        MockHttpSession session = new MockHttpSession();
+    protected String login(String username, String password) throws Exception {
         Map<String, String> body = Map.of("username", username, "password", password);
-        mockMvc.perform(post("/api/auth/login")
-                        .session(session)
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isOk());
-        return session;
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
     }
 
-    protected Long crearAerolinea(MockHttpSession adminSession, String nombre) throws Exception {
+    protected Long crearAerolinea(String adminToken, String nombre) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/aerolineas")
-                        .session(adminSession)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("nombre", nombre))))
                 .andExpect(status().isCreated())
@@ -69,7 +67,7 @@ public abstract class IntegrationTestSupport {
         return idDe(result);
     }
 
-    protected Long crearVuelo(MockHttpSession adminSession, Long aerolineaId, String origen, String destino,
+    protected Long crearVuelo(String adminToken, Long aerolineaId, String origen, String destino,
                                double precio, int asientos, String clase) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("origen", origen);
@@ -82,7 +80,7 @@ public abstract class IntegrationTestSupport {
         body.put("aerolineaId", aerolineaId);
 
         MvcResult result = mockMvc.perform(post("/api/vuelos")
-                        .session(adminSession)
+                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
@@ -90,10 +88,10 @@ public abstract class IntegrationTestSupport {
         return idDe(result);
     }
 
-    protected Long agregarAlCarrito(MockHttpSession pasajeroSession, Long vueloId, int cantidad) throws Exception {
+    protected Long agregarAlCarrito(String pasajeroToken, Long vueloId, int cantidad) throws Exception {
         Map<String, Object> body = Map.of("vueloId", vueloId, "cantidad", cantidad);
         MvcResult result = mockMvc.perform(post("/api/carrito/items")
-                        .session(pasajeroSession)
+                        .header("Authorization", "Bearer " + pasajeroToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())

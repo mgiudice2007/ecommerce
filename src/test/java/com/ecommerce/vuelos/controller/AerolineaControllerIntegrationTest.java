@@ -2,7 +2,6 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.web.MockHttpSession;
 
 import java.util.Map;
 
@@ -19,9 +18,9 @@ class AerolineaControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void crearAerolinea_comoAdmin_devuelveCreated() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
 
-        mockMvc.perform(json(post("/api/aerolineas").session(admin), Map.of("nombre", "LATAM Test")))
+        mockMvc.perform(json(post("/api/aerolineas").header("Authorization", "Bearer " + admin), Map.of("nombre", "LATAM Test")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nombre").value("LATAM Test"))
                 .andExpect(jsonPath("$.cantidadVuelos").value(0));
@@ -35,29 +34,29 @@ class AerolineaControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void crearAerolinea_conNombreDuplicado_devuelve400() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         crearAerolinea(admin, "Duplicada");
 
-        mockMvc.perform(json(post("/api/aerolineas").session(admin), Map.of("nombre", "Duplicada")))
+        mockMvc.perform(json(post("/api/aerolineas").header("Authorization", "Bearer " + admin), Map.of("nombre", "Duplicada")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void eliminarAerolineaConVuelosAsociados_devuelve400() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Con Vuelos");
         crearVuelo(admin, aerolineaId, "A", "B", 100.0, 5, "ECONOMICA");
 
-        mockMvc.perform(delete("/api/aerolineas/" + aerolineaId).session(admin))
+        mockMvc.perform(delete("/api/aerolineas/" + aerolineaId).header("Authorization", "Bearer " + admin))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void actualizarAerolinea_comoAdmin() throws Exception {
-        MockHttpSession admin = loginAdmin();
+        String admin = loginAdmin();
         Long aerolineaId = crearAerolinea(admin, "Nombre Viejo");
 
-        mockMvc.perform(json(put("/api/aerolineas/" + aerolineaId).session(admin), Map.of("nombre", "Nombre Nuevo")))
+        mockMvc.perform(json(put("/api/aerolineas/" + aerolineaId).header("Authorization", "Bearer " + admin), Map.of("nombre", "Nombre Nuevo")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Nombre Nuevo"));
     }
