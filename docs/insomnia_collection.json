@@ -431,7 +431,7 @@
       "method": "DELETE",
       "url": "{{ _.base_url }}/api/vuelos/{{ _.vuelo_id }}",
       "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }],
-      "description": "Correr al final, despues de terminar el flujo de Carrito/Reservas (si borras el vuelo antes, esos pasos van a fallar). Nota: si el vuelo ya tiene una reserva asociada (como en este flujo), hoy el backend devuelve 500 en vez de un 400 prolijo - es un bug conocido, no un error de este request."
+      "description": "Correr al final, despues de terminar el flujo de Carrito/Reservas (si borras el vuelo antes, esos pasos van a fallar). Si el vuelo tiene una reserva asociada (como en este flujo, salvo que la hayas cancelado antes) devuelve 400 'No se puede eliminar un vuelo con reservas asociadas'."
     },
     {
       "_id": "req_aerolineas_eliminar",

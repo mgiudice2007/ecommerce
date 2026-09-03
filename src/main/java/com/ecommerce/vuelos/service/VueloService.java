@@ -2,11 +2,14 @@ package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
+import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.model.Aerolinea;
 import com.ecommerce.vuelos.model.ClaseVuelo;
 import com.ecommerce.vuelos.model.Vuelo;
 import com.ecommerce.vuelos.repository.AerolineaRepository;
+import com.ecommerce.vuelos.repository.ItemCarritoRepository;
+import com.ecommerce.vuelos.repository.ItemReservaRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,6 +25,8 @@ public class VueloService {
 
     private final VueloRepository vueloRepository;
     private final AerolineaRepository aerolineaRepository;
+    private final ItemReservaRepository itemReservaRepository;
+    private final ItemCarritoRepository itemCarritoRepository;
 
     public List<VueloResponse> buscar(String origen, String destino, ClaseVuelo clase,
                                        BigDecimal precioMin, BigDecimal precioMax) {
@@ -77,6 +82,12 @@ public class VueloService {
     @Transactional
     public void eliminar(Long id) {
         Vuelo vuelo = buscarPorId(id);
+        if (itemReservaRepository.existsByVueloId(id)) {
+            throw new BadRequestException("No se puede eliminar un vuelo con reservas asociadas");
+        }
+        if (itemCarritoRepository.existsByVueloId(id)) {
+            throw new BadRequestException("No se puede eliminar un vuelo que esta en carritos de compra");
+        }
         vueloRepository.delete(vuelo);
     }
 
