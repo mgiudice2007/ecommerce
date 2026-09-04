@@ -63,7 +63,7 @@ public class Vuelo {
     @Builder.Default
     private List<Disponibilidad> disponibilidades = new ArrayList<>();
 
-    /** Promociones de este vuelo. El precio usa la que este vigente hoy, si hay alguna. */
+    /** Los descuentos cargados sobre este vuelo. A lo sumo uno esta vigente por fecha. */
     @OneToMany(mappedBy = "vuelo", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Descuento> descuentos = new ArrayList<>();
@@ -79,34 +79,25 @@ public class Vuelo {
     @Column
     private LocalDateTime fechaBaja;
 
-    /** El descuento activo cuya vigencia cubre hoy, si hay alguno. */
+    /**
+     * El descuento que rige hoy, o null si no hay ninguno. Como al crear y al
+     * modificar se valida que no haya dos vigentes solapados, aca a lo sumo hay
+     * uno y no hace falta decidir cual gana.
+     */
     @Transient
     public Descuento getDescuentoVigente() {
         LocalDate hoy = LocalDate.now();
         return descuentos.stream()
-                .filter(d -> Boolean.TRUE.equals(d.getActivo()))
-                .filter(d -> !hoy.isBefore(d.getFechaDesde()) && !hoy.isAfter(d.getFechaHasta()))
+                .filter(d -> d.estaVigente(hoy))
                 .findFirst()
                 .orElse(null);
-    }
-
-    /** Aplica el descuento vigente (si hay) a un precio base. Nunca da negativo. */
-    @Transient
-    public BigDecimal aplicarDescuento(BigDecimal precioBase) {
-        Descuento vigente = getDescuentoVigente();
-        if (vigente == null) {
-            return precioBase;
-        }
-        BigDecimal resultado = vigente.getTipoDescuento() == TipoDescuento.PORCENTAJE
-                ? precioBase.multiply(BigDecimal.ONE.subtract(vigente.getValor().divide(BigDecimal.valueOf(100))))
-                : precioBase.subtract(vigente.getValor());
-        return resultado.max(BigDecimal.ZERO);
     }
 
     /** Derivado: se calcula, no se persiste. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
-        return aplicarDescuento(precio);
+        Descuento vigente = getDescuentoVigente();
+        return vigente == null ? precio : vigente.aplicarA(precio);
     }
 
     /** Derivado: la diferencia entre salida y llegada. */

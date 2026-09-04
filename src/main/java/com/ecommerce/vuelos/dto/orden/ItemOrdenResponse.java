@@ -23,6 +23,9 @@ public class ItemOrdenResponse {
     private String claseNombre;
     private Integer cantidad;
     private BigDecimal precioUnitario;
+
+    /** Lo que se ahorro por asiento, congelado al momento de la compra. */
+    private BigDecimal descuentoAplicado;
     private BigDecimal subtotal;
 
     public static ItemOrdenResponse desde(ItemOrden item) {
@@ -39,6 +42,7 @@ public class ItemOrdenResponse {
                 .claseNombre(disponibilidad.getClase().getNombre())
                 .cantidad(item.getCantidad())
                 .precioUnitario(item.getPrecioUnitario())
+                .descuentoAplicado(item.getDescuentoAplicado())
                 .subtotal(item.getPrecioUnitario().multiply(BigDecimal.valueOf(item.getCantidad())))
                 .build();
     }

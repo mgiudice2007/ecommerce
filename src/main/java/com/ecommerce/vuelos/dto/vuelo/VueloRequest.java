@@ -37,6 +37,10 @@ public class VueloRequest {
     @Future(message = "La fecha de llegada debe ser futura")
     private LocalDateTime fechaLlegada;
 
+    /**
+     * Precio base. El descuento no viaja aca: se gestiona aparte, en
+     * POST /api/descuentos, porque tiene vigencia y tipo propios.
+     */
     @NotNull
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal precio;

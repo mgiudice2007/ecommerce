@@ -110,15 +110,6 @@ public class DataSeeder implements CommandLineRunner {
                     .fechaAlta(LocalDateTime.now())
                     .build());
 
-            descuentoRepository.save(Descuento.builder()
-                    .vuelo(aCordoba)
-                    .tipoDescuento(TipoDescuento.PORCENTAJE)
-                    .valor(new BigDecimal("10"))
-                    .fechaDesde(LocalDate.now())
-                    .fechaHasta(LocalDate.now().plusDays(30))
-                    .activo(true)
-                    .build());
-
             Clase economica = claseRepository.findByNombre("Economica").orElseThrow();
             Clase ejecutiva = claseRepository.findByNombre("Ejecutiva").orElseThrow();
 
@@ -126,6 +117,17 @@ public class DataSeeder implements CommandLineRunner {
                     cupo(aMadrid, economica, 120, new BigDecimal("950.00")),
                     cupo(aMadrid, ejecutiva, 20, new BigDecimal("2100.00")),
                     cupo(aCordoba, economica, 80, new BigDecimal("700.00"))));
+
+            // Un descuento vigente hoy, para que la demo muestre el precio rebajado
+            // sin tener que cargarlo a mano.
+            descuentoRepository.save(Descuento.builder()
+                    .vuelo(aCordoba)
+                    .tipoDescuento(TipoDescuento.PORCENTAJE)
+                    .valor(new BigDecimal("10"))
+                    .fechaDesde(LocalDate.now().minusDays(1))
+                    .fechaHasta(LocalDate.now().plusMonths(3))
+                    .activo(true)
+                    .build());
         }
     }
 
@@ -170,6 +172,7 @@ public class DataSeeder implements CommandLineRunner {
                 .nombre(nombre)
                 .apellido(apellido)
                 .rol(rol)
+                .fechaRegistro(LocalDateTime.now())
                 .build();
 
         // Mismo criterio que AuthServiceImpl: el comprador nace con carrito. Sin

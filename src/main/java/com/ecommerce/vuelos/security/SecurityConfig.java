@@ -48,8 +48,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/vuelos/**", "/api/categorias/**", "/api/aeropuertos/**", "/api/clases", "/api/disponibilidades/**", "/api/descuentos/**", "/api/fotos/**").permitAll()
+                        // Solo el alta y el login son publicos. /me y /logout necesitan
+                        // token: si no, el principal llega en null y revienta con 500
+                        // en vez de contestar 401. registro/administrador ademas exige
+                        // rol ADMIN, que lo resuelve su @PreAuthorize.
+                        .requestMatchers("/api/auth/login", "/api/auth/registro").permitAll()
+                        .requestMatchers("/api/auth/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/vuelos/**", "/api/categorias/**", "/api/aeropuertos/**", "/api/clases", "/api/disponibilidades/**", "/api/fotos/**", "/api/descuentos/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

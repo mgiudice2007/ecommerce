@@ -5,19 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -135,44 +132,20 @@ public abstract class IntegrationTestSupport {
 
     /** El seeder deja siempre las clases Economica, Ejecutiva y Primera. */
     protected Long clasePorDefecto() throws Exception {
+        return claseEnPosicion(0);
+    }
+
+    /** La segunda clase del seeder, para poder cargar dos cupos en un mismo vuelo. */
+    protected Long otraClase() throws Exception {
+        return claseEnPosicion(1);
+    }
+
+    private Long claseEnPosicion(int indice) throws Exception {
         MvcResult r = mockMvc.perform(get("/api/clases"))
                 .andExpect(status().isOk())
                 .andReturn();
-        return objectMapper.readTree(r.getResponse().getContentAsString()).get(0).get("id").asLong();
-    }
-
-    /** Crea un descuento para un vuelo. Devuelve el id del descuento. */
-    protected Long crearDescuento(String vendedorToken, Long vueloId, String tipoDescuento, double valor,
-                                  LocalDate fechaDesde, LocalDate fechaHasta, boolean activo) throws Exception {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("vueloId", vueloId);
-        body.put("tipoDescuento", tipoDescuento);
-        body.put("valor", valor);
-        body.put("fechaDesde", fechaDesde.toString());
-        body.put("fechaHasta", fechaHasta.toString());
-        body.put("activo", activo);
-
-        MvcResult result = mockMvc.perform(post("/api/descuentos")
-                        .header("Authorization", "Bearer " + vendedorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isCreated())
-                .andReturn();
-        return idDe(result);
-    }
-
-    /** Sube una foto de prueba para un vuelo. Devuelve el id de la foto. */
-    protected Long subirFoto(String vendedorToken, Long vueloId) throws Exception {
-        MockMultipartFile archivo = new MockMultipartFile(
-                "archivo", "portada.jpg", "image/jpeg", new byte[]{1, 2, 3, 4});
-
-        MvcResult result = mockMvc.perform(multipart("/api/fotos")
-                        .file(archivo)
-                        .param("vueloId", vueloId.toString())
-                        .header("Authorization", "Bearer " + vendedorToken))
-                .andExpect(status().isCreated())
-                .andReturn();
-        return idDe(result);
+        return objectMapper.readTree(r.getResponse().getContentAsString())
+                .get(indice).get("id").asLong();
     }
 
     protected Long agregarAlCarrito(String compradorToken, Long disponibilidadId, int cantidad) throws Exception {

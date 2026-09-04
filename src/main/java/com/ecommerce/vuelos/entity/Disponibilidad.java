@@ -57,10 +57,21 @@ public class Disponibilidad {
     @Column(nullable = false)
     private BigDecimal precio;
 
-    /** Derivado: el precio de esta clase con el descuento vigente del vuelo aplicado. */
+    /**
+     * Derivado: el precio de esta clase con el descuento vigente del vuelo.
+     * El descuento se carga sobre el vuelo pero se aplica al precio de cada
+     * clase, que es el que se cobra de verdad.
+     */
     @Transient
     public BigDecimal getPrecioConDescuento() {
-        return vuelo != null ? vuelo.aplicarDescuento(precio) : precio;
+        Descuento vigente = vuelo != null ? vuelo.getDescuentoVigente() : null;
+        return vigente == null ? precio : vigente.aplicarA(precio);
+    }
+
+    /** Cuanto se ahorra por asiento. Es lo que la orden guarda como descuento aplicado. */
+    @Transient
+    public BigDecimal getDescuentoUnitario() {
+        return precio.subtract(getPrecioConDescuento());
     }
 
     @Transient

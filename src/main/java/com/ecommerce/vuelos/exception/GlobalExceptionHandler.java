@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -57,6 +58,15 @@ public class GlobalExceptionHandler {
         body.put("error", "Validation error");
         body.put("fields", errores);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    /**
+     * Sin esto, pasarse del limite de multipart devuelve un 500 con un stack
+     * trace de Tomcat en vez de un mensaje que se entienda.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleArchivoGrande(MaxUploadSizeExceededException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "El archivo supera el maximo permitido (5MB)");
     }
 
     @ExceptionHandler(Exception.class)

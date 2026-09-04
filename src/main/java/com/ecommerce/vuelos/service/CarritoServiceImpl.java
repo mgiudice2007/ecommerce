@@ -114,29 +114,36 @@ public class CarritoServiceImpl implements CarritoService {
 
         List<ItemOrden> itemsOrden = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
+        BigDecimal descuentoTotal = BigDecimal.ZERO;
 
         for (ItemCarrito item : carrito.getItems()) {
             Disponibilidad disponibilidad = item.getDisponibilidad();
+            BigDecimal cantidad = BigDecimal.valueOf(item.getCantidad());
             BigDecimal precioUnitario = disponibilidad.getPrecioConDescuento();
+            BigDecimal descuentoUnitario = disponibilidad.getDescuentoUnitario();
 
             disponibilidad.setAsientosDisponibles(
                     disponibilidad.getAsientosDisponibles() - item.getCantidad());
             disponibilidadRepository.save(disponibilidad);
 
-            // El precio se congela aca: si manana el vendedor lo cambia, la
-            // orden ya emitida sigue valiendo lo que el comprador pago.
+            // El precio y el descuento se congelan aca: si manana el vendedor
+            // cambia cualquiera de los dos, la orden ya emitida sigue valiendo
+            // lo que el comprador pago y muestra lo que se ahorro ese dia.
             itemsOrden.add(ItemOrden.builder()
                     .disponibilidad(disponibilidad)
                     .cantidad(item.getCantidad())
                     .precioUnitario(precioUnitario)
+                    .descuentoAplicado(descuentoUnitario)
                     .build());
 
-            total = total.add(precioUnitario.multiply(BigDecimal.valueOf(item.getCantidad())));
+            total = total.add(precioUnitario.multiply(cantidad));
+            descuentoTotal = descuentoTotal.add(descuentoUnitario.multiply(cantidad));
         }
 
         Orden orden = Orden.builder()
                 .usuario(carrito.getUsuario())
                 .total(total)
+                .descuentoTotal(descuentoTotal)
                 .fecha(LocalDateTime.now())
                 .estado(EstadoOrden.CONFIRMADA)
                 .items(new ArrayList<>())

@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.dto.vuelo;
+package com.ecommerce.vuelos.dto.descuento;
 
 import com.ecommerce.vuelos.entity.TipoDescuento;
 import jakarta.validation.constraints.DecimalMin;
@@ -17,22 +17,22 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class DescuentoRequest {
 
-    @NotNull
+    @NotNull(message = "Falta el vueloId")
     private Long vueloId;
 
-    @NotNull
+    @NotNull(message = "El tipo es obligatorio: PORCENTAJE o MONTO_FIJO")
     private TipoDescuento tipoDescuento;
 
     @NotNull
-    @DecimalMin(value = "0.0", inclusive = false)
+    @DecimalMin(value = "0.0", inclusive = false, message = "El valor tiene que ser mayor a cero")
     private BigDecimal valor;
 
-    @NotNull
+    @NotNull(message = "La fecha de inicio es obligatoria")
     private LocalDate fechaDesde;
 
-    @NotNull
+    @NotNull(message = "La fecha de fin es obligatoria")
     private LocalDate fechaHasta;
 
-    @NotNull
+    /** Si no viene, el descuento nace prendido. */
     private Boolean activo;
 }

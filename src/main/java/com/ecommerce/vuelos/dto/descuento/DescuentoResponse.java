@@ -1,4 +1,4 @@
-package com.ecommerce.vuelos.dto.vuelo;
+package com.ecommerce.vuelos.dto.descuento;
 
 import com.ecommerce.vuelos.entity.Descuento;
 import com.ecommerce.vuelos.entity.TipoDescuento;
@@ -20,15 +20,12 @@ public class DescuentoResponse {
     private BigDecimal valor;
     private LocalDate fechaDesde;
     private LocalDate fechaHasta;
-    private boolean activo;
+    private Boolean activo;
+
+    /** Calculado al momento de responder: si hoy cae dentro de la ventana. */
     private boolean vigente;
 
     public static DescuentoResponse desde(Descuento descuento) {
-        LocalDate hoy = LocalDate.now();
-        boolean vigente = Boolean.TRUE.equals(descuento.getActivo())
-                && !hoy.isBefore(descuento.getFechaDesde())
-                && !hoy.isAfter(descuento.getFechaHasta());
-
         return DescuentoResponse.builder()
                 .id(descuento.getId())
                 .vueloId(descuento.getVuelo().getId())
@@ -36,8 +33,8 @@ public class DescuentoResponse {
                 .valor(descuento.getValor())
                 .fechaDesde(descuento.getFechaDesde())
                 .fechaHasta(descuento.getFechaHasta())
-                .activo(Boolean.TRUE.equals(descuento.getActivo()))
-                .vigente(vigente)
+                .activo(descuento.getActivo())
+                .vigente(descuento.estaVigente(LocalDate.now()))
                 .build();
     }
 }

@@ -32,6 +32,102 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void registro_noExigeDniNiFechaDeNacimiento() throws Exception {
+        // La consigna dice que el registro pide usuario, mail, contrasena, nombre
+        // y apellido. Los datos de pasajero se completan despues.
+        String token = registrarYLoguearComprador("csindni");
+
+        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dni").doesNotExist())
+                .andExpect(jsonPath("$.fechaNacimiento").doesNotExist())
+                .andExpect(jsonPath("$.fechaRegistro").exists());
+    }
+
+    @Test
+    void actualizarPerfil_completaLosDatosDePasajero() throws Exception {
+        String token = registrarYLoguearComprador("cperfil");
+
+        Map<String, String> perfil = Map.of(
+                "nombre", "Ana Laura",
+                "apellido", "Perez",
+                "dni", "30111222",
+                "fechaNacimiento", "1995-06-15",
+                "telefono", "1155667788"
+        );
+
+        mockMvc.perform(put("/api/auth/me")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(perfil)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Ana Laura"))
+                .andExpect(jsonPath("$.dni").value("30111222"))
+                .andExpect(jsonPath("$.fechaNacimiento").value("1995-06-15"))
+                .andExpect(jsonPath("$.password").doesNotExist());
+
+        // y queda guardado de verdad
+        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.dni").value("30111222"));
+    }
+
+    @Test
+    void actualizarPerfil_conDniDeOtraCuenta_devuelve400() throws Exception {
+        String primero = registrarYLoguearComprador("cdniuno");
+        Map<String, String> perfil = Map.of(
+                "nombre", "Uno", "apellido", "Uno",
+                "dni", "28999888", "fechaNacimiento", "1990-01-01");
+
+        mockMvc.perform(put("/api/auth/me")
+                        .header("Authorization", "Bearer " + primero)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(perfil)))
+                .andExpect(status().isOk());
+
+        String segundo = registrarYLoguearComprador("cdnidos");
+        mockMvc.perform(put("/api/auth/me")
+                        .header("Authorization", "Bearer " + segundo)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(perfil)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void actualizarPerfil_conDniInvalido_devuelve400() throws Exception {
+        String token = registrarYLoguearComprador("cdnimal");
+        Map<String, String> perfil = Map.of(
+                "nombre", "Ana", "apellido", "Perez", "dni", "ABC123");
+
+        mockMvc.perform(put("/api/auth/me")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(perfil)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void elPerfilSinToken_devuelve401_yNo500() throws Exception {
+        // /api/auth/** estaba entero en permitAll, asi que /me llegaba al
+        // controller con el principal en null y explotaba con 500.
+        Map<String, String> perfil = Map.of("nombre", "Ana", "apellido", "Perez");
+
+        mockMvc.perform(put("/api/auth/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(perfil)))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
+
+        // pero el alta y el login siguen siendo publicos
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("username", "admin", "password", "admin123"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void registrarComprador_conUsernameDuplicado_devuelve400() throws Exception {
         Map<String, String> body = Map.of(
                 "username", "duplicado",

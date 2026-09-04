@@ -56,6 +56,21 @@ Requiere token. No-op del lado servidor (JWT stateless), devuelve `204`.
 ### GET `/api/auth/me`
 Requiere token.
 
+### PUT `/api/auth/me` (requiere token)
+Completar/editar el perfil — el registro solo pide usuario/mail/contraseña/nombre/apellido;
+estos datos se completan después, antes de volar.
+```json
+{
+  "nombre": "Milena",
+  "apellido": "Giudice",
+  "dni": "30111222",
+  "fechaNacimiento": "1995-05-20",
+  "telefono": "1122334455"
+}
+```
+`dni` es único entre cuentas — si ya lo usa otro usuario, `400`. `dni` y `fechaNacimiento` son
+opcionales (podés mandar `dni: ""` si no lo tenés a mano todavía).
+
 ## Catálogo — público, sin token
 
 - `GET /api/categorias`
@@ -106,26 +121,30 @@ y la fecha de hoy está entre `fechaDesde` y `fechaHasta`.
     "tipoDescuento": "PORCENTAJE",
     "valor": 20,
     "fechaDesde": "2026-09-01",
-    "fechaHasta": "2026-09-30",
-    "activo": true
+    "fechaHasta": "2026-09-30"
   }
   ```
-  `tipoDescuento`: `PORCENTAJE` (0-100, se resta como %) o `MONTO_FIJO` (se resta directo del
-  precio). No se puede crear un descuento `activo=true` cuyo rango de fechas se superponga con
-  otro descuento activo del mismo vuelo → `400` (así nunca hay ambigüedad sobre cuál aplica).
+  `tipoDescuento`: `PORCENTAJE` (0-100, se resta como %) o `MONTO_FIJO` (no puede superar el
+  precio del vuelo). No se puede crear un descuento cuyo rango de fechas se superponga con otro
+  descuento activo del mismo vuelo → `400` (así nunca hay ambigüedad sobre cuál aplica).
 - `PUT /api/descuentos/{id}` — mismo body y mismas validaciones.
+- `DELETE /api/descuentos/{id}` — dueño del vuelo o ADMIN. **No afecta órdenes ya compradas**:
+  el monto descontado queda congelado por ítem en cada `Orden` (`descuentoAplicado`), así que
+  borrar o desactivar el descuento nunca cambia el total de una compra ya hecha.
 
 ## Fotos — `/api/fotos`
 
 El binario de la imagen se guarda en la base (`LONGBLOB`), subido como `multipart/form-data`.
+Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 
 - `GET /api/fotos?vueloId={id}` — público, solo metadata (`id`, `nombreArchivo`, `orden`,
-  `tamanioBytes`) — **no** trae el binario, para no inflar la respuesta.
-- `GET /api/fotos/{id}/contenido` — público, devuelve el binario con el `Content-Type` según la
-  extensión del archivo (`.jpg`/`.jpeg`/`.png`/`.gif`).
+  `tamano`) — **no** trae el binario, para no inflar la respuesta.
+- `GET /api/fotos/{id}` — público, devuelve el binario directo con el `Content-Type` según la
+  extensión del archivo.
 - `POST /api/fotos` (multipart) — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo. Campos:
-  `vueloId`, `archivo` (el binario), `orden` (opcional — si no viene, se calcula solo como la
-  siguiente posición). Solo acepta archivos con `Content-Type` que empiece con `image/`.
+  `vueloId`, `file` (el binario — **ojo con el nombre del campo**, no es `archivo`), `orden`
+  (opcional — si no viene, se calcula solo como la siguiente posición). Solo acepta archivos con
+  `Content-Type` que empiece con `image/`.
 - `DELETE /api/fotos/{id}` — dueño del vuelo o ADMIN.
 
 ## Disponibilidades (stock por clase) — `/api/disponibilidades`
@@ -160,6 +179,10 @@ El binario de la imagen se guarda en la base (`LONGBLOB`), subido como `multipar
 - `GET /api/ordenes/{id}` — la orden de otro usuario da `404` (no `403`, para no confirmar que
   ese id existe)
 - `POST /api/ordenes/{id}/cancelar` — devuelve los asientos a la `Disponibilidad` correspondiente
+
+Cada `Orden` trae `descuentoTotal` y cada ítem trae `descuentoAplicado` — el monto exacto
+descontado en ese momento, congelado para siempre en la orden aunque el `Descuento` original
+cambie o se borre después.
 
 ## Flujo típico de prueba
 

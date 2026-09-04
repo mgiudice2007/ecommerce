@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.vuelo.FotoRequest;
 import com.ecommerce.vuelos.dto.vuelo.FotoResponse;
 import com.ecommerce.vuelos.entity.Foto;
 import com.ecommerce.vuelos.entity.Vuelo;
@@ -20,8 +21,55 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FotoServiceImpl implements FotoService {
 
+    /** Tope defensivo: el vuelo no necesita mas que esto y evita llenar la base. */
+    private static final int MAX_FOTOS_POR_VUELO = 5;
+
     private final FotoRepository fotoRepository;
     private final VueloRepository vueloRepository;
+
+    /**
+     * El mismo par que usa el material de multipart de la catedra:
+     * getOriginalFilename() para el nombre y getBytes() para el contenido.
+     */
+    @Override
+    @Transactional
+    public FotoResponse subir(FotoRequest request, MultipartFile archivo, UsuarioPrincipal principal) {
+        if (request.getVueloId() == null) {
+            throw new BadRequestException("Falta el vueloId");
+        }
+        if (archivo == null || archivo.isEmpty()) {
+            throw new BadRequestException("No llego ningun archivo en la parte 'file'");
+        }
+
+        Vuelo vuelo = vueloRepository.findById(request.getVueloId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Vuelo no encontrado: " + request.getVueloId()));
+        validarPropiedad(vuelo, principal);
+        validarEsImagen(archivo);
+
+        long cargadas = fotoRepository.countByVueloId(vuelo.getId());
+        if (cargadas >= MAX_FOTOS_POR_VUELO) {
+            throw new BadRequestException(
+                    "El vuelo ya tiene " + MAX_FOTOS_POR_VUELO + " fotos, que es el maximo");
+        }
+
+        byte[] datos;
+        try {
+            datos = archivo.getBytes();
+        } catch (IOException e) {
+            throw new BadRequestException("No se pudo leer el archivo: " + e.getMessage());
+        }
+
+        Foto foto = Foto.builder()
+                .vuelo(vuelo)
+                .nombreArchivo(archivo.getOriginalFilename())
+                .datos(datos)
+                // Si no mandan orden, la foto va al final. La de orden mas bajo es la portada.
+                .orden(request.getOrden() != null ? request.getOrden() : (int) cargadas)
+                .build();
+
+        return FotoResponse.desde(fotoRepository.save(foto));
+    }
 
     @Override
     public List<FotoResponse> listarPorVuelo(Long vueloId) {
@@ -31,57 +79,29 @@ public class FotoServiceImpl implements FotoService {
     }
 
     @Override
-    public Foto obtenerParaDescarga(Long id) {
-        return buscarPorId(id);
-    }
-
-    @Override
-    @Transactional
-    public FotoResponse subir(Long vueloId, MultipartFile archivo, Integer orden, UsuarioPrincipal principal) {
-        Vuelo vuelo = buscarVuelo(vueloId);
-        validarPropiedad(vuelo, principal);
-
-        if (archivo == null || archivo.isEmpty()) {
-            throw new BadRequestException("El archivo esta vacio");
-        }
-        String contentType = archivo.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new BadRequestException("Solo se permiten imagenes");
-        }
-
-        byte[] datos;
-        try {
-            datos = archivo.getBytes();
-        } catch (IOException e) {
-            throw new BadRequestException("No se pudo leer el archivo");
-        }
-
-        Foto foto = Foto.builder()
-                .vuelo(vuelo)
-                .nombreArchivo(archivo.getOriginalFilename())
-                .datos(datos)
-                .orden(orden != null ? orden : (int) fotoRepository.countByVueloId(vueloId))
-                .build();
-
-        return FotoResponse.desde(fotoRepository.save(foto));
+    public Foto obtenerBinario(Long id) {
+        return fotoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Foto no encontrada: " + id));
     }
 
     @Override
     @Transactional
     public void eliminar(Long id, UsuarioPrincipal principal) {
-        Foto foto = buscarPorId(id);
+        Foto foto = obtenerBinario(id);
         validarPropiedad(foto.getVuelo(), principal);
+        // Borrado fisico: a diferencia del vuelo, ninguna orden referencia una foto.
         fotoRepository.delete(foto);
     }
 
-    private Foto buscarPorId(Long id) {
-        return fotoRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Foto no encontrada: " + id));
-    }
-
-    private Vuelo buscarVuelo(Long id) {
-        return vueloRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vuelo no encontrado: " + id));
+    /**
+     * El content type lo manda el cliente, asi que no alcanza para confiar, pero
+     * sirve para frenar el error obvio de subir un PDF o un .exe.
+     */
+    private void validarEsImagen(MultipartFile archivo) {
+        String tipo = archivo.getContentType();
+        if (tipo == null || !tipo.startsWith("image/")) {
+            throw new BadRequestException("El archivo tiene que ser una imagen, llego: " + tipo);
+        }
     }
 
     private void validarPropiedad(Vuelo vuelo, UsuarioPrincipal principal) {
@@ -89,7 +109,7 @@ public class FotoServiceImpl implements FotoService {
             return;
         }
         if (!vuelo.getVendedor().getId().equals(principal.getId())) {
-            throw new BadRequestException("Solo el vendedor que publico el vuelo puede manejar sus fotos");
+            throw new BadRequestException("Solo el vendedor que publico el vuelo puede cargarle fotos");
         }
     }
 }
