@@ -1,6 +1,5 @@
 package com.ecommerce.vuelos.service;
 
-import com.ecommerce.vuelos.dto.vuelo.ClaseResponse;
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadRequest;
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadResponse;
 import com.ecommerce.vuelos.entity.Clase;
@@ -25,18 +24,6 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     private final DisponibilidadRepository disponibilidadRepository;
     private final VueloRepository vueloRepository;
     private final ClaseRepository claseRepository;
-
-    @Override
-    public List<ClaseResponse> listarClases() {
-        return claseRepository.findAll().stream()
-                .map(c -> ClaseResponse.builder()
-                        .id(c.getId())
-                        .nombre(c.getNombre())
-                        .descripcion(c.getDescripcion())
-                        .equipajeBodega(c.getEquipajeBodega())
-                        .build())
-                .toList();
-    }
 
     @Override
     public List<DisponibilidadResponse> listarPorVuelo(Long vueloId) {

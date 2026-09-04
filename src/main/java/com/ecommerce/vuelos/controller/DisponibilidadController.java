@@ -1,6 +1,5 @@
 package com.ecommerce.vuelos.controller;
 
-import com.ecommerce.vuelos.dto.vuelo.ClaseResponse;
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadRequest;
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -27,11 +26,6 @@ import java.util.List;
 public class DisponibilidadController {
 
     private final DisponibilidadService disponibilidadService;
-
-    @GetMapping("/api/clases")
-    public ResponseEntity<List<ClaseResponse>> listarClases() {
-        return ResponseEntity.ok(disponibilidadService.listarClases());
-    }
 
     @GetMapping("/api/disponibilidades")
     public ResponseEntity<List<DisponibilidadResponse>> listar(@RequestParam Long vueloId) {

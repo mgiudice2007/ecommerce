@@ -1,6 +1,7 @@
 package com.ecommerce.vuelos.config;
 
 import com.ecommerce.vuelos.entity.Aeropuerto;
+import com.ecommerce.vuelos.entity.Carrito;
 import com.ecommerce.vuelos.entity.Categoria;
 import com.ecommerce.vuelos.entity.Clase;
 import com.ecommerce.vuelos.entity.Disponibilidad;
@@ -150,7 +151,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private Usuario usuario(String username, String mail, String nombre, String apellido, Rol rol) {
-        return Usuario.builder()
+        Usuario usuario = Usuario.builder()
                 .username(username)
                 .mail(mail)
                 .password(passwordEncoder.encode(username + "123"))
@@ -158,5 +159,13 @@ public class DataSeeder implements CommandLineRunner {
                 .apellido(apellido)
                 .rol(rol)
                 .build();
+
+        // Mismo criterio que AuthServiceImpl: el comprador nace con carrito. Sin
+        // esto el comprador sembrado se loguea bien pero no puede comprar nada.
+        if (rol == Rol.COMPRADOR) {
+            usuario.setCarrito(Carrito.builder().usuario(usuario).build());
+        }
+
+        return usuario;
     }
 }
