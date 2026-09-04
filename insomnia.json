@@ -9,7 +9,7 @@
       "_type": "workspace",
       "parentId": null,
       "name": "TPO Vuelos - Backend",
-      "description": "Entrega 1: backend + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 6.",
+      "description": "Entrega 1: backend + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 7.",
       "scope": "collection"
     },
     {
@@ -25,7 +25,7 @@
           "base_url"
         ]
       },
-      "metaSortKey": 1788489255796,
+      "metaSortKey": 1788490489584,
       "isPrivate": false
     },
     {
@@ -361,7 +361,7 @@
       "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, directo\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"fechaLlegada\": \"2026-12-15T22:30:00\",\n  \"precio\": 1200.0,\n  \"descuento\": 10\n}"
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, directo\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"fechaLlegada\": \"2026-12-15T22:30:00\",\n  \"precio\": 1200.0\n}"
       }
     },
     {
@@ -406,7 +406,7 @@
       "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, DEMORADO\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0,\n  \"descuento\": 10\n}"
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, DEMORADO\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0\n}"
       }
     },
     {
@@ -535,10 +535,135 @@
       }
     },
     {
+      "_id": "fld_descuentos",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "4 - Descuentos (gestion)",
+      "description": "Gestion de descuentos sobre vuelos individuales. Es una entidad y no un campo porque tiene vigencia y tipo propios.",
+      "metaSortKey": -67
+    },
+    {
+      "_id": "req_dto_crear",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "POST descuento porcentual",
+      "description": "Despues de esto, GET vuelo por id muestra precioConDescuento y descuentoVigente. Cargar otro que se superponga en fechas da 400.",
+      "method": "POST",
+      "url": "{{ base_url }}/api/descuentos",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": \"{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}\",\n  \"tipoDescuento\": \"PORCENTAJE\",\n  \"valor\": 25,\n  \"fechaDesde\": \"2026-09-01\",\n  \"fechaHasta\": \"2026-12-31\"\n}"
+      }
+    },
+    {
+      "_id": "req_dto_listar",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "GET descuentos del vuelo",
+      "description": "Trae el historial completo, con el campo 'vigente' calculado para hoy.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/descuentos",
+      "metaSortKey": -99,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "vueloId",
+          "value": "{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_dto_obtener",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "GET descuento por id",
+      "description": "",
+      "method": "GET",
+      "url": "{{ base_url }}/api/descuentos/{% response 'body', 'req_dto_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -98,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_dto_actualizar",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "PUT descuento (a monto fijo)",
+      "description": "Un monto fijo mayor al precio del vuelo da 400.",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/descuentos/{% response 'body', 'req_dto_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -97,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": \"{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}\",\n  \"tipoDescuento\": \"MONTO_FIJO\",\n  \"valor\": 200,\n  \"fechaDesde\": \"2026-09-01\",\n  \"fechaHasta\": \"2026-12-31\"\n}"
+      }
+    },
+    {
+      "_id": "req_dto_eliminar",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "DELETE descuento",
+      "description": "El precio del vuelo vuelve al original, pero las ordenes ya emitidas conservan el descuentoAplicado que tenian.",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/descuentos/{% response 'body', 'req_dto_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -96,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
       "_id": "fld_fotos",
       "_type": "request_group",
       "parentId": "wrk_vuelos_tpo",
-      "name": "4 - Fotos del vuelo (multipart)",
+      "name": "5 - Fotos del vuelo (multipart)",
       "description": "La unica parte que NO es JSON. El binario se guarda en la base, como en el material de multipart de la catedra.",
       "metaSortKey": -65
     },
@@ -647,7 +772,7 @@
       "_id": "fld_carrito",
       "_type": "request_group",
       "parentId": "wrk_vuelos_tpo",
-      "name": "5 - Carrito y checkout (comprador)",
+      "name": "6 - Carrito y checkout (comprador)",
       "description": "Solo COMPRADOR. El checkout es la operacion transaccional del TPO.",
       "metaSortKey": -60
     },
@@ -776,7 +901,7 @@
       "_id": "fld_ordenes",
       "_type": "request_group",
       "parentId": "wrk_vuelos_tpo",
-      "name": "6 - Ordenes (comprador)",
+      "name": "7 - Ordenes (comprador)",
       "description": "",
       "metaSortKey": -50
     },

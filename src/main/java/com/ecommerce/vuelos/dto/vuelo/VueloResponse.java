@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.dto.vuelo;
 
+import com.ecommerce.vuelos.dto.descuento.DescuentoResponse;
 import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.Vuelo;
 import lombok.AllArgsConstructor;
@@ -32,7 +33,9 @@ public class VueloResponse {
     private Integer duracionMinutos;
 
     private BigDecimal precio;
-    private BigDecimal descuento;
+
+    /** El descuento que rige hoy, o null si el vuelo no tiene ninguno vigente. */
+    private DescuentoResponse descuentoVigente;
     private BigDecimal precioConDescuento;
 
     private boolean hayStock;
@@ -64,7 +67,9 @@ public class VueloResponse {
                 .fechaLlegada(vuelo.getFechaLlegada())
                 .duracionMinutos(vuelo.getDuracionMinutos())
                 .precio(vuelo.getPrecio())
-                .descuento(vuelo.getDescuento())
+                .descuentoVigente(vuelo.getDescuentoVigente() == null
+                        ? null
+                        : DescuentoResponse.desde(vuelo.getDescuentoVigente()))
                 .precioConDescuento(vuelo.getPrecioConDescuento())
                 .hayStock(vuelo.isDisponible())
                 .estado(vuelo.getEstado())

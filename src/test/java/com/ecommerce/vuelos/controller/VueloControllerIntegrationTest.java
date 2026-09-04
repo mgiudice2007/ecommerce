@@ -28,7 +28,6 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
         body.put("fechaSalida", LocalDateTime.now().plusDays(10).withNano(0).toString());
         body.put("fechaLlegada", LocalDateTime.now().plusDays(10).plusHours(3).withNano(0).toString());
         body.put("precio", precio);
-        body.put("descuento", 0);
         return body;
     }
 

@@ -4,14 +4,17 @@ import com.ecommerce.vuelos.entity.Aeropuerto;
 import com.ecommerce.vuelos.entity.Carrito;
 import com.ecommerce.vuelos.entity.Categoria;
 import com.ecommerce.vuelos.entity.Clase;
+import com.ecommerce.vuelos.entity.Descuento;
 import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.Rol;
+import com.ecommerce.vuelos.entity.TipoDescuento;
 import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.entity.Vuelo;
 import com.ecommerce.vuelos.repository.AeropuertoRepository;
 import com.ecommerce.vuelos.repository.CategoriaRepository;
 import com.ecommerce.vuelos.repository.ClaseRepository;
+import com.ecommerce.vuelos.repository.DescuentoRepository;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
@@ -21,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,6 +38,7 @@ public class DataSeeder implements CommandLineRunner {
     private final VueloRepository vueloRepository;
     private final ClaseRepository claseRepository;
     private final DisponibilidadRepository disponibilidadRepository;
+    private final DescuentoRepository descuentoRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -87,7 +92,6 @@ public class DataSeeder implements CommandLineRunner {
                     .fechaSalida(LocalDateTime.now().plusDays(30))
                     .fechaLlegada(LocalDateTime.now().plusDays(30).plusHours(12))
                     .precio(new BigDecimal("950.00"))
-                    .descuento(BigDecimal.ZERO)
                     .estado(EstadoVuelo.ACTIVO)
                     .fechaAlta(LocalDateTime.now())
                     .build());
@@ -102,7 +106,6 @@ public class DataSeeder implements CommandLineRunner {
                     .fechaSalida(LocalDateTime.now().plusDays(15))
                     .fechaLlegada(LocalDateTime.now().plusDays(15).plusHours(2))
                     .precio(new BigDecimal("700.00"))
-                    .descuento(new BigDecimal("10"))
                     .estado(EstadoVuelo.ACTIVO)
                     .fechaAlta(LocalDateTime.now())
                     .build());
@@ -114,6 +117,17 @@ public class DataSeeder implements CommandLineRunner {
                     cupo(aMadrid, economica, 120, new BigDecimal("950.00")),
                     cupo(aMadrid, ejecutiva, 20, new BigDecimal("2100.00")),
                     cupo(aCordoba, economica, 80, new BigDecimal("700.00"))));
+
+            // Un descuento vigente hoy, para que la demo muestre el precio rebajado
+            // sin tener que cargarlo a mano.
+            descuentoRepository.save(Descuento.builder()
+                    .vuelo(aCordoba)
+                    .tipoDescuento(TipoDescuento.PORCENTAJE)
+                    .valor(new BigDecimal("10"))
+                    .fechaDesde(LocalDate.now().minusDays(1))
+                    .fechaHasta(LocalDate.now().plusMonths(3))
+                    .activo(true)
+                    .build());
         }
     }
 

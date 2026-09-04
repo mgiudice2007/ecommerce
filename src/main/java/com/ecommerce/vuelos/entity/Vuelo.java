@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,14 +59,14 @@ public class Vuelo {
     @Column(nullable = false)
     private BigDecimal precio;
 
-    /** Porcentaje de descuento, de 0 a 100. Pasa a la entidad Descuento en la fase 4. */
-    @Column(nullable = false)
-    @Builder.Default
-    private BigDecimal descuento = BigDecimal.ZERO;
-
     @OneToMany(mappedBy = "vuelo", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Disponibilidad> disponibilidades = new ArrayList<>();
+
+    /** Los descuentos cargados sobre este vuelo. A lo sumo uno esta vigente por fecha. */
+    @OneToMany(mappedBy = "vuelo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Descuento> descuentos = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -78,11 +79,25 @@ public class Vuelo {
     @Column
     private LocalDateTime fechaBaja;
 
+    /**
+     * El descuento que rige hoy, o null si no hay ninguno. Como al crear y al
+     * modificar se valida que no haya dos vigentes solapados, aca a lo sumo hay
+     * uno y no hace falta decidir cual gana.
+     */
+    @Transient
+    public Descuento getDescuentoVigente() {
+        LocalDate hoy = LocalDate.now();
+        return descuentos.stream()
+                .filter(d -> d.estaVigente(hoy))
+                .findFirst()
+                .orElse(null);
+    }
+
     /** Derivado: se calcula, no se persiste. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
-        BigDecimal factor = BigDecimal.ONE.subtract(descuento.divide(BigDecimal.valueOf(100)));
-        return precio.multiply(factor);
+        Descuento vigente = getDescuentoVigente();
+        return vigente == null ? precio : vigente.aplicarA(precio);
     }
 
     /** Derivado: la diferencia entre salida y llegada. */

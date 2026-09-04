@@ -29,8 +29,14 @@ public class Orden {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    /** Lo que se cobro, ya con los descuentos restados. */
     @Column(nullable = false)
     private BigDecimal total;
+
+    /** Cuanto se ahorro el comprador en esta orden. Queda congelado como el total. */
+    @Column(nullable = false)
+    @Builder.Default
+    private BigDecimal descuentoTotal = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private LocalDateTime fecha;

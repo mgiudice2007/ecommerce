@@ -17,6 +17,9 @@ public class OrdenResponse {
 
     private Long id;
     private BigDecimal total;
+
+    /** Cuanto se ahorro el comprador en toda la orden. */
+    private BigDecimal descuentoTotal;
     private LocalDateTime fecha;
     private EstadoOrden estado;
     private List<ItemOrdenResponse> items;
@@ -25,6 +28,7 @@ public class OrdenResponse {
         return OrdenResponse.builder()
                 .id(orden.getId())
                 .total(orden.getTotal())
+                .descuentoTotal(orden.getDescuentoTotal())
                 .fecha(orden.getFecha())
                 .estado(orden.getEstado())
                 .items(orden.getItems().stream()
