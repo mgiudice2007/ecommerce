@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @AllArgsConstructor
@@ -15,7 +18,14 @@ public class UsuarioResponse {
     private String mail;
     private String nombre;
     private String apellido;
+
+    /** Datos del pasajero. Pueden venir en null hasta que el usuario los complete. */
+    private String dni;
+    private LocalDate fechaNacimiento;
+    private String telefono;
+
     private String rol;
+    private LocalDateTime fechaRegistro;
 
     /**
      * Arma la respuesta a partir de la entidad. Notar que la password nunca se
@@ -28,7 +38,11 @@ public class UsuarioResponse {
                 .mail(usuario.getMail())
                 .nombre(usuario.getNombre())
                 .apellido(usuario.getApellido())
+                .dni(usuario.getDni())
+                .fechaNacimiento(usuario.getFechaNacimiento())
+                .telefono(usuario.getTelefono())
                 .rol(usuario.getRol().name())
+                .fechaRegistro(usuario.getFechaRegistro())
                 .build();
     }
 }

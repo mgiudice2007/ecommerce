@@ -132,10 +132,20 @@ public abstract class IntegrationTestSupport {
 
     /** El seeder deja siempre las clases Economica, Ejecutiva y Primera. */
     protected Long clasePorDefecto() throws Exception {
+        return claseEnPosicion(0);
+    }
+
+    /** La segunda clase del seeder, para poder cargar dos cupos en un mismo vuelo. */
+    protected Long otraClase() throws Exception {
+        return claseEnPosicion(1);
+    }
+
+    private Long claseEnPosicion(int indice) throws Exception {
         MvcResult r = mockMvc.perform(get("/api/clases"))
                 .andExpect(status().isOk())
                 .andReturn();
-        return objectMapper.readTree(r.getResponse().getContentAsString()).get(0).get("id").asLong();
+        return objectMapper.readTree(r.getResponse().getContentAsString())
+                .get(indice).get("id").asLong();
     }
 
     protected Long agregarAlCarrito(String compradorToken, Long disponibilidadId, int cantidad) throws Exception {

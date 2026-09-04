@@ -12,6 +12,7 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -146,6 +147,59 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         String comprador = registrarYLoguearComprador("cdto");
 
         crear(comprador, vigenteHoy(vueloId, "PORCENTAJE", 10), 403);
+    }
+
+    @Test
+    void obtenerDescuentoPorId_esPublicoYCalculaSiEstaVigente() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vdtoporid");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+
+        MvcResult creado = crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 15), 201);
+        Long descuentoId = objectMapper.readTree(creado.getResponse().getContentAsString())
+                .get("id").asLong();
+
+        // sin token: es de lectura publica, como el catalogo
+        mockMvc.perform(get("/api/descuentos/" + descuentoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(descuentoId))
+                .andExpect(jsonPath("$.vueloId").value(vueloId))
+                .andExpect(jsonPath("$.tipoDescuento").value("PORCENTAJE"))
+                .andExpect(jsonPath("$.valor").value(15))
+                .andExpect(jsonPath("$.vigente").value(true));
+    }
+
+    @Test
+    void modificarDescuento_cambiaElTipoYRecalculaElPrecio() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vdtoedita");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+
+        MvcResult creado = crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 20), 201);
+        Long descuentoId = objectMapper.readTree(creado.getResponse().getContentAsString())
+                .get("id").asLong();
+
+        mockMvc.perform(get("/api/vuelos/" + vueloId))
+                .andExpect(jsonPath("$.precioConDescuento").value(800.0));
+
+        // de 20% a un monto fijo de 350
+        Map<String, Object> aMontoFijo = vigenteHoy(vueloId, "MONTO_FIJO", 350);
+        mockMvc.perform(put("/api/descuentos/" + descuentoId)
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(aMontoFijo)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tipoDescuento").value("MONTO_FIJO"))
+                .andExpect(jsonPath("$.valor").value(350));
+
+        mockMvc.perform(get("/api/vuelos/" + vueloId))
+                .andExpect(jsonPath("$.precioConDescuento").value(650.0));
+
+        // editar el de otro vendedor no se puede
+        String intruso = registrarYLoguearVendedor("vdtoeditaajeno");
+        mockMvc.perform(put("/api/descuentos/" + descuentoId)
+                        .header("Authorization", "Bearer " + intruso)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(aMontoFijo)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

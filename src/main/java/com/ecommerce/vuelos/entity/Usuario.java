@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +39,24 @@ public class Usuario {
 
     @Column(nullable = false)
     private String apellido;
+
+    /**
+     * Datos del pasajero. Van opcionales a proposito: la consigna dice que el
+     * registro pide usuario, mail, contrasena, nombre y apellido, nada mas.
+     * El comprador los completa despues, antes de volar.
+     */
+    @Column(unique = true)
+    private String dni;
+
+    @Column
+    private LocalDate fechaNacimiento;
+
+    @Column
+    private String telefono;
+
+    /** Cuando se dio de alta. La setea el alta, nadie la manda. */
+    @Column(nullable = false)
+    private LocalDateTime fechaRegistro;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

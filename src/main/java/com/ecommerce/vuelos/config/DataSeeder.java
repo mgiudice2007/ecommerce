@@ -172,6 +172,7 @@ public class DataSeeder implements CommandLineRunner {
                 .nombre(nombre)
                 .apellido(apellido)
                 .rol(rol)
+                .fechaRegistro(LocalDateTime.now())
                 .build();
 
         // Mismo criterio que AuthServiceImpl: el comprador nace con carrito. Sin

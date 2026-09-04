@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.controller;
 
+import com.ecommerce.vuelos.dto.auth.ActualizarPerfilRequest;
 import com.ecommerce.vuelos.dto.auth.LoginRequest;
 import com.ecommerce.vuelos.dto.auth.LoginResponse;
 import com.ecommerce.vuelos.dto.auth.RegisterRequest;
@@ -58,5 +59,16 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponse> me(@AuthenticationPrincipal UsuarioPrincipal principal) {
         return ResponseEntity.ok(UsuarioResponse.desde(principal.getUsuario()));
+    }
+
+    /**
+     * El usuario completa o corrige sus propios datos, incluidos los de
+     * pasajero. No cambia username, mail, password ni rol.
+     */
+    @PutMapping("/me")
+    public ResponseEntity<UsuarioResponse> actualizarPerfil(
+            @AuthenticationPrincipal UsuarioPrincipal principal,
+            @Valid @RequestBody ActualizarPerfilRequest request) {
+        return ResponseEntity.ok(authService.actualizarPerfil(principal.getId(), request));
     }
 }

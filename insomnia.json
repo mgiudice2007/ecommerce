@@ -25,7 +25,7 @@
           "base_url"
         ]
       },
-      "metaSortKey": 1788490489584,
+      "metaSortKey": 1788496449855,
       "isPrivate": false
     },
     {
@@ -226,7 +226,7 @@
       "_type": "request",
       "parentId": "fld_auth",
       "name": "GET me",
-      "description": "Devuelve el usuario del token. Sin password: por eso hay DTO.",
+      "description": "Devuelve el usuario del token. Sin password: por eso hay DTO. Sin token da 401.",
       "method": "GET",
       "url": "{{ base_url }}/api/auth/me",
       "metaSortKey": -95,
@@ -241,6 +241,35 @@
       "settingStoreCookies": true,
       "settingSendCookies": true,
       "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_auth_perfil",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "PUT completar perfil",
+      "description": "El registro solo pide usuario, mail, contrasena, nombre y apellido, como dice el enunciado. El DNI y la fecha de nacimiento -los datos con los que se vuela- se completan aca. El DNI no se puede repetir entre cuentas.",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/auth/me",
+      "metaSortKey": -94.5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nombre\": \"Caro\",\n  \"apellido\": \"Compradora\",\n  \"dni\": \"30111222\",\n  \"fechaNacimiento\": \"1995-06-15\",\n  \"telefono\": \"1155667788\"\n}"
+      }
     },
     {
       "_id": "req_auth_logout",

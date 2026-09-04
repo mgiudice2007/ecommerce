@@ -152,6 +152,28 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void listarCuposDelVuelo_devuelveUnoPorClaseCargada() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vcupolista");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 30, 1000.0);
+        crearDisponibilidad(vendedor, vueloId, otraClase(), 10, 2500.0);
+
+        // sin token: el stock es informacion publica del catalogo
+        mockMvc.perform(get("/api/disponibilidades").param("vueloId", vueloId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].vueloId").value(vueloId))
+                .andExpect(jsonPath("$[0].claseNombre").exists())
+                .andExpect(jsonPath("$[0].hayStock").value(true));
+
+        // un vuelo sin cupos devuelve la lista vacia, no un 404
+        Long sinCupos = crearVuelo(vendedor, "EZE", "MAD", 500.0);
+        mockMvc.perform(get("/api/disponibilidades").param("vueloId", sinCupos.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void cargarDosVecesLaMismaClase_devuelve400() throws Exception {
         String vendedor = registrarYLoguearVendedor("vduplicado");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 800.0);
