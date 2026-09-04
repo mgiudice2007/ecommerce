@@ -50,6 +50,7 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponse(token, UsuarioResponse.desde(principal.getUsuario())));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         return ResponseEntity.noContent().build();
@@ -65,6 +66,7 @@ public class AuthController {
      * El usuario completa o corrige sus propios datos, incluidos los de
      * pasajero. No cambia username, mail, password ni rol.
      */
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/me")
     public ResponseEntity<UsuarioResponse> actualizarPerfil(
             @AuthenticationPrincipal UsuarioPrincipal principal,
