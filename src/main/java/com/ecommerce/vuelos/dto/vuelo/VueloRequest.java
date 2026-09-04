@@ -1,6 +1,5 @@
 package com.ecommerce.vuelos.dto.vuelo;
 
-import com.ecommerce.vuelos.model.ClaseVuelo;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,30 +16,32 @@ import java.time.LocalDateTime;
 public class VueloRequest {
 
     @NotBlank
-    private String origen;
+    private String numeroVuelo;
+
+    private String descripcion;
+
+    @NotNull
+    private Long categoriaId;
 
     @NotBlank
-    private String destino;
+    private String origenIata;
+
+    @NotBlank
+    private String destinoIata;
 
     @NotNull
     @Future(message = "La fecha de salida debe ser futura")
     private LocalDateTime fechaSalida;
 
     @NotNull
-    @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal precio;
+    @Future(message = "La fecha de llegada debe ser futura")
+    private LocalDateTime fechaLlegada;
 
     @NotNull
-    @Min(0)
-    private Integer asientosDisponibles;
+    @DecimalMin(value = "0.0", inclusive = false)
+    private BigDecimal precio;
 
     @DecimalMin(value = "0.0")
     @DecimalMax(value = "100.0")
     private BigDecimal descuento;
-
-    @NotNull
-    private ClaseVuelo clase;
-
-    @NotNull
-    private Long aerolineaId;
 }

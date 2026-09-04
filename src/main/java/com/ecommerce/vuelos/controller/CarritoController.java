@@ -3,7 +3,7 @@ package com.ecommerce.vuelos.controller;
 import com.ecommerce.vuelos.dto.carrito.ActualizarCantidadRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
-import com.ecommerce.vuelos.dto.reserva.ReservaResponse;
+import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.CarritoService;
 import jakarta.validation.Valid;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/carrito")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('PASAJERO')")
+@PreAuthorize("hasRole('COMPRADOR')")
 public class CarritoController {
 
     private final CarritoService carritoService;
@@ -47,7 +47,7 @@ public class CarritoController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<ReservaResponse> checkout(@AuthenticationPrincipal UsuarioPrincipal principal) {
+    public ResponseEntity<OrdenResponse> checkout(@AuthenticationPrincipal UsuarioPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(principal.getId()));
     }
 }

@@ -2,101 +2,206 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
-    @Test
-    void listarVuelos_esPublico_sinNecesidadDeSesion() throws Exception {
-        mockMvc.perform(get("/api/vuelos"))
-                .andExpect(status().isOk());
+    private Map<String, Object> bodyVuelo(Long categoriaId, String origen, String destino, double precio)
+            throws Exception {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("numeroVuelo", "TS" + System.nanoTime() % 100000);
+        body.put("descripcion", "Vuelo de prueba");
+        body.put("categoriaId", categoriaId);
+        body.put("origenIata", origen);
+        body.put("destinoIata", destino);
+        body.put("fechaSalida", LocalDateTime.now().plusDays(10).withNano(0).toString());
+        body.put("fechaLlegada", LocalDateTime.now().plusDays(10).plusHours(3).withNano(0).toString());
+        body.put("precio", precio);
+        body.put("descuento", 0);
+        return body;
     }
 
     @Test
-    void buscarVuelos_filtraPorClaseYRangoDePrecio() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Filtros");
-        crearVuelo(admin, aerolineaId, "Rosario", "Salta", 100.0, 10, "ECONOMICA");
-        crearVuelo(admin, aerolineaId, "Rosario", "Ushuaia", 900.0, 10, "PRIMERA");
+    void buscar_sinFiltros_devuelveLosVuelosPublicados() throws Exception {
+        mockMvc.perform(get("/api/vuelos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].numeroVuelo").exists())
+                .andExpect(jsonPath("$.content[0].vendedorUsername").exists())
+                .andExpect(jsonPath("$.content[0].disponibilidades").isArray());
+    }
+
+    @Test
+    void buscar_filtrandoPorPrecioMaximo_excluyeLosCaros() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vfiltro");
+        crearVuelo(vendedor, "COR", "MDZ", 100.0);
+        crearVuelo(vendedor, "COR", "MDZ", 900.0);
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("clase", "PRIMERA")
-                        .param("precioMin", "500")
-                        .param("precioMax", "1000"))
+                        .param("origen", "COR")
+                        .param("precioMax", "500"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.destino == 'Ushuaia')]").exists())
-                .andExpect(jsonPath("$[?(@.destino == 'Salta')]").doesNotExist());
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].precio").value(100.0));
     }
 
     @Test
-    void crearVuelo_comoAdmin_devuelveCreated() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Crear Vuelo");
+    void buscar_conPageYSize_devuelveSoloEsaPagina() throws Exception {
+        // MIA no se usa como origen en el seeder ni en los otros tests, asi que
+        // el filtro deja exactamente los tres vuelos que se crean aca.
+        String vendedor = registrarYLoguearVendedor("vpagina");
+        crearVuelo(vendedor, "MIA", "COR", 100.0);
+        crearVuelo(vendedor, "MIA", "COR", 200.0);
+        crearVuelo(vendedor, "MIA", "COR", 300.0);
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("origen", "Mendoza");
-        body.put("destino", "Neuquen");
-        body.put("fechaSalida", LocalDateTime.now().plusDays(5).withNano(0).toString());
-        body.put("precio", 150.0);
-        body.put("asientosDisponibles", 20);
-        body.put("descuento", 5);
-        body.put("clase", "ECONOMICA");
-        body.put("aerolineaId", aerolineaId);
+        mockMvc.perform(get("/api/vuelos")
+                        .param("origen", "MIA")
+                        .param("page", "0")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.number").value(0));
 
-        mockMvc.perform(json(post("/api/vuelos").header("Authorization", "Bearer " + admin), body))
+        // La segunda pagina trae el que sobra.
+        mockMvc.perform(get("/api/vuelos")
+                        .param("origen", "MIA")
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.last").value(true));
+
+        // Sin page ni size sigue devolviendo todo en una sola pagina.
+        mockMvc.perform(get("/api/vuelos").param("origen", "MIA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.totalPages").value(1));
+    }
+
+    @Test
+    void buscar_filtrandoPorClase_soloDevuelveVuelosConEseCupo() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vclase");
+        Long conCupo = crearVuelo(vendedor, "MDZ", "MIA", 400.0);
+        crearDisponibilidad(vendedor, conCupo, clasePorDefecto(), 10, 400.0);
+        crearVuelo(vendedor, "MDZ", "MIA", 400.0); // sin cupos cargados
+
+        mockMvc.perform(get("/api/vuelos")
+                        .param("origen", "MDZ")
+                        .param("claseId", clasePorDefecto().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(conCupo));
+    }
+
+    @Test
+    void crearVuelo_comoVendedor_quedaComoDueno() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vdueno");
+
+        mockMvc.perform(post("/api/vuelos")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                bodyVuelo(categoriaPorDefecto(), "EZE", "MIA", 500.0))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.precioConDescuento").value(142.5));
+                .andExpect(jsonPath("$.vendedorUsername").value("vdueno"))
+                .andExpect(jsonPath("$.estado").value("ACTIVO"))
+                .andExpect(jsonPath("$.duracionMinutos").value(180))
+                .andExpect(jsonPath("$.hayStock").value(false));
     }
 
     @Test
-    void crearVuelo_comoPasajero_devuelve403() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Sin Permiso");
-        String pasajero = registrarYLoguearPasajero("pasajerovuelo");
+    void crearVuelo_comoComprador_devuelve403() throws Exception {
+        String comprador = registrarYLoguearComprador("cnopublica");
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("origen", "A");
-        body.put("destino", "B");
-        body.put("fechaSalida", LocalDateTime.now().plusDays(5).withNano(0).toString());
-        body.put("precio", 100.0);
-        body.put("asientosDisponibles", 10);
-        body.put("clase", "ECONOMICA");
-        body.put("aerolineaId", aerolineaId);
-
-        mockMvc.perform(json(post("/api/vuelos").header("Authorization", "Bearer " + pasajero), body))
+        mockMvc.perform(post("/api/vuelos")
+                        .header("Authorization", "Bearer " + comprador)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                bodyVuelo(categoriaPorDefecto(), "EZE", "MIA", 500.0))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void actualizarYEliminarVuelo_comoAdmin() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Update Delete");
-        Long vueloId = crearVuelo(admin, aerolineaId, "X", "Y", 200.0, 5, "ECONOMICA");
+    void cargarCupo_quedaConStockYPrecioConDescuento() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vcupo");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 30, 1000.0);
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("origen", "X");
-        body.put("destino", "Z");
-        body.put("fechaSalida", LocalDateTime.now().plusDays(5).withNano(0).toString());
-        body.put("precio", 250.0);
-        body.put("asientosDisponibles", 8);
-        body.put("clase", "EJECUTIVA");
-        body.put("aerolineaId", aerolineaId);
-
-        mockMvc.perform(json(put("/api/vuelos/" + vueloId).header("Authorization", "Bearer " + admin), body))
+        mockMvc.perform(get("/api/disponibilidades/" + cupoId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.destino").value("Z"))
-                .andExpect(jsonPath("$.clase").value("EJECUTIVA"));
-
-        mockMvc.perform(delete("/api/vuelos/" + vueloId).header("Authorization", "Bearer " + admin))
-                .andExpect(status().isNoContent());
+                .andExpect(jsonPath("$.asientosTotales").value(30))
+                .andExpect(jsonPath("$.asientosDisponibles").value(30))
+                .andExpect(jsonPath("$.hayStock").value(true));
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hayStock").value(true))
+                .andExpect(jsonPath("$.disponibilidades.length()").value(1));
+    }
+
+    @Test
+    void cargarDosVecesLaMismaClase_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vduplicado");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 800.0);
+        crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 800.0);
+
+        Map<String, Object> repetido = Map.of(
+                "vueloId", vueloId,
+                "claseId", clasePorDefecto(),
+                "asientosTotales", 5,
+                "precio", 800.0);
+
+        mockMvc.perform(post("/api/disponibilidades")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(repetido)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void modificarVueloDeOtroVendedor_devuelve400() throws Exception {
+        String dueno = registrarYLoguearVendedor("vpropietario");
+        Long vueloId = crearVuelo(dueno, "EZE", "MAD", 300.0);
+
+        String intruso = registrarYLoguearVendedor("vintruso");
+        mockMvc.perform(put("/api/vuelos/" + vueloId)
+                        .header("Authorization", "Bearer " + intruso)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                bodyVuelo(categoriaPorDefecto(), "EZE", "MAD", 999.0))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void eliminarVuelo_esBajaLogicaYDejaDeListarse() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vbaja");
+        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+
+        mockMvc.perform(delete("/api/vuelos/" + vueloId)
+                        .header("Authorization", "Bearer " + vendedor))
+                .andExpect(status().isNoContent());
+
+        // sigue existiendo por id, pero con estado ELIMINADO
+        mockMvc.perform(get("/api/vuelos/" + vueloId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ELIMINADO"));
+
+        // y ya no aparece en el listado
+        mockMvc.perform(get("/api/vuelos").param("origen", "MDZ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
     }
 }

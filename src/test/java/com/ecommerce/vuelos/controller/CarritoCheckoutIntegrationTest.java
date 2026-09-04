@@ -10,26 +10,39 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
+    /**
+     * El seeder arma los usuarios a mano, sin pasar por AuthService, asi que el
+     * carrito del comprador sembrado hay que verificarlo aparte: el resto de los
+     * tests registra usuarios nuevos y por ese camino el carrito siempre existe.
+     */
+    @Test
+    void compradorDelSeeder_naceConCarrito() throws Exception {
+        String comprador = login("comprador", "comprador123");
+
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.items").isArray());
+    }
+
     @Test
     void agregarItem_superandoElStockDisponible_devuelve400() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Stock");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 2, "ECONOMICA");
-        String pasajero = registrarYLoguearPasajero("pasajerostock");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 2);
+        String pasajero = registrarYLoguearComprador("pasajerostock");
 
-        mockMvc.perform(json(post("/api/carrito/items").header("Authorization", "Bearer " + pasajero), Map.of("vueloId", vueloId, "cantidad", 3)))
+        mockMvc.perform(json(post("/api/carrito/items").header("Authorization", "Bearer " + pasajero), Map.of("disponibilidadId", cupoId, "cantidad", 3)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void agregarElMismoVueloDosVeces_acumulaLaCantidad() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Acumula");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
-        String pasajero = registrarYLoguearPasajero("pasajeroacumula");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajeroacumula");
 
-        agregarAlCarrito(pasajero, vueloId, 2);
-        mockMvc.perform(json(post("/api/carrito/items").header("Authorization", "Bearer " + pasajero), Map.of("vueloId", vueloId, "cantidad", 3)))
+        agregarAlCarrito(pasajero, cupoId, 2);
+        mockMvc.perform(json(post("/api/carrito/items").header("Authorization", "Bearer " + pasajero), Map.of("disponibilidadId", cupoId, "cantidad", 3)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].cantidad").value(5))
@@ -38,11 +51,10 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void actualizarYEliminarItemDelCarrito() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Update Item");
-        Long vueloId = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
-        String pasajero = registrarYLoguearPasajero("pasajeroupdateitem");
-        Long itemId = agregarAlCarrito(pasajero, vueloId, 1);
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajeroupdateitem");
+        Long itemId = agregarAlCarrito(pasajero, cupoId, 1);
 
         mockMvc.perform(json(put("/api/carrito/items/" + itemId).header("Authorization", "Bearer " + pasajero), Map.of("cantidad", 4)))
                 .andExpect(status().isOk())
@@ -55,26 +67,25 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_conCarritoVacio_devuelve400() throws Exception {
-        String pasajero = registrarYLoguearPasajero("pasajerocarritovacio");
+        String pasajero = registrarYLoguearComprador("pasajerocarritovacio");
 
         mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void checkout_generaReservaYDescuentaStock() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Checkout");
-        Long vueloId = crearVuelo(admin, aerolineaId, "BUE", "MIA", 200.0, 10, "ECONOMICA");
-        String pasajero = registrarYLoguearPasajero("pasajerocheckout");
-        agregarAlCarrito(pasajero, vueloId, 4);
+    void checkout_generaOrdenYDescuentaStock() throws Exception {
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajerocheckout");
+        agregarAlCarrito(pasajero, cupoId, 4);
 
         mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.estado").value("CONFIRMADA"))
                 .andExpect(jsonPath("$.total").value(800.0));
 
-        mockMvc.perform(get("/api/vuelos/" + vueloId))
+        mockMvc.perform(get("/api/disponibilidades/" + cupoId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.asientosDisponibles").value(6));
 
@@ -85,26 +96,30 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_siElStockBajaDespuesDeAgregarAlCarrito_fallaYNoDescuentaNadaDeNingunVuelo() throws Exception {
-        String admin = loginAdmin();
-        Long aerolineaId = crearAerolinea(admin, "Aerolinea Atomicidad");
-        Long vueloOk = crearVuelo(admin, aerolineaId, "A", "B", 100.0, 10, "ECONOMICA");
-        Long vueloSinStock = crearVuelo(admin, aerolineaId, "C", "D", 100.0, 5, "ECONOMICA");
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long cupoOk = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
+        Long cupoSinStock = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 5);
 
-        String pasajero = registrarYLoguearPasajero("pasajeroatomico");
-        agregarAlCarrito(pasajero, vueloOk, 2);
-        agregarAlCarrito(pasajero, vueloSinStock, 3);
+        String pasajero = registrarYLoguearComprador("pasajeroatomico");
+        agregarAlCarrito(pasajero, cupoOk, 2);
+        agregarAlCarrito(pasajero, cupoSinStock, 3);
 
-        // Se vende el stock de vueloSinStock por otro medio despues de que ya estaba en el carrito
-        mockMvc.perform(json(put("/api/vuelos/" + vueloSinStock).header("Authorization", "Bearer " + admin), Map.of(
-                "origen", "C", "destino", "D", "fechaSalida", "2027-01-01T10:00:00",
-                "precio", 100.0, "asientosDisponibles", 1, "clase", "ECONOMICA", "aerolineaId", aerolineaId)))
+        // Se vende el stock de cupoSinStock por otro medio despues de que ya estaba en el carrito
+        Map<String, Object> bajaDeStock = Map.of(
+                "vueloId", 0,
+                "claseId", clasePorDefecto(),
+                "asientosTotales", 1,
+                "precio", 100.0);
+
+        mockMvc.perform(json(put("/api/disponibilidades/" + cupoSinStock)
+                        .header("Authorization", "Bearer " + vendedor), bajaDeStock))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
                 .andExpect(status().isBadRequest());
 
-        // vueloOk no debe haber sido descontado a pesar de tener stock suficiente
-        mockMvc.perform(get("/api/vuelos/" + vueloOk))
+        // cupoOk no debe haber sido descontado a pesar de tener stock suficiente
+        mockMvc.perform(get("/api/disponibilidades/" + cupoOk))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.asientosDisponibles").value(10));
     }

@@ -1,447 +1,738 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-09-02T00:00:00.000Z",
-  "__export_source": "insomnia.manual:ecommerce-vuelos",
+  "__export_date": "2026-09-04T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v8.6.1:tpo-vuelos",
   "resources": [
     {
-      "_id": "wrk_ecommerce_vuelos",
+      "_id": "wrk_vuelos_tpo",
       "_type": "workspace",
-      "name": "Ecommerce Vuelos API",
-      "description": "Coleccion para probar la API de pasajes de avion. Autenticacion JWT (Authorization: Bearer <token>). Los folders estan numerados en el orden pensado para correrlos de punta a punta: Auth -> Aerolineas -> Vuelos -> Carrito -> Reservas. Los requests de login y de creacion (aerolinea/vuelo/item/checkout) tienen un script 'after-response' que guarda automaticamente el token/id devuelto en las variables de entorno (token_admin, token_pasajero, aerolinea_id, vuelo_id, item_id, reserva_id). Si tu version de Insomnia no ejecuta esos scripts, copia el valor manualmente desde la respuesta a Manage Environments.",
+      "parentId": null,
+      "name": "TPO Vuelos - Backend",
+      "description": "Entrega 1: backend + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 5.",
       "scope": "collection"
     },
     {
-      "_id": "env_base",
+      "_id": "env_vuelos_local",
       "_type": "environment",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "Base Environment",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "Local",
       "data": {
-        "base_url": "http://localhost:8080",
-        "token_admin": "",
-        "token_pasajero": "",
-        "aerolinea_id": "",
-        "vuelo_id": "",
-        "item_id": "",
-        "reserva_id": ""
-      }
+        "base_url": "http://localhost:8080"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url"
+        ]
+      },
+      "metaSortKey": 1788475091734,
+      "isPrivate": false
+    },
+    {
+      "_id": "fld_catalogo",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "0 - Catalogo (publico)",
+      "description": "Tablas de consulta. Se leen sin token porque hacen falta antes de loguearse.",
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_cat_categorias",
+      "_type": "request",
+      "parentId": "fld_catalogo",
+      "name": "GET categorias",
+      "description": "De la catedra: se muestra, no se explica. El modelo la necesita como FK de Vuelo.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/categorias",
+      "metaSortKey": -100,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_cat_aeropuertos",
+      "_type": "request",
+      "parentId": "fld_catalogo",
+      "name": "GET aeropuertos",
+      "description": "La PK es el codigo IATA de 3 letras, no un autonumerico.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/aeropuertos",
+      "metaSortKey": -99,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_cat_clases",
+      "_type": "request",
+      "parentId": "fld_catalogo",
+      "name": "GET clases",
+      "description": "Economica / Ejecutiva / Primera. El claseId sale de aca.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/clases",
+      "metaSortKey": -98,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
       "_id": "fld_auth",
       "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "1. Auth"
+      "parentId": "wrk_vuelos_tpo",
+      "name": "1 - Auth (lo que dio la catedra)",
+      "description": "Register y login. Los tres logins alimentan el token del resto de la coleccion.",
+      "metaSortKey": -90
     },
     {
-      "_id": "fld_aerolineas",
-      "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "2. Aerolineas (Admin)"
-    },
-    {
-      "_id": "fld_vuelos",
-      "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "3. Vuelos"
-    },
-    {
-      "_id": "fld_carrito",
-      "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "4. Carrito (Pasajero)"
-    },
-    {
-      "_id": "fld_reservas",
-      "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "5. Reservas (Pasajero)"
-    },
-    {
-      "_id": "fld_errores",
-      "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "6. Casos de error (bonus)"
-    },
-    {
-      "_id": "fld_cleanup",
-      "_type": "request_group",
-      "parentId": "wrk_ecommerce_vuelos",
-      "name": "7. Cleanup (opcional, no correr en medio del flujo)"
-    },
-
-    {
-      "_id": "req_registro_pasajero",
+      "_id": "req_login_vendedor",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "1. Registro pasajero",
+      "name": "POST login vendedor",
+      "description": "Corre esta primero: las carpetas 2 y 3 toman el token de aca.",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/auth/registro/pasajero",
+      "url": "{{ base_url }}/api/auth/login",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"username\": \"mile\",\n  \"mail\": \"mile@test.com\",\n  \"password\": \"123456\",\n  \"nombre\": \"Milena\",\n  \"apellido\": \"Giudice\"\n}"
-      },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
-      "description": "Publico. Si ya corriste la coleccion antes, este usuario ya existe y da 400 (username duplicado) - es esperado, segui con el login."
+        "text": "{\n  \"username\": \"vendedor\",\n  \"password\": \"vendedor123\"\n}"
+      }
     },
     {
-      "_id": "req_login_pasajero",
+      "_id": "req_login_comprador",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "2. Login pasajero",
+      "name": "POST login comprador",
+      "description": "Corre esta segunda: las carpetas 4 y 5 toman el token de aca.",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/auth/login",
+      "url": "{{ base_url }}/api/auth/login",
+      "metaSortKey": -99,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"username\": \"mile\",\n  \"password\": \"123456\"\n}"
-      },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
-      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('token_pasajero', body.token);",
-      "description": "Publico. Devuelve { token, usuario }. El script guarda el token en la variable de entorno token_pasajero. Si no se auto-completa, copialo manualmente."
+        "text": "{\n  \"username\": \"comprador\",\n  \"password\": \"comprador123\"\n}"
+      }
     },
     {
       "_id": "req_login_admin",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "3. Login admin",
+      "name": "POST login admin",
+      "description": "",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/auth/login",
+      "url": "{{ base_url }}/api/auth/login",
+      "metaSortKey": -98,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
-      },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
-      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('token_admin', body.token);",
-      "description": "Publico. Usa el admin semilla creado por DataSeeder. Guarda el token en token_admin."
+      }
     },
     {
-      "_id": "req_me",
+      "_id": "req_auth_registro",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "4. Me (usuario logueado)",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/auth/me",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token. Devuelve los datos del usuario dueno del token."
+      "name": "POST registro",
+      "description": "El rol solo acepta COMPRADOR o VENDEDOR. Mandar ADMIN devuelve 400.",
+      "method": "POST",
+      "url": "{{ base_url }}/api/auth/registro",
+      "metaSortKey": -97,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"nuevo\",\n  \"mail\": \"nuevo@test.com\",\n  \"password\": \"123456\",\n  \"nombre\": \"Nuevo\",\n  \"apellido\": \"Usuario\",\n  \"rol\": \"COMPRADOR\"\n}"
+      }
     },
     {
-      "_id": "req_registro_admin",
+      "_id": "req_auth_registro_admin",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "5. Registro administrador (requiere admin)",
+      "name": "POST registro administrador",
+      "description": "Solo un ADMIN autenticado puede dar de alta otro ADMIN.",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/auth/registro/administrador",
+      "url": "{{ base_url }}/api/auth/registro/administrador",
+      "metaSortKey": -96,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_admin', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"username\": \"admin2\",\n  \"mail\": \"admin2@test.com\",\n  \"password\": \"123456\",\n  \"nombre\": \"Ana\",\n  \"apellido\": \"Admin\",\n  \"permisos\": [\"GESTION_VUELOS\"]\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }
-      ],
-      "description": "Requiere token de un ADMINISTRADOR. Corre 3. Login admin antes."
+        "text": "{\n  \"username\": \"admin2\",\n  \"mail\": \"admin2@test.com\",\n  \"password\": \"123456\",\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Admin\",\n  \"rol\": \"ADMIN\"\n}"
+      }
     },
     {
-      "_id": "req_logout",
+      "_id": "req_auth_me",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "6. Logout",
-      "method": "POST",
-      "url": "{{ _.base_url }}/api/auth/logout",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Con JWT stateless el logout es logico: solo confirma 204, el token en si sigue siendo valido hasta que expira (24hs). El 'cierre de sesion' real es que el cliente descarte el token."
-    },
-
-    {
-      "_id": "req_aerolineas_listar",
-      "_type": "request",
-      "parentId": "fld_aerolineas",
-      "name": "1. Listar aerolineas",
+      "name": "GET me",
+      "description": "Devuelve el usuario del token. Sin password: por eso hay DTO.",
       "method": "GET",
-      "url": "{{ _.base_url }}/api/aerolineas",
-      "description": "Publico."
+      "url": "{{ base_url }}/api/auth/me",
+      "metaSortKey": -95,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
-      "_id": "req_aerolineas_crear",
+      "_id": "req_auth_logout",
       "_type": "request",
-      "parentId": "fld_aerolineas",
-      "name": "2. Crear aerolinea (ADMIN)",
+      "parentId": "fld_auth",
+      "name": "POST logout",
+      "description": "",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/aerolineas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"nombre\": \"Aerolineas Demo API\"\n}"
-      },
+      "url": "{{ base_url }}/api/auth/logout",
+      "metaSortKey": -94,
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
       ],
-      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('aerolinea_id', String(body.id));",
-      "description": "Requiere token de ADMINISTRADOR. Guarda el id creado en aerolinea_id."
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
-      "_id": "req_aerolineas_obtener",
-      "_type": "request",
-      "parentId": "fld_aerolineas",
-      "name": "3. Obtener aerolinea por id",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/aerolineas/{{ _.aerolinea_id }}",
-      "description": "Publico."
+      "_id": "fld_vuelos",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "2 - Vuelos (vendedor)",
+      "description": "Publicacion del pasaje. Solo VENDEDOR o ADMIN, y solo el dueno puede modificar.",
+      "metaSortKey": -80
     },
     {
-      "_id": "req_aerolineas_actualizar",
-      "_type": "request",
-      "parentId": "fld_aerolineas",
-      "name": "4. Actualizar aerolinea (ADMIN)",
-      "method": "PUT",
-      "url": "{{ _.base_url }}/api/aerolineas/{{ _.aerolinea_id }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"nombre\": \"Aerolineas Demo API Actualizada\"\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }
-      ],
-      "description": "Requiere token de ADMINISTRADOR."
-    },
-
-    {
-      "_id": "req_vuelos_crear",
+      "_id": "req_vuelo_buscar",
       "_type": "request",
       "parentId": "fld_vuelos",
-      "name": "1. Crear vuelo (ADMIN)",
-      "method": "POST",
-      "url": "{{ _.base_url }}/api/vuelos",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"origen\": \"Buenos Aires\",\n  \"destino\": \"Madrid\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"precio\": 500.00,\n  \"asientosDisponibles\": 100,\n  \"descuento\": 0,\n  \"clase\": \"ECONOMICA\",\n  \"aerolineaId\": {{ _.aerolinea_id }}\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }
-      ],
-      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('vuelo_id', String(body.id));",
-      "description": "Requiere token de ADMINISTRADOR y aerolinea_id (correr antes 2. Crear aerolinea). Guarda el id creado en vuelo_id. Valores de clase: ECONOMICA, EJECUTIVA, PRIMERA."
-    },
-    {
-      "_id": "req_vuelos_buscar",
-      "_type": "request",
-      "parentId": "fld_vuelos",
-      "name": "2. Buscar vuelos",
+      "name": "GET vuelos (con filtros)",
+      "description": "Todos los filtros son opcionales y se combinan con Specifications. Los que estan deshabilitados se activan con el check.",
       "method": "GET",
-      "url": "{{ _.base_url }}/api/vuelos",
+      "url": "{{ base_url }}/api/vuelos",
+      "metaSortKey": -100,
+      "headers": [],
       "parameters": [
-        { "name": "origen", "value": "Buenos Aires", "disabled": true },
-        { "name": "destino", "value": "Madrid", "disabled": true },
-        { "name": "clase", "value": "ECONOMICA", "disabled": true },
-        { "name": "precioMin", "value": "100", "disabled": true },
-        { "name": "precioMax", "value": "1000", "disabled": true }
+        {
+          "name": "origen",
+          "value": "EZE",
+          "disabled": false
+        },
+        {
+          "name": "precioMax",
+          "value": "2000",
+          "disabled": true
+        },
+        {
+          "name": "categoriaId",
+          "value": "1",
+          "disabled": true
+        },
+        {
+          "name": "claseId",
+          "value": "1",
+          "disabled": true
+        }
       ],
-      "description": "Publico. Todos los query params son opcionales (activalos segun necesites)."
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
-      "_id": "req_vuelos_obtener",
+      "_id": "req_vuelo_paginado",
       "_type": "request",
       "parentId": "fld_vuelos",
-      "name": "3. Obtener vuelo por id",
+      "name": "GET vuelos (paginado)",
+      "description": "Sin page ni size devuelve todo en una pagina. Con ambos pagina de verdad: mirar content, totalElements y totalPages.",
       "method": "GET",
-      "url": "{{ _.base_url }}/api/vuelos/{{ _.vuelo_id }}",
-      "description": "Publico."
+      "url": "{{ base_url }}/api/vuelos",
+      "metaSortKey": -99,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "page",
+          "value": "0",
+          "disabled": false
+        },
+        {
+          "name": "size",
+          "value": "2",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
-      "_id": "req_vuelos_actualizar",
+      "_id": "req_vuelo_crear",
       "_type": "request",
       "parentId": "fld_vuelos",
-      "name": "4. Actualizar vuelo (ADMIN)",
-      "method": "PUT",
-      "url": "{{ _.base_url }}/api/vuelos/{{ _.vuelo_id }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"origen\": \"Buenos Aires\",\n  \"destino\": \"Madrid\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"precio\": 550.00,\n  \"asientosDisponibles\": 90,\n  \"descuento\": 5,\n  \"clase\": \"ECONOMICA\",\n  \"aerolineaId\": {{ _.aerolinea_id }}\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }
-      ],
-      "description": "Requiere token de ADMINISTRADOR."
-    },
-
-    {
-      "_id": "req_carrito_obtener",
-      "_type": "request",
-      "parentId": "fld_carrito",
-      "name": "1. Obtener carrito",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/carrito",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO."
-    },
-    {
-      "_id": "req_carrito_agregar_item",
-      "_type": "request",
-      "parentId": "fld_carrito",
-      "name": "2. Agregar item al carrito",
+      "name": "POST vuelo",
+      "description": "El vuelo nace SIN asientos. El cupo se carga aparte, en la carpeta 3.",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/carrito/items",
+      "url": "{{ base_url }}/api/vuelos",
+      "metaSortKey": -98,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"vueloId\": {{ _.vuelo_id }},\n  \"cantidad\": 2\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }
-      ],
-      "afterResponseScript": "const body = insomnia.response.json();\nconst items = body.items;\ninsomnia.environment.set('item_id', String(items[items.length - 1].id));",
-      "description": "Requiere token de PASAJERO y vuelo_id (correr antes 1. Crear vuelo). Guarda el id del item agregado en item_id."
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, directo\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"fechaLlegada\": \"2026-12-15T22:30:00\",\n  \"precio\": 1200.0,\n  \"descuento\": 10\n}"
+      }
     },
     {
-      "_id": "req_carrito_actualizar_item",
+      "_id": "req_vuelo_obtener",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "GET vuelo por id",
+      "description": "Trae la lista de disponibilidades y hayStock calculado.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -97,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_vuelo_actualizar",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "PUT vuelo (se demoro)",
+      "description": "Con otro token de vendedor da 400: solo el dueno puede tocarlo.",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -96,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, DEMORADO\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0,\n  \"descuento\": 10\n}"
+      }
+    },
+    {
+      "_id": "req_vuelo_eliminar",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "DELETE vuelo (baja logica)",
+      "description": "No borra la fila: la deja en ELIMINADO para no romper las ordenes que la referencian. Despues de esto el vuelo desaparece del listado pero sigue respondiendo por id. NO correr antes del checkout.",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -95,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "fld_cupos",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "3 - Disponibilidades (stock)",
+      "description": "El stock por clase. Un vuelo tiene un cupo por cada clase, con su propio precio.",
+      "metaSortKey": -70
+    },
+    {
+      "_id": "req_cupo_crear",
+      "_type": "request",
+      "parentId": "fld_cupos",
+      "name": "POST cupo",
+      "description": "Repetir la misma clase para el mismo vuelo da 400: hay un UNIQUE (vuelo_id, clase_id).",
+      "method": "POST",
+      "url": "{{ base_url }}/api/disponibilidades",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": \"{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}\",\n  \"claseId\": \"{% response 'body', 'req_cat_clases', '$[0].id', 'never', 60 %}\",\n  \"asientosTotales\": 30,\n  \"precio\": 1200.0\n}"
+      }
+    },
+    {
+      "_id": "req_cupo_listar",
+      "_type": "request",
+      "parentId": "fld_cupos",
+      "name": "GET cupos del vuelo",
+      "description": "",
+      "method": "GET",
+      "url": "{{ base_url }}/api/disponibilidades",
+      "metaSortKey": -99,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "vueloId",
+          "value": "{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_cupo_obtener",
+      "_type": "request",
+      "parentId": "fld_cupos",
+      "name": "GET cupo por id",
+      "description": "Aca se mira asientosDisponibles para comprobar que el checkout descuento.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/disponibilidades/{% response 'body', 'req_cupo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -98,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_cupo_actualizar",
+      "_type": "request",
+      "parentId": "fld_cupos",
+      "name": "PUT cupo (manejo de stock)",
+      "description": "No deja bajar el total por debajo de lo ya vendido.",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/disponibilidades/{% response 'body', 'req_cupo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -97,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": \"{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}\",\n  \"claseId\": \"{% response 'body', 'req_cat_clases', '$[0].id', 'never', 60 %}\",\n  \"asientosTotales\": 50,\n  \"precio\": 1350.0\n}"
+      }
+    },
+    {
+      "_id": "fld_carrito",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "4 - Carrito y checkout (comprador)",
+      "description": "Solo COMPRADOR. El checkout es la operacion transaccional del TPO.",
+      "metaSortKey": -60
+    },
+    {
+      "_id": "req_carrito_agregar",
       "_type": "request",
       "parentId": "fld_carrito",
-      "name": "3. Actualizar cantidad de item",
+      "name": "POST agregar al carrito",
+      "description": "Se elige vuelo Y clase en un solo id. Pedir mas asientos de los que hay da 400.",
+      "method": "POST",
+      "url": "{{ base_url }}/api/carrito/items",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"disponibilidadId\": \"{% response 'body', 'req_cupo_crear', '$.id', 'never', 60 %}\",\n  \"cantidad\": 2\n}"
+      }
+    },
+    {
+      "_id": "req_carrito_ver",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "GET carrito",
+      "description": "El precio se lee de la disponibilidad cada vez: todavia no esta congelado.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/carrito",
+      "metaSortKey": -99,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_carrito_actualizar",
+      "_type": "request",
+      "parentId": "fld_carrito",
+      "name": "PUT cantidad del item",
+      "description": "",
       "method": "PUT",
-      "url": "{{ _.base_url }}/api/carrito/items/{{ _.item_id }}",
+      "url": "{{ base_url }}/api/carrito/items/{% response 'body', 'req_carrito_agregar', '$.items[0].id', 'never', 60 %}",
+      "metaSortKey": -98,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"cantidad\": 3\n}"
-      },
-      "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }
-      ],
-      "description": "Requiere token de PASAJERO."
+      }
     },
     {
-      "_id": "req_carrito_eliminar_item",
+      "_id": "req_carrito_eliminar",
       "_type": "request",
       "parentId": "fld_carrito",
-      "name": "4. Eliminar item del carrito (demo)",
+      "name": "DELETE item del carrito",
+      "description": "Ojo: si borras el item no queda nada para el checkout.",
       "method": "DELETE",
-      "url": "{{ _.base_url }}/api/carrito/items/{{ _.item_id }}",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO. Solo para mostrar el endpoint de borrado: deja el carrito vacio, por eso el siguiente paso vuelve a agregar un item antes del checkout."
-    },
-    {
-      "_id": "req_carrito_agregar_item_para_checkout",
-      "_type": "request",
-      "parentId": "fld_carrito",
-      "name": "5. Agregar item de nuevo (para checkout)",
-      "method": "POST",
-      "url": "{{ _.base_url }}/api/carrito/items",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"vueloId\": {{ _.vuelo_id }},\n  \"cantidad\": 1\n}"
-      },
+      "url": "{{ base_url }}/api/carrito/items/{% response 'body', 'req_carrito_agregar', '$.items[0].id', 'never', 60 %}",
+      "metaSortKey": -97,
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
       ],
-      "afterResponseScript": "const body = insomnia.response.json();\nconst items = body.items;\ninsomnia.environment.set('item_id', String(items[items.length - 1].id));",
-      "description": "Requiere token de PASAJERO y vuelo_id."
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
       "_id": "req_carrito_checkout",
       "_type": "request",
       "parentId": "fld_carrito",
-      "name": "6. Checkout",
+      "name": "POST checkout",
+      "description": "Transaccional: valida el stock de todos los items, descuenta asientos, crea la orden con el precio congelado y vacia el carrito. Si algo falla se revierte entero.",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/carrito/checkout",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "afterResponseScript": "const body = insomnia.response.json();\ninsomnia.environment.set('reserva_id', String(body.id));",
-      "description": "Requiere token de PASAJERO y un carrito con items. Genera la reserva y guarda su id en reserva_id."
-    },
-
-    {
-      "_id": "req_reservas_historial",
-      "_type": "request",
-      "parentId": "fld_reservas",
-      "name": "1. Historial de reservas",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/reservas",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO."
-    },
-    {
-      "_id": "req_reservas_obtener",
-      "_type": "request",
-      "parentId": "fld_reservas",
-      "name": "2. Obtener reserva por id",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/reservas/{{ _.reserva_id }}",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO. Solo el dueno de la reserva puede verla."
-    },
-    {
-      "_id": "req_reservas_cancelar",
-      "_type": "request",
-      "parentId": "fld_reservas",
-      "name": "3. Cancelar reserva",
-      "method": "POST",
-      "url": "{{ _.base_url }}/api/reservas/{{ _.reserva_id }}/cancelar",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }],
-      "description": "Requiere token de PASAJERO. Devuelve la reserva con asientos liberados."
-    },
-
-    {
-      "_id": "req_error_sin_token",
-      "_type": "request",
-      "parentId": "fld_errores",
-      "name": "Endpoint protegido sin token -> 401",
-      "method": "GET",
-      "url": "{{ _.base_url }}/api/carrito",
-      "description": "Sin header Authorization. Debe devolver 401 'No autenticado'."
-    },
-    {
-      "_id": "req_error_rol_incorrecto",
-      "_type": "request",
-      "parentId": "fld_errores",
-      "name": "Crear vuelo con rol PASAJERO -> 403",
-      "method": "POST",
-      "url": "{{ _.base_url }}/api/vuelos",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"origen\": \"Buenos Aires\",\n  \"destino\": \"Roma\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"precio\": 800.00,\n  \"asientosDisponibles\": 50,\n  \"descuento\": 0,\n  \"clase\": \"ECONOMICA\",\n  \"aerolineaId\": {{ _.aerolinea_id }}\n}"
-      },
+      "url": "{{ base_url }}/api/carrito/checkout",
+      "metaSortKey": -96,
       "headers": [
-        { "name": "Content-Type", "value": "application/json" },
-        { "name": "Authorization", "value": "Bearer {{ _.token_pasajero }}" }
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
       ],
-      "description": "Token valido pero sin rol ADMINISTRADOR. Debe devolver 403 'No tiene permisos para realizar esta accion'."
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     },
     {
-      "_id": "req_error_credenciales_invalidas",
+      "_id": "fld_ordenes",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "5 - Ordenes (comprador)",
+      "description": "",
+      "metaSortKey": -50
+    },
+    {
+      "_id": "req_orden_historial",
       "_type": "request",
-      "parentId": "fld_errores",
-      "name": "Login con credenciales invalidas -> 401",
+      "parentId": "fld_ordenes",
+      "name": "GET historial",
+      "description": "Solo las ordenes del usuario del token.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/ordenes",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_orden_obtener",
+      "_type": "request",
+      "parentId": "fld_ordenes",
+      "name": "GET orden por id",
+      "description": "La orden de otro usuario devuelve 404, no 403: contestar 403 confirmaria que ese id existe.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/ordenes/{% response 'body', 'req_carrito_checkout', '$.id', 'never', 60 %}",
+      "metaSortKey": -99,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_orden_cancelar",
+      "_type": "request",
+      "parentId": "fld_ordenes",
+      "name": "POST cancelar orden",
+      "description": "Devuelve los asientos al cupo. Verificarlo con GET cupo por id.",
       "method": "POST",
-      "url": "{{ _.base_url }}/api/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"username\": \"noexiste\",\n  \"password\": \"loquesea\"\n}"
-      },
-      "headers": [{ "name": "Content-Type", "value": "application/json" }],
-      "description": "Debe devolver 401 'Usuario o contraseña incorrectos'."
-    },
-
-    {
-      "_id": "req_vuelos_eliminar",
-      "_type": "request",
-      "parentId": "fld_cleanup",
-      "name": "Eliminar vuelo (ADMIN)",
-      "method": "DELETE",
-      "url": "{{ _.base_url }}/api/vuelos/{{ _.vuelo_id }}",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }],
-      "description": "Correr al final, despues de terminar el flujo de Carrito/Reservas (si borras el vuelo antes, esos pasos van a fallar). Si el vuelo tiene una reserva asociada (como en este flujo, salvo que la hayas cancelado antes) devuelve 400 'No se puede eliminar un vuelo con reservas asociadas'."
-    },
-    {
-      "_id": "req_aerolineas_eliminar",
-      "_type": "request",
-      "parentId": "fld_cleanup",
-      "name": "Eliminar aerolinea (ADMIN)",
-      "method": "DELETE",
-      "url": "{{ _.base_url }}/api/aerolineas/{{ _.aerolinea_id }}",
-      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_admin }}" }],
-      "description": "Correr despues de eliminar el vuelo (una aerolinea con vuelos asociados no deberia poder borrarse)."
+      "url": "{{ base_url }}/api/ordenes/{% response 'body', 'req_carrito_checkout', '$.id', 'never', 60 %}/cancelar",
+      "metaSortKey": -98,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
     }
   ]
 }

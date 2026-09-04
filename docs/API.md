@@ -3,126 +3,136 @@
 Base URL: `http://localhost:8080`
 
 Autenticación por **JWT** (`Authorization: Bearer <token>`), stateless. El token se obtiene
-en `POST /api/auth/login` y expira a las 24hs. No hay cookies de sesión ni estado en el servidor:
-cada request protegido debe mandar el header `Authorization`.
+en `POST /api/auth/login` y expira a las 24hs. No hay cookies de sesión ni estado en el servidor.
+
+## Modelo: marketplace multi-vendedor
+
+Cualquier usuario con rol `VENDEDOR` publica sus propios vuelos (no hay una "aerolínea" fija
+cargada por un admin). Un mismo vuelo se vende en varias clases al mismo tiempo, cada una con
+su propio stock y precio (`Disponibilidad`).
+
+Roles (`Rol`): `COMPRADOR`, `VENDEDOR`, `ADMIN`.
 
 ## Usuarios de prueba (seed inicial, solo si la base está vacía al arrancar)
 
-- Admin: `username: admin`, `password: admin123`
-- No hay pasajero precargado: registrar uno con `POST /api/auth/registro/pasajero`
+| username | password | rol |
+|---|---|---|
+| `admin` | `admin123` | ADMIN |
+| `vendedor` | `vendedor123` | VENDEDOR |
+| `comprador` | `comprador123` | COMPRADOR |
 
-Vuelos de ejemplo ya cargados (aerolínea id 1 "Aerolineas Demo"):
-- Vuelo 1: Buenos Aires → Madrid, ECONOMICA, $950
-- Vuelo 2: Buenos Aires → Miami, EJECUTIVA, $700 (10% descuento)
+Catálogo semilla: 6 aeropuertos (EZE, AEP, COR, MDZ, MAD, MIA), 3 categorías (Cabotaje,
+Regional, Internacional), 3 clases (Economica, Ejecutiva, Primera), 2 vuelos de ejemplo del
+usuario `vendedor` con su `Disponibilidad` cargada.
 
 ## Auth — `/api/auth`
 
-### POST `/api/auth/registro/pasajero` (público)
+### POST `/api/auth/registro` (público)
+Registro genérico — el rol es un campo del body, solo acepta `COMPRADOR` o `VENDEDOR`
+(mandar `ADMIN` acá devuelve `400`).
 ```json
 {
   "username": "mile",
   "mail": "mile@test.com",
   "password": "123456",
   "nombre": "Milena",
-  "apellido": "Giudice"
+  "apellido": "Giudice",
+  "rol": "COMPRADOR"
 }
 ```
 
-### POST `/api/auth/registro/administrador` (requiere token con rol ADMINISTRADOR)
-```json
-{
-  "username": "admin2",
-  "mail": "admin2@test.com",
-  "password": "123456",
-  "nombre": "Ana",
-  "apellido": "Admin",
-  "permisos": ["GESTION_VUELOS"]
-}
-```
+### POST `/api/auth/registro/administrador` (requiere token con rol ADMIN)
+Mismo body, pero fuerza `rol=ADMIN` del lado del servidor sin importar lo que mandes.
 
 ### POST `/api/auth/login` (público)
 ```json
-{ "username": "mile", "password": "123456" }
+{ "username": "comprador", "password": "comprador123" }
 ```
-Devuelve:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "usuario": { "id": 1, "username": "mile", "mail": "mile@test.com", "nombre": "Milena", "apellido": "Giudice", "rol": "PASAJERO" }
-}
-```
-Guardar `token` y mandarlo como `Authorization: Bearer <token>` en los siguientes requests.
+Devuelve `{ "token": "...", "usuario": { id, username, mail, nombre, apellido, rol } }`.
 
 ### POST `/api/auth/logout`
-Requiere token. Sin body. Con JWT stateless es un no-op del lado servidor (devuelve 204):
-no hay invalidación real, el token sigue siendo válido hasta que expira. El "logout" real
-es que el cliente descarte el token.
+Requiere token. No-op del lado servidor (JWT stateless), devuelve `204`.
 
 ### GET `/api/auth/me`
 Requiere token.
 
-## Aerolíneas — `/api/aerolineas`
+## Catálogo — público, sin token
 
-- `GET /api/aerolineas` — público
-- `GET /api/aerolineas/{id}` — público
-- `POST /api/aerolineas` — requiere token con rol ADMINISTRADOR
-  ```json
-  { "nombre": "Aerolineas Argentinas" }
-  ```
-- `PUT /api/aerolineas/{id}` — ADMIN, mismo body que POST
-- `DELETE /api/aerolineas/{id}` — ADMIN
+- `GET /api/categorias`
+- `GET /api/aeropuertos` — la clave es el código IATA (3 letras), no un id numérico
+- `GET /api/clases`
 
 ## Vuelos — `/api/vuelos`
 
-- `GET /api/vuelos?origen=BUE&destino=MAD&clase=ECONOMICA&precioMin=100&precioMax=1000` — público, todos los query params opcionales
-- `GET /api/vuelos/{id}` — público
-- `POST /api/vuelos` — requiere token con rol ADMINISTRADOR
+- `GET /api/vuelos` — público, filtros opcionales combinables: `origen`, `destino`,
+  `categoriaId`, `claseId`, `precioMin`, `precioMax`, `vendedorId`, más `page`/`size` para
+  paginar (respuesta `Page<VueloResponse>`: `content`, `totalElements`, `totalPages`, etc.)
+- `GET /api/vuelos/{id}` — público, incluye `disponibilidades[]` y `hayStock`
+- `POST /api/vuelos` — requiere token con rol `VENDEDOR` o `ADMIN`. El vuelo nace **sin
+  asientos** — el cupo se carga aparte con `Disponibilidad`.
   ```json
   {
-    "origen": "Buenos Aires",
-    "destino": "Madrid",
+    "numeroVuelo": "AR1500",
+    "descripcion": "Buenos Aires a Madrid, directo",
+    "categoriaId": 1,
+    "origenIata": "EZE",
+    "destinoIata": "MAD",
     "fechaSalida": "2026-12-15T10:00:00",
-    "precio": 500.00,
-    "asientosDisponibles": 100,
-    "descuento": 0,
-    "clase": "ECONOMICA",
-    "aerolineaId": 1
+    "fechaLlegada": "2026-12-15T22:30:00",
+    "precio": 1200.0,
+    "descuento": 10
   }
   ```
-  Valores de `clase`: `ECONOMICA`, `EJECUTIVA`, `PRIMERA`. `fechaSalida` debe ser una fecha futura.
-- `PUT /api/vuelos/{id}` — ADMIN, mismo body
-- `DELETE /api/vuelos/{id}` — ADMIN
+- `PUT /api/vuelos/{id}` — solo el vendedor dueño (o un ADMIN) puede modificarlo; con el token
+  de otro vendedor devuelve `400`.
+- `DELETE /api/vuelos/{id}` — **baja lógica** (pasa a `estado=ELIMINADO`, no borra la fila —
+  así no rompe las órdenes que ya lo referencian). Desaparece del listado pero sigue
+  respondiendo por id.
 
-## Carrito — `/api/carrito` (requiere token con rol PASAJERO)
+## Disponibilidades (stock por clase) — `/api/disponibilidades`
+
+- `GET /api/disponibilidades?vueloId={id}` — público, lista los cupos de un vuelo
+- `GET /api/disponibilidades/{id}` — público
+- `POST /api/disponibilidades` — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo. Repetir la
+  misma clase para el mismo vuelo da `400` (hay un `UNIQUE(vuelo_id, clase_id)`).
+  ```json
+  { "vueloId": 1, "claseId": 1, "asientosTotales": 30, "precio": 1200.0 }
+  ```
+- `PUT /api/disponibilidades/{id}` — no deja bajar `asientosTotales` por debajo de lo ya
+  vendido.
+
+## Carrito — `/api/carrito` (requiere token con rol COMPRADOR)
 
 - `GET /api/carrito`
-- `POST /api/carrito/items`
+- `POST /api/carrito/items` — se elige vuelo **y clase** en un solo id (`disponibilidadId`).
+  Pedir más asientos de los que hay disponibles da `400`.
   ```json
-  { "vueloId": 1, "cantidad": 2 }
+  { "disponibilidadId": 1, "cantidad": 2 }
   ```
-- `PUT /api/carrito/items/{itemId}`
-  ```json
-  { "cantidad": 3 }
-  ```
+- `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
-- `POST /api/carrito/checkout` — sin body, genera la reserva
+- `POST /api/carrito/checkout` — sin body. Operación transaccional: valida el stock de todos
+  los ítems, descuenta asientos de cada `Disponibilidad`, crea la `Orden` con el precio
+  **congelado** al momento de la compra, y vacía el carrito. Si algo falla, se revierte entero.
 
-## Reservas — `/api/reservas` (requiere token con rol PASAJERO)
+## Órdenes — `/api/ordenes` (requiere token con rol COMPRADOR)
 
-- `GET /api/reservas` — historial
-- `GET /api/reservas/{id}`
-- `POST /api/reservas/{id}/cancelar` — sin body
+- `GET /api/ordenes` — historial, solo las del usuario del token
+- `GET /api/ordenes/{id}` — la orden de otro usuario da `404` (no `403`, para no confirmar que
+  ese id existe)
+- `POST /api/ordenes/{id}/cancelar` — devuelve los asientos a la `Disponibilidad` correspondiente
 
 ## Flujo típico de prueba
 
-1. `POST /api/auth/login` con `admin` / `admin123` → guardar el `token` → probar endpoints ADMIN (crear vuelos/aerolíneas) mandando `Authorization: Bearer <token>`.
-2. `POST /api/auth/registro/pasajero` con un usuario nuevo, luego `POST /api/auth/login` con ese usuario → guardar su `token` → probar carrito y reservas usando `vueloId` 1 o 2.
-3. `POST /api/carrito/items` → `POST /api/carrito/checkout` → `GET /api/reservas`
+1. `GET /api/categorias`, `/api/aeropuertos`, `/api/clases` para tener los ids del catálogo.
+2. `POST /api/auth/login` con `vendedor`/`vendedor123` → crear un vuelo → cargar su
+   `Disponibilidad` (clase + stock + precio).
+3. `POST /api/auth/login` con `comprador`/`comprador123` → agregar esa `disponibilidadId` al
+   carrito → `POST /api/carrito/checkout` → `GET /api/ordenes`.
 
 ## Colección de Insomnia
 
-`docs/insomnia_collection.json` trae el flujo completo de arriba ya armado en requests
-organizados en carpetas (Auth → Aerolíneas → Vuelos → Carrito → Reservas → Casos de error →
-Cleanup), con los tokens e IDs encadenados automáticamente entre requests vía variables de
-entorno (`token_admin`, `token_pasajero`, `aerolinea_id`, `vuelo_id`, `item_id`, `reserva_id`).
-Importarlo en Insomnia con File → Import.
+`docs/insomnia_collection.json` trae el flujo completo de arriba en carpetas numeradas
+(0-Catálogo, 1-Auth, 2-Vuelos, 3-Disponibilidades, 4-Carrito, 5-Órdenes), con los tokens e ids
+encadenados automáticamente entre requests (tag `{% response %}` de Insomnia — no hace falta
+copiar nada a mano). Importarla con File → Import.

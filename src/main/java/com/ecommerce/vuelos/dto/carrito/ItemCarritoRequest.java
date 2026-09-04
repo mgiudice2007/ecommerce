@@ -14,7 +14,7 @@ import lombok.Setter;
 public class ItemCarritoRequest {
 
     @NotNull
-    private Long vueloId;
+    private Long disponibilidadId;
 
     @NotNull
     @Min(1)

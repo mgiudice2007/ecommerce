@@ -2,8 +2,7 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.dto.auth.LoginRequest;
 import com.ecommerce.vuelos.dto.auth.LoginResponse;
-import com.ecommerce.vuelos.dto.auth.RegisterAdministradorRequest;
-import com.ecommerce.vuelos.dto.auth.RegisterPasajeroRequest;
+import com.ecommerce.vuelos.dto.auth.RegisterRequest;
 import com.ecommerce.vuelos.dto.auth.UsuarioResponse;
 import com.ecommerce.vuelos.security.JwtService;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -28,14 +27,14 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    @PostMapping("/registro/pasajero")
-    public ResponseEntity<UsuarioResponse> registrarPasajero(@Valid @RequestBody RegisterPasajeroRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registrarPasajero(request));
+    @PostMapping("/registro")
+    public ResponseEntity<UsuarioResponse> registrar(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registrar(request));
     }
 
     @PostMapping("/registro/administrador")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioResponse> registrarAdministrador(@Valid @RequestBody RegisterAdministradorRequest request) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioResponse> registrarAdministrador(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registrarAdministrador(request));
     }
 
@@ -45,10 +44,9 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
         UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
-        String rol = principal.isAdministrador() ? "ADMINISTRADOR" : "PASAJERO";
         String token = jwtService.generateToken(principal);
 
-        return ResponseEntity.ok(new LoginResponse(token, AuthService.toResponse(principal.getUsuario(), rol)));
+        return ResponseEntity.ok(new LoginResponse(token, UsuarioResponse.desde(principal.getUsuario())));
     }
 
     @PostMapping("/logout")
@@ -59,7 +57,6 @@ public class AuthController {
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponse> me(@AuthenticationPrincipal UsuarioPrincipal principal) {
-        String rol = principal.isAdministrador() ? "ADMINISTRADOR" : "PASAJERO";
-        return ResponseEntity.ok(AuthService.toResponse(principal.getUsuario(), rol));
+        return ResponseEntity.ok(UsuarioResponse.desde(principal.getUsuario()));
     }
 }

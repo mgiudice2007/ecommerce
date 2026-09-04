@@ -12,34 +12,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
-    void registrarPasajero_devuelveDatosSinPassword() throws Exception {
+    void registrarComprador_devuelveDatosSinPassword() throws Exception {
         Map<String, String> body = Map.of(
                 "username", "juanp",
                 "mail", "juanp@test.com",
                 "password", "123456",
                 "nombre", "Juan",
-                "apellido", "Perez"
+                "apellido", "Perez",
+                "rol", "COMPRADOR"
         );
 
-        mockMvc.perform(post("/api/auth/registro/pasajero")
+        mockMvc.perform(post("/api/auth/registro")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("juanp"))
-                .andExpect(jsonPath("$.rol").value("PASAJERO"))
+                .andExpect(jsonPath("$.rol").value("COMPRADOR"))
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
 
     @Test
-    void registrarPasajero_conUsernameDuplicado_devuelve400() throws Exception {
+    void registrarComprador_conUsernameDuplicado_devuelve400() throws Exception {
         Map<String, String> body = Map.of(
                 "username", "duplicado",
                 "mail", "duplicado1@test.com",
                 "password", "123456",
                 "nombre", "A",
-                "apellido", "B"
+                "apellido", "B",
+                "rol", "COMPRADOR"
         );
-        mockMvc.perform(post("/api/auth/registro/pasajero")
+        mockMvc.perform(post("/api/auth/registro")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated());
@@ -49,9 +51,10 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "mail", "duplicado2@test.com",
                 "password", "123456",
                 "nombre", "A",
-                "apellido", "B"
+                "apellido", "B",
+                "rol", "COMPRADOR"
         );
-        mockMvc.perform(post("/api/auth/registro/pasajero")
+        mockMvc.perform(post("/api/auth/registro")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(repetido)))
                 .andExpect(status().isBadRequest());
@@ -59,7 +62,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void login_conCredencialesValidas_devuelveUsuarioYCreaSesion() throws Exception {
-        registrarYLoguearPasajero("loginok");
+        registrarYLoguearComprador("loginok");
     }
 
     @Test
@@ -83,7 +86,8 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "mail", "nuevoadmin@test.com",
                 "password", "123456",
                 "nombre", "A",
-                "apellido", "B"
+                "apellido", "B",
+                "rol", "ADMIN"
         );
         mockMvc.perform(post("/api/auth/registro/administrador")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,19 +104,20 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "mail", "nuevoadmin2@test.com",
                 "password", "123456",
                 "nombre", "A",
-                "apellido", "B"
+                "apellido", "B",
+                "rol", "ADMIN"
         );
         mockMvc.perform(post("/api/auth/registro/administrador")
                         .header("Authorization", "Bearer " + adminSession)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.rol").value("ADMINISTRADOR"));
+                .andExpect(jsonPath("$.rol").value("ADMIN"));
     }
 
     @Test
     void me_conSesionActiva_devuelveElUsuarioLogueado() throws Exception {
-        String session = registrarYLoguearPasajero("mepasajero");
+        String session = registrarYLoguearComprador("mepasajero");
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + session))
                 .andExpect(status().isOk())
@@ -121,7 +126,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void logout_devuelveNoContent() throws Exception {
-        String token = registrarYLoguearPasajero("logoutuser");
+        String token = registrarYLoguearComprador("logoutuser");
 
         mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
