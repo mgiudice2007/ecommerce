@@ -32,7 +32,6 @@ public class VueloResponse {
     private Integer duracionMinutos;
 
     private BigDecimal precio;
-    private BigDecimal descuento;
     private BigDecimal precioConDescuento;
 
     private boolean hayStock;
@@ -64,7 +63,6 @@ public class VueloResponse {
                 .fechaLlegada(vuelo.getFechaLlegada())
                 .duracionMinutos(vuelo.getDuracionMinutos())
                 .precio(vuelo.getPrecio())
-                .descuento(vuelo.getDescuento())
                 .precioConDescuento(vuelo.getPrecioConDescuento())
                 .hayStock(vuelo.isDisponible())
                 .estado(vuelo.getEstado())

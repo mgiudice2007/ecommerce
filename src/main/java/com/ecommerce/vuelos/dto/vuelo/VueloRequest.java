@@ -40,8 +40,4 @@ public class VueloRequest {
     @NotNull
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal precio;
-
-    @DecimalMin(value = "0.0")
-    @DecimalMax(value = "100.0")
-    private BigDecimal descuento;
 }

@@ -79,15 +79,54 @@ Requiere token.
     "destinoIata": "MAD",
     "fechaSalida": "2026-12-15T10:00:00",
     "fechaLlegada": "2026-12-15T22:30:00",
-    "precio": 1200.0,
-    "descuento": 10
+    "precio": 1200.0
   }
   ```
+  `precioConDescuento` en la respuesta ya no viene de un campo fijo en el vuelo: se calcula
+  solo, buscando si hay un `Descuento` vigente hoy (ver más abajo). Sin descuento vigente,
+  `precioConDescuento` = `precio`.
 - `PUT /api/vuelos/{id}` — solo el vendedor dueño (o un ADMIN) puede modificarlo; con el token
   de otro vendedor devuelve `400`.
 - `DELETE /api/vuelos/{id}` — **baja lógica** (pasa a `estado=ELIMINADO`, no borra la fila —
   así no rompe las órdenes que ya lo referencian). Desaparece del listado pero sigue
   respondiendo por id.
+
+## Descuentos (promociones por vuelo) — `/api/descuentos`
+
+El precio final de un vuelo (y de cada `Disponibilidad`, por clase) depende del `Descuento`
+**vigente hoy** para ese vuelo, si hay alguno — no de un campo fijo. "Vigente" = `activo=true`
+y la fecha de hoy está entre `fechaDesde` y `fechaHasta`.
+
+- `GET /api/descuentos?vueloId={id}` — público, lista todos los descuentos del vuelo (vigentes o no)
+- `GET /api/descuentos/{id}` — público
+- `POST /api/descuentos` — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo.
+  ```json
+  {
+    "vueloId": 1,
+    "tipoDescuento": "PORCENTAJE",
+    "valor": 20,
+    "fechaDesde": "2026-09-01",
+    "fechaHasta": "2026-09-30",
+    "activo": true
+  }
+  ```
+  `tipoDescuento`: `PORCENTAJE` (0-100, se resta como %) o `MONTO_FIJO` (se resta directo del
+  precio). No se puede crear un descuento `activo=true` cuyo rango de fechas se superponga con
+  otro descuento activo del mismo vuelo → `400` (así nunca hay ambigüedad sobre cuál aplica).
+- `PUT /api/descuentos/{id}` — mismo body y mismas validaciones.
+
+## Fotos — `/api/fotos`
+
+El binario de la imagen se guarda en la base (`LONGBLOB`), subido como `multipart/form-data`.
+
+- `GET /api/fotos?vueloId={id}` — público, solo metadata (`id`, `nombreArchivo`, `orden`,
+  `tamanioBytes`) — **no** trae el binario, para no inflar la respuesta.
+- `GET /api/fotos/{id}/contenido` — público, devuelve el binario con el `Content-Type` según la
+  extensión del archivo (`.jpg`/`.jpeg`/`.png`/`.gif`).
+- `POST /api/fotos` (multipart) — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo. Campos:
+  `vueloId`, `archivo` (el binario), `orden` (opcional — si no viene, se calcula solo como la
+  siguiente posición). Solo acepta archivos con `Content-Type` que empiece con `image/`.
+- `DELETE /api/fotos/{id}` — dueño del vuelo o ADMIN.
 
 ## Disponibilidades (stock por clase) — `/api/disponibilidades`
 
@@ -133,6 +172,6 @@ Requiere token.
 ## Colección de Insomnia
 
 `docs/insomnia_collection.json` trae el flujo completo de arriba en carpetas numeradas
-(0-Catálogo, 1-Auth, 2-Vuelos, 3-Disponibilidades, 4-Carrito, 5-Órdenes), con los tokens e ids
-encadenados automáticamente entre requests (tag `{% response %}` de Insomnia — no hace falta
-copiar nada a mano). Importarla con File → Import.
+(0-Catálogo, 1-Auth, 2-Vuelos, 3-Disponibilidades, 4-Descuentos, 5-Fotos, 6-Carrito, 7-Órdenes),
+con los tokens e ids encadenados automáticamente entre requests (tag `{% response %}` de
+Insomnia — no hace falta copiar nada a mano). Importarla con File → Import.

@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,14 +59,14 @@ public class Vuelo {
     @Column(nullable = false)
     private BigDecimal precio;
 
-    /** Porcentaje de descuento, de 0 a 100. Pasa a la entidad Descuento en la fase 4. */
-    @Column(nullable = false)
-    @Builder.Default
-    private BigDecimal descuento = BigDecimal.ZERO;
-
     @OneToMany(mappedBy = "vuelo", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Disponibilidad> disponibilidades = new ArrayList<>();
+
+    /** Promociones de este vuelo. El precio usa la que este vigente hoy, si hay alguna. */
+    @OneToMany(mappedBy = "vuelo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Descuento> descuentos = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -78,11 +79,34 @@ public class Vuelo {
     @Column
     private LocalDateTime fechaBaja;
 
+    /** El descuento activo cuya vigencia cubre hoy, si hay alguno. */
+    @Transient
+    public Descuento getDescuentoVigente() {
+        LocalDate hoy = LocalDate.now();
+        return descuentos.stream()
+                .filter(d -> Boolean.TRUE.equals(d.getActivo()))
+                .filter(d -> !hoy.isBefore(d.getFechaDesde()) && !hoy.isAfter(d.getFechaHasta()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** Aplica el descuento vigente (si hay) a un precio base. Nunca da negativo. */
+    @Transient
+    public BigDecimal aplicarDescuento(BigDecimal precioBase) {
+        Descuento vigente = getDescuentoVigente();
+        if (vigente == null) {
+            return precioBase;
+        }
+        BigDecimal resultado = vigente.getTipoDescuento() == TipoDescuento.PORCENTAJE
+                ? precioBase.multiply(BigDecimal.ONE.subtract(vigente.getValor().divide(BigDecimal.valueOf(100))))
+                : precioBase.subtract(vigente.getValor());
+        return resultado.max(BigDecimal.ZERO);
+    }
+
     /** Derivado: se calcula, no se persiste. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
-        BigDecimal factor = BigDecimal.ONE.subtract(descuento.divide(BigDecimal.valueOf(100)));
-        return precio.multiply(factor);
+        return aplicarDescuento(precio);
     }
 
     /** Derivado: la diferencia entre salida y llegada. */

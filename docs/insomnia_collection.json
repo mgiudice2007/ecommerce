@@ -9,7 +9,7 @@
       "_type": "workspace",
       "parentId": null,
       "name": "TPO Vuelos - Backend",
-      "description": "Entrega 1: backend + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 5.",
+      "description": "Entrega 1: backend + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 7.",
       "scope": "collection"
     },
     {
@@ -361,7 +361,7 @@
       "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, directo\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"fechaLlegada\": \"2026-12-15T22:30:00\",\n  \"precio\": 1200.0,\n  \"descuento\": 10\n}"
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, directo\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T10:00:00\",\n  \"fechaLlegada\": \"2026-12-15T22:30:00\",\n  \"precio\": 1200.0\n}"
       }
     },
     {
@@ -406,7 +406,7 @@
       "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, DEMORADO\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0,\n  \"descuento\": 10\n}"
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, DEMORADO\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0\n}"
       }
     },
     {
@@ -535,10 +535,218 @@
       }
     },
     {
+      "_id": "fld_descuentos",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "4 - Descuentos (vendedor)",
+      "description": "Promociones por vuelo. El precio final (precioConDescuento, en Vuelos y en Disponibilidades) usa el descuento activo cuya vigencia cubre hoy, si hay alguno.",
+      "metaSortKey": -68
+    },
+    {
+      "_id": "req_descuento_crear",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "POST descuento (20% vigente)",
+      "description": "tipoDescuento: PORCENTAJE (0-100) o MONTO_FIJO (se resta directo). No puede haber dos descuentos activos del mismo vuelo con fechas superpuestas -> 400.",
+      "method": "POST",
+      "url": "{{ base_url }}/api/descuentos",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": \"{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}\",\n  \"tipoDescuento\": \"PORCENTAJE\",\n  \"valor\": 20,\n  \"fechaDesde\": \"2026-09-01\",\n  \"fechaHasta\": \"2026-12-31\",\n  \"activo\": true\n}"
+      }
+    },
+    {
+      "_id": "req_descuento_listar",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "GET descuentos del vuelo",
+      "description": "Publico. Fijate el campo vigente: true en el que acabas de crear.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/descuentos",
+      "metaSortKey": -99,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "vueloId",
+          "value": "{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_vuelo_con_descuento",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "GET vuelo (ver precioConDescuento aplicado)",
+      "description": "Mismo GET vuelo por id de la carpeta 2, pero corriendolo despues del descuento: precioConDescuento ahora tiene que ser un 20% menor que precio.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -98,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_descuento_solapado",
+      "_type": "request",
+      "parentId": "fld_descuentos",
+      "name": "POST descuento solapado (400)",
+      "description": "Mismo vuelo, mismas fechas: choca con el que ya esta activo. Debe dar 400.",
+      "method": "POST",
+      "url": "{{ base_url }}/api/descuentos",
+      "metaSortKey": -97,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"vueloId\": \"{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}\",\n  \"tipoDescuento\": \"PORCENTAJE\",\n  \"valor\": 5,\n  \"fechaDesde\": \"2026-09-10\",\n  \"fechaHasta\": \"2026-09-20\",\n  \"activo\": true\n}"
+      }
+    },
+    {
+      "_id": "fld_fotos",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "5 - Fotos (vendedor)",
+      "description": "El binario se guarda en la base (LONGBLOB), subido por multipart/form-data.",
+      "metaSortKey": -66
+    },
+    {
+      "_id": "req_foto_subir",
+      "_type": "request",
+      "parentId": "fld_fotos",
+      "name": "POST subir foto",
+      "description": "En el campo 'archivo' toca elegir un archivo de imagen a mano (Insomnia no guarda el binario en el export). Solo acepta Content-Type que empiece con image/.",
+      "method": "POST",
+      "url": "{{ base_url }}/api/fotos",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "vueloId",
+            "value": "{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+            "disabled": false
+          },
+          {
+            "name": "archivo",
+            "type": "file",
+            "fileName": "",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "_id": "req_foto_listar",
+      "_type": "request",
+      "parentId": "fld_fotos",
+      "name": "GET fotos del vuelo",
+      "description": "Publico. Solo metadata (nombreArchivo, orden, tamanioBytes) - sin el binario.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/fotos",
+      "metaSortKey": -99,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "vueloId",
+          "value": "{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+          "disabled": false
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_foto_contenido",
+      "_type": "request",
+      "parentId": "fld_fotos",
+      "name": "GET contenido de la foto",
+      "description": "Publico. Devuelve el binario con el Content-Type segun la extension del archivo. En Insomnia se puede previsualizar en la pestaña Preview.",
+      "method": "GET",
+      "url": "{{ base_url }}/api/fotos/{% response 'body', 'req_foto_subir', '$.id', 'never', 60 %}/contenido",
+      "metaSortKey": -98,
+      "headers": [],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_foto_eliminar",
+      "_type": "request",
+      "parentId": "fld_fotos",
+      "name": "DELETE foto",
+      "description": "Dueno del vuelo o ADMIN.",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/fotos/{% response 'body', 'req_foto_subir', '$.id', 'never', 60 %}",
+      "metaSortKey": -97,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
       "_id": "fld_carrito",
       "_type": "request_group",
       "parentId": "wrk_vuelos_tpo",
-      "name": "4 - Carrito y checkout (comprador)",
+      "name": "6 - Carrito y checkout (comprador)",
       "description": "Solo COMPRADOR. El checkout es la operacion transaccional del TPO.",
       "metaSortKey": -60
     },
@@ -667,7 +875,7 @@
       "_id": "fld_ordenes",
       "_type": "request_group",
       "parentId": "wrk_vuelos_tpo",
-      "name": "5 - Ordenes (comprador)",
+      "name": "7 - Ordenes (comprador)",
       "description": "",
       "metaSortKey": -50
     },

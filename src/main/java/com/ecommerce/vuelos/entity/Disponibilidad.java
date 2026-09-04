@@ -57,14 +57,10 @@ public class Disponibilidad {
     @Column(nullable = false)
     private BigDecimal precio;
 
-    /** Derivado: el precio de esta clase con el descuento del vuelo aplicado. */
+    /** Derivado: el precio de esta clase con el descuento vigente del vuelo aplicado. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
-        BigDecimal descuento = vuelo != null && vuelo.getDescuento() != null
-                ? vuelo.getDescuento()
-                : BigDecimal.ZERO;
-        BigDecimal factor = BigDecimal.ONE.subtract(descuento.divide(BigDecimal.valueOf(100)));
-        return precio.multiply(factor);
+        return vuelo != null ? vuelo.aplicarDescuento(precio) : precio;
     }
 
     @Transient

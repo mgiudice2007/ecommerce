@@ -73,7 +73,6 @@ public class VueloServiceImpl implements VueloService {
                 .fechaSalida(request.getFechaSalida())
                 .fechaLlegada(request.getFechaLlegada())
                 .precio(request.getPrecio())
-                .descuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO)
                 .estado(EstadoVuelo.ACTIVO)
                 .fechaAlta(LocalDateTime.now())
                 .build();
@@ -96,7 +95,6 @@ public class VueloServiceImpl implements VueloService {
         vuelo.setFechaSalida(request.getFechaSalida());
         vuelo.setFechaLlegada(request.getFechaLlegada());
         vuelo.setPrecio(request.getPrecio());
-        vuelo.setDescuento(request.getDescuento() != null ? request.getDescuento() : BigDecimal.ZERO);
 
         validarFechas(vuelo);
         return VueloResponse.desde(vueloRepository.save(vuelo));
