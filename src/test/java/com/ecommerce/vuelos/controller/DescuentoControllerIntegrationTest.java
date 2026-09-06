@@ -29,7 +29,6 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         return body;
     }
 
-    /** Una ventana que incluye hoy, asi el descuento queda vigente. */
     private Map<String, Object> vigenteHoy(Long vueloId, String tipo, Object valor) {
         return body(vueloId, tipo, valor, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
     }
@@ -76,7 +75,6 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         String vendedor = registrarYLoguearVendedor("vdtoviejo");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
-        // Ventana que ya paso: se guarda igual, pero no rige.
         crear(vendedor, body(vueloId, "PORCENTAJE", 50,
                 LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(1)), 201);
 
@@ -85,7 +83,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.precioConDescuento").value(1000.0))
                 .andExpect(jsonPath("$.descuentoVigente").doesNotExist());
 
-        // pero sigue existiendo en el historial del vuelo
+
         mockMvc.perform(get("/api/descuentos").param("vueloId", vueloId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -100,11 +98,11 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         crear(vendedor, body(vueloId, "PORCENTAJE", 10,
                 LocalDate.now(), LocalDate.now().plusDays(30)), 201);
 
-        // arranca dentro de la ventana anterior
+
         crear(vendedor, body(vueloId, "PORCENTAJE", 20,
                 LocalDate.now().plusDays(15), LocalDate.now().plusDays(45)), 400);
 
-        // pero uno que arranca despues entra sin problema
+
         crear(vendedor, body(vueloId, "PORCENTAJE", 20,
                 LocalDate.now().plusDays(31), LocalDate.now().plusDays(45)), 201);
     }
@@ -158,7 +156,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         Long descuentoId = objectMapper.readTree(creado.getResponse().getContentAsString())
                 .get("id").asLong();
 
-        // sin token: es de lectura publica, como el catalogo
+
         mockMvc.perform(get("/api/descuentos/" + descuentoId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(descuentoId))
@@ -180,7 +178,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(jsonPath("$.precioConDescuento").value(800.0));
 
-        // de 20% a un monto fijo de 350
+
         Map<String, Object> aMontoFijo = vigenteHoy(vueloId, "MONTO_FIJO", 350);
         mockMvc.perform(put("/api/descuentos/" + descuentoId)
                         .header("Authorization", "Bearer " + vendedor)
@@ -193,7 +191,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(jsonPath("$.precioConDescuento").value(650.0));
 
-        // editar el de otro vendedor no se puede
+
         String intruso = registrarYLoguearVendedor("vdtoeditaajeno");
         mockMvc.perform(put("/api/descuentos/" + descuentoId)
                         .header("Authorization", "Bearer " + intruso)
@@ -249,13 +247,12 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         Long ordenId = objectMapper.readTree(checkout.getResponse().getContentAsString())
                 .get("id").asLong();
 
-        // El vendedor saca el descuento despues de la compra...
+
         mockMvc.perform(delete("/api/descuentos/" + descuentoId)
                         .header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isNoContent());
 
-        // ...y la orden ya emitida no se entera: sigue diciendo lo que se pago
-        // y lo que se ahorro ese dia.
+
         mockMvc.perform(get("/api/ordenes/" + ordenId)
                         .header("Authorization", "Bearer " + comprador))
                 .andExpect(status().isOk())

@@ -5,7 +5,7 @@ import com.ecommerce.vuelos.dto.vuelo.FotoResponse;
 import com.ecommerce.vuelos.entity.Foto;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.FotoService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,15 +26,12 @@ import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/fotos")
-@RequiredArgsConstructor
 public class FotoController {
 
-    private final FotoService fotoService;
+    @Autowired
+    private FotoService fotoService;
 
-    /**
-     * Carga una foto del vuelo. No es JSON: es multipart/form-data, con el
-     * archivo en la parte "file" y el resto de los campos como partes sueltas.
-     */
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
     public ResponseEntity<FotoResponse> subir(@ModelAttribute FotoRequest request,
@@ -44,16 +41,12 @@ public class FotoController {
                 .body(fotoService.subir(request, file, principal));
     }
 
-    /** Solo los datos de las fotos, sin los binarios. */
+
     @GetMapping
     public ResponseEntity<List<FotoResponse>> listar(@RequestParam Long vueloId) {
         return ResponseEntity.ok(fotoService.listarPorVuelo(vueloId));
     }
 
-    /**
-     * Devuelve la imagen en crudo, con su Content-Type, para que el cliente la
-     * pueda mostrar directo en vez de tener que decodificar un Base64.
-     */
     @GetMapping("/{id}")
     public ResponseEntity<byte[]> ver(@PathVariable Long id) {
         Foto foto = fotoService.obtenerBinario(id);
@@ -70,11 +63,7 @@ public class FotoController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * La entidad guarda el nombre y los bytes, no el content type, asi que se
-     * deduce de la extension. Es la misma forma de la entidad Product del
-     * material de la catedra.
-     */
+
     private MediaType tipoSegunExtension(String nombreArchivo) {
         String nombre = nombreArchivo == null ? "" : nombreArchivo.toLowerCase(Locale.ROOT);
         if (nombre.endsWith(".png")) {

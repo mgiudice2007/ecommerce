@@ -5,7 +5,7 @@ import com.ecommerce.vuelos.dto.vuelo.DisponibilidadResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.DisponibilidadService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 public class DisponibilidadController {
 
-    private final DisponibilidadService disponibilidadService;
+    @Autowired
+    private DisponibilidadService disponibilidadService;
 
     @GetMapping("/api/disponibilidades")
     public ResponseEntity<List<DisponibilidadResponse>> listar(@RequestParam Long vueloId) {

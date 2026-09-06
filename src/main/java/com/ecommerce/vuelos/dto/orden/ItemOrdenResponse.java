@@ -24,7 +24,6 @@ public class ItemOrdenResponse {
     private Integer cantidad;
     private BigDecimal precioUnitario;
 
-    /** Lo que se ahorro por asiento, congelado al momento de la compra. */
     private BigDecimal descuentoAplicado;
     private BigDecimal subtotal;
 

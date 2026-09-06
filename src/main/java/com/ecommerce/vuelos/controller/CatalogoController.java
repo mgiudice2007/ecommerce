@@ -4,23 +4,18 @@ import com.ecommerce.vuelos.dto.catalogo.AeropuertoResponse;
 import com.ecommerce.vuelos.dto.catalogo.CategoriaResponse;
 import com.ecommerce.vuelos.dto.catalogo.ClaseResponse;
 import com.ecommerce.vuelos.service.CatalogoService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Las tres tablas de consulta, todas publicas y de solo lectura. Sin estos
- * endpoints no hay forma de saber que categoriaId, que codigo IATA o que
- * claseId mandar al publicar un vuelo.
- */
 @RestController
-@RequiredArgsConstructor
 public class CatalogoController {
 
-    private final CatalogoService catalogoService;
+    @Autowired
+    private CatalogoService catalogoService;
 
     @GetMapping("/api/categorias")
     public ResponseEntity<List<CategoriaResponse>> listarCategorias() {

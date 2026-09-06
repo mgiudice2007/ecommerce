@@ -34,24 +34,17 @@ public class VueloResponse {
 
     private BigDecimal precio;
 
-    /** El descuento que rige hoy, o null si el vuelo no tiene ninguno vigente. */
     private DescuentoResponse descuentoVigente;
     private BigDecimal precioConDescuento;
 
     private boolean hayStock;
     private EstadoVuelo estado;
 
-    /** Los cupos por clase, con su precio. */
     private List<DisponibilidadResponse> disponibilidades;
 
     private Long vendedorId;
     private String vendedorUsername;
 
-    /**
-     * Aplana el vuelo y sus relaciones. Aca se ve para que sirve el DTO: en vez
-     * de mandar el Aeropuerto, la Categoria y el Usuario enteros, viajan solo los
-     * campos que la pantalla necesita.
-     */
     public static VueloResponse desde(Vuelo vuelo) {
         return VueloResponse.builder()
                 .id(vuelo.getId())

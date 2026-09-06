@@ -19,7 +19,7 @@ import lombok.Setter;
 @Builder
 public class Aeropuerto {
 
-    /** Clave natural: el codigo IATA de tres letras (EZE, MAD, MIA). */
+    /** Clave: el codigo IATA de tres letras (EZE, MAD, MIA). */
     @Id
     @Column(length = 3)
     private String codigoIata;

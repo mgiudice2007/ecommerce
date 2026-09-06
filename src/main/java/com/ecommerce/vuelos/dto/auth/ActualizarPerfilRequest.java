@@ -10,10 +10,6 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
-/**
- * Los datos que el usuario puede cambiar de si mismo. No incluye username,
- * mail, password ni rol: eso no se toca por aca.
- */
 @Getter
 @Setter
 @NoArgsConstructor

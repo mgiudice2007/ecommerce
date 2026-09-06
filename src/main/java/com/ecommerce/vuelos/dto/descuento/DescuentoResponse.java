@@ -22,7 +22,6 @@ public class DescuentoResponse {
     private LocalDate fechaHasta;
     private Boolean activo;
 
-    /** Calculado al momento de responder: si hoy cae dentro de la ventana. */
     private boolean vigente;
 
     public static DescuentoResponse desde(Descuento descuento) {

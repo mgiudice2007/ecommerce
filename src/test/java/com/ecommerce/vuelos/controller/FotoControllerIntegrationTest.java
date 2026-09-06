@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
-    /** Un PNG de 1x1 valido de verdad, para que el upload no sea un string cualquiera. */
+
     private static final byte[] PNG_1X1 = Base64.getDecoder().decode(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
 
@@ -143,7 +143,6 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        // la foto se borra fisicamente: ninguna orden la referencia
         mockMvc.perform(get("/api/fotos/" + fotoId))
                 .andExpect(status().isNotFound());
     }

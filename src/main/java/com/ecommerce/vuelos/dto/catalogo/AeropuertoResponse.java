@@ -10,7 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class AeropuertoResponse {
 
-    /** El codigo IATA es la clave primaria: es el id que se manda al publicar un vuelo. */
     private String codigoIata;
     private String nombre;
     private String ciudad;

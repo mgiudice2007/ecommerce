@@ -5,7 +5,7 @@ import com.ecommerce.vuelos.dto.descuento.DescuentoResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.DescuentoService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,10 +25,10 @@ import java.util.List;
 /** Gestion de descuentos sobre vuelos individuales. */
 @RestController
 @RequestMapping("/api/descuentos")
-@RequiredArgsConstructor
 public class DescuentoController {
 
-    private final DescuentoService descuentoService;
+    @Autowired
+    private DescuentoService descuentoService;
 
     @GetMapping
     public ResponseEntity<List<DescuentoResponse>> listar(@RequestParam Long vueloId) {

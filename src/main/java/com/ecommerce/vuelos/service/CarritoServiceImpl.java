@@ -16,7 +16,7 @@ import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.CarritoRepository;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.OrdenRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,12 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class CarritoServiceImpl implements CarritoService {
 
-    private final CarritoRepository carritoRepository;
-    private final DisponibilidadRepository disponibilidadRepository;
-    private final OrdenRepository ordenRepository;
+    @Autowired
+    private CarritoRepository carritoRepository;
+    @Autowired
+    private DisponibilidadRepository disponibilidadRepository;
+    @Autowired
+    private OrdenRepository ordenRepository;
 
     @Override
     public CarritoResponse obtenerCarrito(Long usuarioId) {
@@ -92,11 +94,6 @@ public class CarritoServiceImpl implements CarritoService {
         return CarritoResponse.desde(carrito);
     }
 
-    /**
-     * La operacion transaccional: descuenta stock, crea la orden y vacia el
-     * carrito. Si algo falla en el medio, @Transactional revierte los tres
-     * pasos y no queda una orden a medio hacer.
-     */
     @Override
     @Transactional
     public OrdenResponse checkout(Long usuarioId) {
@@ -126,9 +123,7 @@ public class CarritoServiceImpl implements CarritoService {
                     disponibilidad.getAsientosDisponibles() - item.getCantidad());
             disponibilidadRepository.save(disponibilidad);
 
-            // El precio y el descuento se congelan aca: si manana el vendedor
-            // cambia cualquiera de los dos, la orden ya emitida sigue valiendo
-            // lo que el comprador pago y muestra lo que se ahorro ese dia.
+
             itemsOrden.add(ItemOrden.builder()
                     .disponibilidad(disponibilidad)
                     .cantidad(item.getCantidad())

@@ -10,7 +10,7 @@ import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.DescuentoRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +18,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class DescuentoServiceImpl implements DescuentoService {
 
     private static final BigDecimal CIEN = BigDecimal.valueOf(100);
 
-    private final DescuentoRepository descuentoRepository;
-    private final VueloRepository vueloRepository;
+    @Autowired
+    private DescuentoRepository descuentoRepository;
+    @Autowired
+    private VueloRepository vueloRepository;
 
     @Override
     public List<DescuentoResponse> listarPorVuelo(Long vueloId) {
@@ -38,6 +39,10 @@ public class DescuentoServiceImpl implements DescuentoService {
         return DescuentoResponse.desde(buscarPorId(id));
     }
 
+     // control 1: ¿existe el vuelo?
+     // control 2: ¿sos el dueño (o admin)?
+     // control 3: ¿tienen sentido las fechas, el porcentaje, el monto fijo?
+     // control 4: ¿se pisa con otro descuento activo de este vuelo?
     @Override
     @Transactional
     public DescuentoResponse crear(DescuentoRequest request, UsuarioPrincipal principal) {
@@ -59,8 +64,6 @@ public class DescuentoServiceImpl implements DescuentoService {
 
         Descuento guardado = descuentoRepository.save(descuento);
 
-        // El otro lado de la relacion tambien tiene que quedar al dia, si no
-        // getPrecioConDescuento() sigue viendo la lista vieja en esta transaccion.
         vuelo.getDescuentos().add(guardado);
 
         return DescuentoResponse.desde(guardado);
@@ -92,9 +95,12 @@ public class DescuentoServiceImpl implements DescuentoService {
         Descuento descuento = buscarPorId(id);
         validarPropiedad(descuento.getVuelo(), principal);
         descuento.getVuelo().getDescuentos().remove(descuento);
-        descuentoRepository.delete(descuento);
+        descuentoRepository.delete(descuento); // lo borra de la base de verdad
     }
 
+    //¿La fecha de fin es posterior a la de inicio?
+    //Si es porcentaje, ¿no pasa el 100%?
+    //Si es monto fijo, ¿no es más grande que el precio del vuelo?
     private void validarRequest(DescuentoRequest request, Vuelo vuelo) {
         if (request.getFechaHasta().isBefore(request.getFechaDesde())) {
             throw new BadRequestException("La fecha de fin no puede ser anterior a la de inicio");
@@ -112,10 +118,7 @@ public class DescuentoServiceImpl implements DescuentoService {
         }
     }
 
-    /**
-     * No se permiten dos descuentos que compartan dias sobre el mismo vuelo:
-     * si hubiera dos vigentes a la vez, no habria regla para decidir cual gana.
-     */
+    /** No se permiten dos descuentos que compartan dias sobre el mismo vuelo. */
     private void validarSinSolapamiento(DescuentoRequest request, Vuelo vuelo, Long idQueSeEdita) {
         boolean hayChoque = descuentoRepository.findByVueloId(vuelo.getId()).stream()
                 .filter(d -> !d.getId().equals(idQueSeEdita))

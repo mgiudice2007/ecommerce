@@ -6,7 +6,6 @@ import com.ecommerce.vuelos.security.UsuarioPrincipal;
 
 import java.util.List;
 
-/** La "gestion de descuentos sobre productos individuales" del enunciado. */
 public interface DescuentoService {
 
     List<DescuentoResponse> listarPorVuelo(Long vueloId);

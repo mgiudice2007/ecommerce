@@ -19,10 +19,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * El cupo de un vuelo para una clase concreta. Es la entidad asociativa entre
- * Vuelo y Clase, y es donde vive el stock.
- */
 @Entity
 @Table(name = "disponibilidades",
         uniqueConstraints = @UniqueConstraint(
@@ -55,25 +51,23 @@ public class Disponibilidad {
 
     /** Precio de venta de esta clase. Es el que se cobra, no el precio base del vuelo. */
     @Column(nullable = false)
-    private BigDecimal precio;
+    private BigDecimal precio; 
 
-    /**
-     * Derivado: el precio de esta clase con el descuento vigente del vuelo.
-     * El descuento se carga sobre el vuelo pero se aplica al precio de cada
-     * clase, que es el que se cobra de verdad.
-     */
+    /** Tiene 3 métodos que no se guardan en la base: se calculan al vuelo, no son una columna. */
+    /** "si el vuelo tiene un descuento vigente ahora mismo se lo aplica al precio. Si no tiene, el precio es el normal" */
     @Transient
     public BigDecimal getPrecioConDescuento() {
         Descuento vigente = vuelo != null ? vuelo.getDescuentoVigente() : null;
         return vigente == null ? precio : vigente.aplicarA(precio);
     }
 
-    /** Cuanto se ahorra por asiento. Es lo que la orden guarda como descuento aplicado. */
+    /** precio original menos precio con descuento = cuánto te ahorrás por asiento. */
     @Transient
     public BigDecimal getDescuentoUnitario() {
         return precio.subtract(getPrecioConDescuento());
     }
 
+   /** ¿queda algo para vender? */
     @Transient
     public boolean hayStock() {
         return asientosDisponibles != null && asientosDisponibles > 0;

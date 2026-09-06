@@ -15,14 +15,8 @@ public class FotoResponse {
     private String nombreArchivo;
     private Integer orden;
 
-    /** Tamano en bytes, para que el cliente sepa que va a descargar. */
     private Integer tamano;
 
-    /**
-     * A proposito no expone el campo datos. Si el binario viajara aca, un
-     * listado de vuelos con fotos pesaria megabytes; el que quiere la imagen
-     * la pide por GET /api/fotos/{id}.
-     */
     public static FotoResponse desde(Foto foto) {
         return FotoResponse.builder()
                 .id(foto.getId())

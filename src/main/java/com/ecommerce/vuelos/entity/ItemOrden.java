@@ -33,15 +33,9 @@ public class ItemOrden {
     @Column(nullable = false)
     private Integer cantidad;
 
-    /** Precio unitario ya con descuento aplicado, tomado al momento de la orden. */
     @Column(nullable = false)
     private BigDecimal precioUnitario;
 
-    /**
-     * Cuanto se descontro por asiento. Guardarlo aparte no es redundante:
-     * con solo el precio final no habria forma de saber si hubo descuento
-     * ni de cuanto fue, porque el descuento del vuelo puede cambiar despues.
-     */
     @Column(nullable = false)
     @Builder.Default
     private BigDecimal descuentoAplicado = BigDecimal.ZERO;

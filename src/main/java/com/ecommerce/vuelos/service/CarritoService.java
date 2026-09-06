@@ -14,6 +14,5 @@ public interface CarritoService {
 
     CarritoResponse eliminarItem(Long usuarioId, Long itemId);
 
-    /** Convierte el carrito en una orden. Es la operacion transaccional del TPO. */
     OrdenResponse checkout(Long usuarioId);
 }

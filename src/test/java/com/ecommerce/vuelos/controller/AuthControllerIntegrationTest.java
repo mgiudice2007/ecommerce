@@ -33,8 +33,6 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void registro_noExigeDniNiFechaDeNacimiento() throws Exception {
-        // La consigna dice que el registro pide usuario, mail, contrasena, nombre
-        // y apellido. Los datos de pasajero se completan despues.
         String token = registrarYLoguearComprador("csindni");
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
@@ -66,7 +64,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.fechaNacimiento").value("1995-06-15"))
                 .andExpect(jsonPath("$.password").doesNotExist());
 
-        // y queda guardado de verdad
+
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.dni").value("30111222"));
     }
@@ -119,7 +117,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());
 
-        // pero el alta y el login siguen siendo publicos
+
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
@@ -227,8 +225,6 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
-        // Con JWT stateless el logout es un no-op del lado servidor: el token
-        // sigue siendo valido hasta que expira, no hay invalidacion server-side.
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }

@@ -65,7 +65,7 @@ public abstract class IntegrationTestSupport {
         return login(username, "123456");
     }
 
-    /** El seeder deja siempre una categoria "Cabotaje" y los aeropuertos EZE/MAD/AEP/COR. */
+
     protected Long categoriaPorDefecto() throws Exception {
         MvcResult r = mockMvc.perform(get("/api/vuelos"))
                 .andExpect(status().isOk())
@@ -83,7 +83,7 @@ public abstract class IntegrationTestSupport {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
     }
 
-    /** Publica un vuelo. Devuelve el id del vuelo, sin cupos todavia. */
+
     protected Long crearVuelo(String vendedorToken, String origenIata, String destinoIata,
                               double precio) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -105,7 +105,7 @@ public abstract class IntegrationTestSupport {
         return idDe(result);
     }
 
-    /** Carga el cupo de una clase para un vuelo. Devuelve el id de la disponibilidad. */
+
     protected Long crearDisponibilidad(String vendedorToken, Long vueloId, Long claseId,
                                        int asientos, double precio) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -123,19 +123,19 @@ public abstract class IntegrationTestSupport {
         return idDe(result);
     }
 
-    /** Atajo: publica un vuelo con un unico cupo en Economica. Devuelve la disponibilidad. */
+
     protected Long crearVueloConCupo(String vendedorToken, String origenIata, String destinoIata,
                                      double precio, int asientos) throws Exception {
         Long vueloId = crearVuelo(vendedorToken, origenIata, destinoIata, precio);
         return crearDisponibilidad(vendedorToken, vueloId, clasePorDefecto(), asientos, precio);
     }
 
-    /** El seeder deja siempre las clases Economica, Ejecutiva y Primera. */
+
     protected Long clasePorDefecto() throws Exception {
         return claseEnPosicion(0);
     }
 
-    /** La segunda clase del seeder, para poder cargar dos cupos en un mismo vuelo. */
+
     protected Long otraClase() throws Exception {
         return claseEnPosicion(1);
     }

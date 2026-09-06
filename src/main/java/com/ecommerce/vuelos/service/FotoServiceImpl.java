@@ -9,7 +9,7 @@ import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.FotoRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,19 +18,15 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class FotoServiceImpl implements FotoService {
 
-    /** Tope defensivo: el vuelo no necesita mas que esto y evita llenar la base. */
     private static final int MAX_FOTOS_POR_VUELO = 5;
 
-    private final FotoRepository fotoRepository;
-    private final VueloRepository vueloRepository;
+    @Autowired
+    private FotoRepository fotoRepository;
+    @Autowired
+    private VueloRepository vueloRepository;
 
-    /**
-     * El mismo par que usa el material de multipart de la catedra:
-     * getOriginalFilename() para el nombre y getBytes() para el contenido.
-     */
     @Override
     @Transactional
     public FotoResponse subir(FotoRequest request, MultipartFile archivo, UsuarioPrincipal principal) {
@@ -93,10 +89,6 @@ public class FotoServiceImpl implements FotoService {
         fotoRepository.delete(foto);
     }
 
-    /**
-     * El content type lo manda el cliente, asi que no alcanza para confiar, pero
-     * sirve para frenar el error obvio de subir un PDF o un .exe.
-     */
     private void validarEsImagen(MultipartFile archivo) {
         String tipo = archivo.getContentType();
         if (tipo == null || !tipo.startsWith("image/")) {

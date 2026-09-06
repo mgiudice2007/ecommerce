@@ -25,11 +25,7 @@ public class ItemCarritoResponse {
     private Integer cantidad;
     private BigDecimal subtotal;
 
-    /**
-     * A diferencia del ItemOrden, el item del carrito no tiene precio propio:
-     * lo lee de la disponibilidad cada vez. El precio recien se congela en el
-     * checkout, asi el carrito refleja los cambios de precio del vendedor.
-     */
+
     public static ItemCarritoResponse desde(ItemCarrito item) {
         Disponibilidad disponibilidad = item.getDisponibilidad();
         Vuelo vuelo = disponibilidad.getVuelo();

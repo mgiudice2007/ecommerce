@@ -10,11 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
-    /**
-     * El seeder arma los usuarios a mano, sin pasar por AuthService, asi que el
-     * carrito del comprador sembrado hay que verificarlo aparte: el resto de los
-     * tests registra usuarios nuevos y por ese camino el carrito siempre existe.
-     */
+
     @Test
     void compradorDelSeeder_naceConCarrito() throws Exception {
         String comprador = login("comprador", "comprador123");

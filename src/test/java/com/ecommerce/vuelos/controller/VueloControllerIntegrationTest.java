@@ -56,8 +56,6 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void buscar_conPageYSize_devuelveSoloEsaPagina() throws Exception {
-        // MIA no se usa como origen en el seeder ni en los otros tests, asi que
-        // el filtro deja exactamente los tres vuelos que se crean aca.
         String vendedor = registrarYLoguearVendedor("vpagina");
         crearVuelo(vendedor, "MIA", "COR", 100.0);
         crearVuelo(vendedor, "MIA", "COR", 200.0);
@@ -73,7 +71,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.totalPages").value(2))
                 .andExpect(jsonPath("$.number").value(0));
 
-        // La segunda pagina trae el que sobra.
+
         mockMvc.perform(get("/api/vuelos")
                         .param("origen", "MIA")
                         .param("page", "1")
@@ -83,7 +81,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.number").value(1))
                 .andExpect(jsonPath("$.last").value(true));
 
-        // Sin page ni size sigue devolviendo todo en una sola pagina.
+
         mockMvc.perform(get("/api/vuelos").param("origen", "MIA"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(3))
@@ -158,7 +156,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
         crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 30, 1000.0);
         crearDisponibilidad(vendedor, vueloId, otraClase(), 10, 2500.0);
 
-        // sin token: el stock es informacion publica del catalogo
+
         mockMvc.perform(get("/api/disponibilidades").param("vueloId", vueloId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -166,7 +164,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$[0].claseNombre").exists())
                 .andExpect(jsonPath("$[0].hayStock").value(true));
 
-        // un vuelo sin cupos devuelve la lista vacia, no un 404
+
         Long sinCupos = crearVuelo(vendedor, "EZE", "MAD", 500.0);
         mockMvc.perform(get("/api/disponibilidades").param("vueloId", sinCupos.toString()))
                 .andExpect(status().isOk())
@@ -215,12 +213,12 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isNoContent());
 
-        // sigue existiendo por id, pero con estado ELIMINADO
+
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("ELIMINADO"));
 
-        // y ya no aparece en el listado
+
         mockMvc.perform(get("/api/vuelos").param("origen", "MDZ"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(0));

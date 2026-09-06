@@ -18,7 +18,7 @@ import com.ecommerce.vuelos.repository.DescuentoRepository;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -29,17 +29,24 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
-    private final UsuarioRepository usuarioRepository;
-    private final AeropuertoRepository aeropuertoRepository;
-    private final CategoriaRepository categoriaRepository;
-    private final VueloRepository vueloRepository;
-    private final ClaseRepository claseRepository;
-    private final DisponibilidadRepository disponibilidadRepository;
-    private final DescuentoRepository descuentoRepository;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    @Autowired
+    private AeropuertoRepository aeropuertoRepository;
+    @Autowired
+    private CategoriaRepository categoriaRepository;
+    @Autowired
+    private VueloRepository vueloRepository;
+    @Autowired
+    private ClaseRepository claseRepository;
+    @Autowired
+    private DisponibilidadRepository disponibilidadRepository;
+    @Autowired
+    private DescuentoRepository descuentoRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
@@ -175,8 +182,7 @@ public class DataSeeder implements CommandLineRunner {
                 .fechaRegistro(LocalDateTime.now())
                 .build();
 
-        // Mismo criterio que AuthServiceImpl: el comprador nace con carrito. Sin
-        // esto el comprador sembrado se loguea bien pero no puede comprar nada.
+
         if (rol == Rol.COMPRADOR) {
             usuario.setCarrito(Carrito.builder().usuario(usuario).build());
         }

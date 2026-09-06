@@ -14,7 +14,7 @@ import com.ecommerce.vuelos.repository.CategoriaRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,13 +25,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
-@RequiredArgsConstructor
 public class VueloServiceImpl implements VueloService {
 
-    private final VueloRepository vueloRepository;
-    private final CategoriaRepository categoriaRepository;
-    private final AeropuertoRepository aeropuertoRepository;
-    private final UsuarioRepository usuarioRepository;
+    @Autowired
+    private VueloRepository vueloRepository;
+    @Autowired
+    private CategoriaRepository categoriaRepository;
+    @Autowired
+    private AeropuertoRepository aeropuertoRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Override
     public Page<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
@@ -100,10 +103,6 @@ public class VueloServiceImpl implements VueloService {
         return VueloResponse.desde(vueloRepository.save(vuelo));
     }
 
-    /**
-     * Baja logica: el vuelo queda en ELIMINADO en vez de borrarse, para no
-     * romper las ordenes que ya lo referencian.
-     */
     @Override
     @Transactional
     public void eliminar(Long id, UsuarioPrincipal principal) {

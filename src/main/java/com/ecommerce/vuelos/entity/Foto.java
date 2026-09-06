@@ -27,12 +27,10 @@ public class Foto {
     @Column(nullable = false)
     private String nombreArchivo;
 
-    /** El binario vive en la base, como en el material de multipart de la catedra. */
     @Lob
     @Column(nullable = false, columnDefinition = "LONGBLOB")
     private byte[] datos;
 
-    /** Orden de exhibicion. La foto con el orden mas bajo es la portada. */
     @Column(nullable = false)
     private Integer orden;
 }

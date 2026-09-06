@@ -27,7 +27,6 @@ public class Vuelo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** El vendedor que publico este vuelo. Es su dueño. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendedor_id", nullable = false)
     private Usuario vendedor;
@@ -79,11 +78,7 @@ public class Vuelo {
     @Column
     private LocalDateTime fechaBaja;
 
-    /**
-     * El descuento que rige hoy, o null si no hay ninguno. Como al crear y al
-     * modificar se valida que no haya dos vigentes solapados, aca a lo sumo hay
-     * uno y no hace falta decidir cual gana.
-     */
+
     @Transient
     public Descuento getDescuentoVigente() {
         LocalDate hoy = LocalDate.now();
@@ -93,14 +88,12 @@ public class Vuelo {
                 .orElse(null);
     }
 
-    /** Derivado: se calcula, no se persiste. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
         Descuento vigente = getDescuentoVigente();
         return vigente == null ? precio : vigente.aplicarA(precio);
     }
 
-    /** Derivado: la diferencia entre salida y llegada. */
     @Transient
     public Integer getDuracionMinutos() {
         if (fechaSalida == null || fechaLlegada == null) {

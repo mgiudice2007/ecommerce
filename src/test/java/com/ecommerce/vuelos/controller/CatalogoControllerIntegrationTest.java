@@ -7,10 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Las tres tablas de consulta. Se piden sin token a proposito: son publicas
- * porque el cliente las necesita antes de poder loguearse.
- */
+
 class CatalogoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test

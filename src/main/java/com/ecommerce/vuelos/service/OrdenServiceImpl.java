@@ -9,18 +9,19 @@ import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.OrdenRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class OrdenServiceImpl implements OrdenService {
 
-    private final OrdenRepository ordenRepository;
-    private final DisponibilidadRepository disponibilidadRepository;
+    @Autowired
+    private OrdenRepository ordenRepository;
+    @Autowired
+    private DisponibilidadRepository disponibilidadRepository;
 
     @Override
     public List<OrdenResponse> historial(Long usuarioId) {
@@ -55,10 +56,6 @@ public class OrdenServiceImpl implements OrdenService {
         return OrdenResponse.desde(ordenRepository.save(orden));
     }
 
-    /**
-     * Devuelve 404 en vez de 403 cuando la orden es de otro usuario: si
-     * contestaramos "prohibido" estariamos confirmando que ese id existe.
-     */
     private Orden buscarOrdenDelUsuario(Long usuarioId, Long ordenId) {
         Orden orden = ordenRepository.findById(ordenId)
                 .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada: " + ordenId));

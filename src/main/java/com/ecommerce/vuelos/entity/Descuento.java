@@ -21,12 +21,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Un descuento sobre un vuelo. Es una entidad y no un campo porque tiene dos
- * cosas que un campo no puede expresar: una vigencia (desde/hasta) y un tipo
- * (porcentaje o monto fijo). Ademas queda el historial: apagar un descuento no
- * borra el que estuvo vigente el mes pasado.
- */
 @Entity
 @Table(name = "descuentos")
 @Getter
@@ -46,7 +40,7 @@ public class Descuento {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoDescuento tipoDescuento;
+    private TipoDescuento tipoDescuento; // PORCENTAJE o MONTO_FIJO
 
     /** Si es PORCENTAJE va de 0 a 100. Si es MONTO_FIJO es plata. */
     @Column(nullable = false)
@@ -62,13 +56,13 @@ public class Descuento {
     @Builder.Default
     private Boolean activo = true;
 
-    /** Vigente = prendido y dentro de la ventana de fechas, inclusive los bordes. */
+    /** Vigente = prendido y dentro de la ventana de fechas. */
     @Transient
     public boolean estaVigente(LocalDate fecha) {
         return Boolean.TRUE.equals(activo)
                 && fechaDesde != null && fechaHasta != null
-                && !fecha.isBefore(fechaDesde)
-                && !fecha.isAfter(fechaHasta);
+                && !fecha.isBefore(fechaDesde) // pregunta 1: ¿ya empezó?
+                && !fecha.isAfter(fechaHasta); // pregunta 2: ¿todavía no terminó?
     }
 
     /**
@@ -88,13 +82,9 @@ public class Descuento {
         return resultado.max(BigDecimal.ZERO);
     }
 
-    /**
-     * Dos descuentos se solapan si comparten al menos un dia. Se usa para no
-     * dejar cargar dos vigentes a la vez sobre el mismo vuelo: si se pudiera,
-     * no habria forma de decidir cual gana.
-     */
+    /** que no se pisen en el rango de fechas. */
     @Transient
-    public boolean seSolapaCon(LocalDate desde, LocalDate hasta) {
+    public boolean seSolapaCon(LocalDate desde, LocalDate hasta) { 
         return !fechaDesde.isAfter(hasta) && !fechaHasta.isBefore(desde);
     }
 }

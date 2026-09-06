@@ -18,7 +18,6 @@ public class OrdenResponse {
     private Long id;
     private BigDecimal total;
 
-    /** Cuanto se ahorro el comprador en toda la orden. */
     private BigDecimal descuentoTotal;
     private LocalDateTime fecha;
     private EstadoOrden estado;
