@@ -39,10 +39,6 @@ public class DescuentoServiceImpl implements DescuentoService {
         return DescuentoResponse.desde(buscarPorId(id));
     }
 
-     // control 1: ¿existe el vuelo?
-     // control 2: ¿sos el dueño (o admin)?
-     // control 3: ¿tienen sentido las fechas, el porcentaje, el monto fijo?
-     // control 4: ¿se pisa con otro descuento activo de este vuelo?
     @Override
     @Transactional
     public DescuentoResponse crear(DescuentoRequest request, UsuarioPrincipal principal) {
@@ -109,8 +105,7 @@ public class DescuentoServiceImpl implements DescuentoService {
                 && request.getValor().compareTo(CIEN) > 0) {
             throw new BadRequestException("Un descuento porcentual no puede superar el 100%");
         }
-        // Un monto fijo mayor al precio dejaria el pasaje gratis: lo frenamos aca
-        // en vez de dejar que aplicarA() lo recorte silenciosamente a cero.
+   
         if (request.getTipoDescuento() == TipoDescuento.MONTO_FIJO
                 && request.getValor().compareTo(vuelo.getPrecio()) > 0) {
             throw new BadRequestException("El monto fijo (" + request.getValor()
