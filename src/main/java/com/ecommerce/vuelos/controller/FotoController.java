@@ -5,7 +5,7 @@ import com.ecommerce.vuelos.dto.vuelo.FotoResponse;
 import com.ecommerce.vuelos.entity.Foto;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.FotoService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +26,10 @@ import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/fotos")
-@RequiredArgsConstructor
 public class FotoController {
 
-    private final FotoService fotoService;
+    @Autowired
+    private FotoService fotoService;
 
     /**
      * Carga una foto del vuelo. No es JSON: es multipart/form-data, con el

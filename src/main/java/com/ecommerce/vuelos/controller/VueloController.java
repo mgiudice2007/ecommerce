@@ -5,7 +5,7 @@ import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.VueloService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -26,10 +26,10 @@ import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/vuelos")
-@RequiredArgsConstructor
 public class VueloController {
 
-    private final VueloService vueloService;
+    @Autowired
+    private VueloService vueloService;
 
     /**
      * Catalogo publico. Si no mandan page y size devuelve todo en una sola

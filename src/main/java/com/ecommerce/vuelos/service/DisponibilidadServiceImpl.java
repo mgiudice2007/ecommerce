@@ -11,19 +11,23 @@ import com.ecommerce.vuelos.repository.ClaseRepository;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class DisponibilidadServiceImpl implements DisponibilidadService {
 
-    private final DisponibilidadRepository disponibilidadRepository;
-    private final VueloRepository vueloRepository;
-    private final ClaseRepository claseRepository;
+    @Autowired
+    private DisponibilidadRepository disponibilidadRepository;
+
+    @Autowired
+    private VueloRepository vueloRepository;
+
+    @Autowired
+    private ClaseRepository claseRepository;
 
     @Override
     public List<DisponibilidadResponse> listarPorVuelo(Long vueloId) {

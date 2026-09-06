@@ -10,7 +10,7 @@ import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.DescuentoRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +18,15 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class DescuentoServiceImpl implements DescuentoService {
 
     private static final BigDecimal CIEN = BigDecimal.valueOf(100);
 
-    private final DescuentoRepository descuentoRepository;
-    private final VueloRepository vueloRepository;
+    @Autowired
+    private DescuentoRepository descuentoRepository;
+
+    @Autowired
+    private VueloRepository vueloRepository;
 
     @Override
     public List<DescuentoResponse> listarPorVuelo(Long vueloId) {

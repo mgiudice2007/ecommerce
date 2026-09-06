@@ -6,18 +6,22 @@ import com.ecommerce.vuelos.dto.catalogo.ClaseResponse;
 import com.ecommerce.vuelos.repository.AeropuertoRepository;
 import com.ecommerce.vuelos.repository.CategoriaRepository;
 import com.ecommerce.vuelos.repository.ClaseRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class CatalogoServiceImpl implements CatalogoService {
 
-    private final CategoriaRepository categoriaRepository;
-    private final AeropuertoRepository aeropuertoRepository;
-    private final ClaseRepository claseRepository;
+    @Autowired
+    private CategoriaRepository categoriaRepository;
+
+    @Autowired
+    private AeropuertoRepository aeropuertoRepository;
+
+    @Autowired
+    private ClaseRepository claseRepository;
 
     @Override
     public List<CategoriaResponse> listarCategorias() {
