@@ -49,12 +49,10 @@ public class Disponibilidad {
     @Column(nullable = false)
     private Integer asientosDisponibles;
 
-    /** Precio de venta de esta clase. Es el que se cobra, no el precio base del vuelo. */
     @Column(nullable = false)
     private BigDecimal precio; 
 
-    /** Tiene 3 métodos que no se guardan en la base: se calculan al vuelo, no son una columna. */
-    /** "si el vuelo tiene un descuento vigente ahora mismo se lo aplica al precio. Si no tiene, el precio es el normal" */
+    /** "si el vuelo tiene un descuento vigente se lo aplica al precio. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
         Descuento vigente = vuelo != null ? vuelo.getDescuentoVigente() : null;
