@@ -13,7 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CarritoResponse {
 
-    private Long id;
     private List<ItemCarritoResponse> items;
     private BigDecimal total;
 
@@ -27,7 +26,6 @@ public class CarritoResponse {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return CarritoResponse.builder()
-                .id(carrito.getId())
                 .items(items)
                 .total(total)
                 .build();

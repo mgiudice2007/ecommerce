@@ -17,8 +17,22 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void cadaCompradorVeSoloSuPropioCarrito() throws Exception {
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 500.0, 10);
+        String uno = registrarYLoguearComprador("carritouno");
+        String dos = registrarYLoguearComprador("carritodos");
+
+        agregarAlCarrito(uno, disponibilidadId, 2);
+
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + uno))
+                .andExpect(jsonPath("$.items.length()").value(1));
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + dos))
+                .andExpect(jsonPath("$.items.length()").value(0));
     }
 
     @Test

@@ -10,12 +10,14 @@ import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.ItemCarrito;
 import com.ecommerce.vuelos.entity.ItemOrden;
 import com.ecommerce.vuelos.entity.Orden;
+import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.entity.Vuelo;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.CarritoRepository;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.OrdenRepository;
+import com.ecommerce.vuelos.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +36,11 @@ public class CarritoServiceImpl implements CarritoService {
     private DisponibilidadRepository disponibilidadRepository;
     @Autowired
     private OrdenRepository ordenRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Override
+    @Transactional
     public CarritoResponse obtenerCarrito(Long usuarioId) {
         return CarritoResponse.desde(buscarCarrito(usuarioId));
     }
@@ -178,9 +183,18 @@ public class CarritoServiceImpl implements CarritoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Item no encontrado en el carrito: " + itemId));
     }
 
+    /**
+     * Cada comprador tiene un unico carrito, y siempre se busca por el id que
+     * viene en el JWT: nunca se recibe un id de carrito desde afuera, asi que
+     * nadie puede ver ni tocar el carrito de otro. Si por algun motivo el
+     * usuario todavia no tiene carrito, se le crea en ese momento.
+     */
     private Carrito buscarCarrito(Long usuarioId) {
         return carritoRepository.findByUsuarioId(usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Carrito no encontrado para el usuario: " + usuarioId));
+                .orElseGet(() -> {
+                    Usuario usuario = usuarioRepository.findById(usuarioId)
+                            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado: " + usuarioId));
+                    return carritoRepository.save(Carrito.builder().usuario(usuario).build());
+                });
     }
 }
