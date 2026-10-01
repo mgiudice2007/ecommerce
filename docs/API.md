@@ -72,6 +72,19 @@ estos datos se completan después, antes de volar.
 `dni` es único entre cuentas — si ya lo usa otro usuario, `400`. `dni` y `fechaNacimiento` son
 opcionales (podés mandar `dni: ""` si no lo tenés a mano todavía).
 
+## Usuarios — `/api/usuarios` (solo ADMIN)
+
+Administración de cuentas y asignación de permisos (roles).
+
+- `GET /api/usuarios` — lista todas las cuentas ordenadas por username: `id`, `username`, `mail`,
+  `nombre`, `apellido`, `rol`, `fechaRegistro` (sin datos de pasajero ni contraseña).
+- `PUT /api/usuarios/{id}/rol` — cambia el rol de una cuenta:
+  ```json
+  { "rol": "VENDEDOR" }
+  ```
+  Acepta `COMPRADOR`, `VENDEDOR` o `ADMIN`. El cambio rige enseguida (el rol se lee de la base en
+  cada request, no del token). Un admin no puede cambiar su propio rol → `400`. Con otro rol → `403`.
+
 ## Catálogo — público, sin token
 
 - `GET /api/categorias`
