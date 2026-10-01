@@ -48,10 +48,11 @@ Mismo body, pero fuerza `rol=ADMIN` del lado del servidor sin importar lo que ma
 ```json
 { "username": "comprador", "password": "comprador123" }
 ```
-Devuelve `{ "token": "...", "usuario": { id, username, mail, nombre, apellido, rol } }`.
+Devuelve solo `{ "token": "..." }`. El `id`, `username` y `rol` viajan dentro del JWT; el resto
+de los datos del usuario se piden con `GET /api/auth/me`.
 
 ### POST `/api/auth/logout`
-Requiere token. No-op del lado servidor (JWT stateless), devuelve `204`.
+Requiere token. No-op del lado servidor (JWT stateless), devuelve `200` con `{ "mensaje": "Sesion cerrada correctamente" }`.
 
 ### GET `/api/auth/me`
 Requiere token.
@@ -104,7 +105,7 @@ opcionales (podés mandar `dni: ""` si no lo tenés a mano todavía).
   de otro vendedor devuelve `400`.
 - `DELETE /api/vuelos/{id}` — **baja lógica** (pasa a `estado=ELIMINADO`, no borra la fila —
   así no rompe las órdenes que ya lo referencian). Desaparece del listado pero sigue
-  respondiendo por id.
+  respondiendo por id. Devuelve `200` con `{ "mensaje": "Vuelo eliminado correctamente" }`.
 
 ## Descuentos (promociones por vuelo) — `/api/descuentos`
 
@@ -130,7 +131,8 @@ y la fecha de hoy está entre `fechaDesde` y `fechaHasta`.
 - `PUT /api/descuentos/{id}` — mismo body y mismas validaciones.
 - `DELETE /api/descuentos/{id}` — dueño del vuelo o ADMIN. **No afecta órdenes ya compradas**:
   el monto descontado queda congelado por ítem en cada `Orden` (`descuentoAplicado`), así que
-  borrar o desactivar el descuento nunca cambia el total de una compra ya hecha.
+  borrar o desactivar el descuento nunca cambia el total de una compra ya hecha. Devuelve `200`
+  con `{ "mensaje": "Descuento eliminado correctamente" }`.
 
 ## Fotos — `/api/fotos`
 
@@ -145,7 +147,7 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   `vueloId`, `file` (el binario — **ojo con el nombre del campo**, no es `archivo`), `orden`
   (opcional — si no viene, se calcula solo como la siguiente posición). Solo acepta archivos con
   `Content-Type` que empiece con `image/`.
-- `DELETE /api/fotos/{id}` — dueño del vuelo o ADMIN.
+- `DELETE /api/fotos/{id}` — dueño del vuelo o ADMIN. Devuelve `200` con `{ "mensaje": "Foto eliminada correctamente" }`.
 
 ## Disponibilidades (stock por clase) — `/api/disponibilidades`
 

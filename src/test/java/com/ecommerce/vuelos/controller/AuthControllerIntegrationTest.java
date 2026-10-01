@@ -155,8 +155,16 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void login_conCredencialesValidas_devuelveUsuarioYCreaSesion() throws Exception {
+    void login_conCredencialesValidas_devuelveSoloElToken() throws Exception {
         registrarYLoguearComprador("loginok");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("username", "loginok", "password", "123456"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.usuario").doesNotExist());
     }
 
     @Test
@@ -219,11 +227,12 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void logout_devuelveNoContent() throws Exception {
+    void logout_devuelveMensaje() throws Exception {
         String token = registrarYLoguearComprador("logoutuser");
 
         mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").exists());
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());

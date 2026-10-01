@@ -214,7 +214,8 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(delete("/api/descuentos/" + descuentoId)
                         .header("Authorization", "Bearer " + vendedor))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Descuento eliminado correctamente"));
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(jsonPath("$.precioConDescuento").value(1000.0))
@@ -250,7 +251,8 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(delete("/api/descuentos/" + descuentoId)
                         .header("Authorization", "Bearer " + vendedor))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Descuento eliminado correctamente"));
 
 
         mockMvc.perform(get("/api/ordenes/" + ordenId)

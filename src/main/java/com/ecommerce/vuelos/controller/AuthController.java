@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.controller;
 
+import com.ecommerce.vuelos.dto.MensajeResponse;
 import com.ecommerce.vuelos.dto.auth.ActualizarPerfilRequest;
 import com.ecommerce.vuelos.dto.auth.LoginRequest;
 import com.ecommerce.vuelos.dto.auth.LoginResponse;
@@ -49,13 +50,13 @@ public class AuthController {
         UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
         String token = jwtService.generateToken(principal);
 
-        return ResponseEntity.ok(new LoginResponse(token, UsuarioResponse.desde(principal.getUsuario())));
+        return ResponseEntity.ok(new LoginResponse(token));
     }
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<MensajeResponse> logout() {
+        return ResponseEntity.ok(new MensajeResponse("Sesion cerrada correctamente"));
     }
 
     @GetMapping("/me")

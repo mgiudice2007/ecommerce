@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UsuarioResponse {
 
-    private Long id;
     private String username;
     private String mail;
     private String nombre;
@@ -29,7 +28,6 @@ public class UsuarioResponse {
 
     public static UsuarioResponse desde(Usuario usuario) {
         return UsuarioResponse.builder()
-                .id(usuario.getId())
                 .username(usuario.getUsername())
                 .mail(usuario.getMail())
                 .nombre(usuario.getNombre())

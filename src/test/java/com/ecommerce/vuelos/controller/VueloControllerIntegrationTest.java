@@ -211,7 +211,8 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(delete("/api/vuelos/" + vueloId)
                         .header("Authorization", "Bearer " + vendedor))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Vuelo eliminado correctamente"));
 
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))

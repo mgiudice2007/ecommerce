@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.controller;
 
+import com.ecommerce.vuelos.dto.MensajeResponse;
 import com.ecommerce.vuelos.dto.vuelo.FotoRequest;
 import com.ecommerce.vuelos.dto.vuelo.FotoResponse;
 import com.ecommerce.vuelos.entity.Foto;
@@ -57,10 +58,10 @@ public class FotoController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id,
-                                         @AuthenticationPrincipal UsuarioPrincipal principal) {
+    public ResponseEntity<MensajeResponse> eliminar(@PathVariable Long id,
+                                                    @AuthenticationPrincipal UsuarioPrincipal principal) {
         fotoService.eliminar(id, principal);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MensajeResponse("Foto eliminada correctamente"));
     }
 
 

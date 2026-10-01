@@ -42,7 +42,6 @@ public class VueloResponse {
 
     private List<DisponibilidadResponse> disponibilidades;
 
-    private Long vendedorId;
     private String vendedorUsername;
 
     public static VueloResponse desde(Vuelo vuelo) {
@@ -69,7 +68,6 @@ public class VueloResponse {
                 .disponibilidades(vuelo.getDisponibilidades().stream()
                         .map(DisponibilidadResponse::desde)
                         .toList())
-                .vendedorId(vuelo.getVendedor().getId())
                 .vendedorUsername(vuelo.getVendedor().getUsername())
                 .build();
     }

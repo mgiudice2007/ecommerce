@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.controller;
 
+import com.ecommerce.vuelos.dto.MensajeResponse;
 import com.ecommerce.vuelos.dto.descuento.DescuentoRequest;
 import com.ecommerce.vuelos.dto.descuento.DescuentoResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -58,9 +59,9 @@ public class DescuentoController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id,
-                                         @AuthenticationPrincipal UsuarioPrincipal principal) {
+    public ResponseEntity<MensajeResponse> eliminar(@PathVariable Long id,
+                                                    @AuthenticationPrincipal UsuarioPrincipal principal) {
         descuentoService.eliminar(id, principal);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new MensajeResponse("Descuento eliminado correctamente"));
     }
 }

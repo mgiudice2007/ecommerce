@@ -137,7 +137,8 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(delete("/api/fotos/" + fotoId)
                         .header("Authorization", "Bearer " + vendedor))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Foto eliminada correctamente"));
 
         mockMvc.perform(get("/api/fotos").param("vueloId", vueloId.toString()))
                 .andExpect(status().isOk())
