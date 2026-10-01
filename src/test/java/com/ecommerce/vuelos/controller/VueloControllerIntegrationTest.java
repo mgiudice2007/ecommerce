@@ -41,6 +41,21 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void buscar_noListaLosVuelosQueYaSalieron_peroSiguenRespondiendoPorId() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vsalio");
+        Long vueloId = crearVuelo(vendedor, "COR", "MIA", 500.0);
+        hacerQueYaSalio(vueloId);
+
+        mockMvc.perform(get("/api/vuelos").param("origen", "COR").param("destino", "MIA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + vueloId + ")]").isEmpty());
+
+        // Las compras viejas lo siguen necesitando para mostrar sus datos
+        mockMvc.perform(get("/api/vuelos/" + vueloId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void buscar_filtrandoPorPrecioMaximo_excluyeLosCaros() throws Exception {
         String vendedor = registrarYLoguearVendedor("vfiltro");
         crearVuelo(vendedor, "COR", "MDZ", 100.0);

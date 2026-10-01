@@ -166,6 +166,9 @@ public class CarritoServiceImpl implements CarritoService {
         if (vuelo.getEstado() != EstadoVuelo.ACTIVO) {
             throw new BadRequestException("El vuelo " + vuelo.getNumeroVuelo() + " ya no esta disponible");
         }
+        if (!vuelo.getFechaSalida().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("El vuelo " + vuelo.getNumeroVuelo() + " ya salio");
+        }
     }
 
     private void validarStock(Disponibilidad disponibilidad, int cantidad) {

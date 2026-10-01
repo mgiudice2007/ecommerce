@@ -44,6 +44,7 @@ public class VueloServiceImpl implements VueloService {
         // combinamos todas y quedan solo las que el cliente realmente mando.
         Specification<Vuelo> spec = Specification.allOf(
                 VueloSpecifications.soloPublicados(),
+                VueloSpecifications.todaviaNoSalio(),
                 VueloSpecifications.origenContiene(origen),
                 VueloSpecifications.destinoContiene(destino),
                 VueloSpecifications.deCategoria(categoriaId),

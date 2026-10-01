@@ -82,8 +82,10 @@ opcionales (podés mandar `dni: ""` si no lo tenés a mano todavía).
 
 - `GET /api/vuelos` — público, filtros opcionales combinables: `origen`, `destino`,
   `categoriaId`, `claseId`, `precioMin`, `precioMax`, `vendedorId`, más `page`/`size` para
-  paginar (respuesta `Page<VueloResponse>`: `content`, `totalElements`, `totalPages`, etc.)
-- `GET /api/vuelos/{id}` — público, incluye `disponibilidades[]` y `hayStock`
+  paginar (respuesta `Page<VueloResponse>`: `content`, `totalElements`, `totalPages`, etc.).
+  **No lista los vuelos que ya salieron** (`fechaSalida` pasada) ni los eliminados.
+- `GET /api/vuelos/{id}` — público, incluye `disponibilidades[]` y `hayStock`. Responde también
+  por vuelos que ya salieron (las compras viejas los necesitan para mostrar sus datos).
 - `POST /api/vuelos` — requiere token con rol `VENDEDOR` o `ADMIN`. El vuelo nace **sin
   asientos** — el cupo se carga aparte con `Disponibilidad`.
   ```json
@@ -165,7 +167,7 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 
 - `GET /api/carrito`
 - `POST /api/carrito/items` — se elige vuelo **y clase** en un solo id (`disponibilidadId`).
-  Pedir más asientos de los que hay disponibles da `400`.
+  Pedir más asientos de los que hay disponibles da `400`, y lo mismo si el vuelo ya salió.
   ```json
   { "disponibilidadId": 1, "cantidad": 2 }
   ```

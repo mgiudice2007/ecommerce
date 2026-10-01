@@ -76,6 +76,39 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void agregarItem_deUnVueloQueYaSalio_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "AEP", "COR", 300.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 300.0);
+        hacerQueYaSalio(vueloId);
+        String pasajero = registrarYLoguearComprador("pasajerotarde");
+
+        mockMvc.perform(post("/api/carrito/items")
+                        .header("Authorization", "Bearer " + pasajero)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("disponibilidadId", cupoId, "cantidad", 1))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("ya salio")));
+    }
+
+    @Test
+    void checkout_conUnVueloQueSalioMientrasEstabaEnElCarrito_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "AEP", "MDZ", 300.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 300.0);
+        String pasajero = registrarYLoguearComprador("pasajerodistraido");
+        agregarAlCarrito(pasajero, cupoId, 2);
+
+        hacerQueYaSalio(vueloId);
+
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isBadRequest());
+        // No se descontaron asientos
+        mockMvc.perform(get("/api/disponibilidades/" + cupoId))
+                .andExpect(jsonPath("$.asientosDisponibles").value(10));
+    }
+
+    @Test
     void checkout_conCarritoVacio_devuelve400() throws Exception {
         String pasajero = registrarYLoguearComprador("pasajerocarritovacio");
 

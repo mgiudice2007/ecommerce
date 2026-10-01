@@ -5,6 +5,7 @@ import com.ecommerce.vuelos.entity.Vuelo;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public final class VueloSpecifications {
 
@@ -14,6 +15,11 @@ public final class VueloSpecifications {
     /** Un vuelo dado de baja no se lista nunca. */
     public static Specification<Vuelo> soloPublicados() {
         return (root, query, cb) -> cb.notEqual(root.get("estado"), EstadoVuelo.ELIMINADO);
+    }
+
+    /** Un vuelo que ya salio no se puede comprar, asi que tampoco se lista. */
+    public static Specification<Vuelo> todaviaNoSalio() {
+        return (root, query, cb) -> cb.greaterThan(root.get("fechaSalida"), LocalDateTime.now());
     }
 
     public static Specification<Vuelo> origenContiene(String origen) {

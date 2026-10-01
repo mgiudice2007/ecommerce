@@ -1,5 +1,7 @@
 package com.ecommerce.vuelos;
 
+import com.ecommerce.vuelos.entity.Vuelo;
+import com.ecommerce.vuelos.repository.VueloRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,20 @@ public abstract class IntegrationTestSupport {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @Autowired
+    private VueloRepository vueloRepository;
+
+    /**
+     * La API no deja crear vuelos con fecha pasada (@Future), asi que para
+     * probar un vuelo que ya salio le movemos la fecha directo en la base.
+     */
+    protected void hacerQueYaSalio(Long vueloId) {
+        Vuelo vuelo = vueloRepository.findById(vueloId).orElseThrow();
+        vuelo.setFechaSalida(LocalDateTime.now().minusDays(1));
+        vuelo.setFechaLlegada(LocalDateTime.now().minusDays(1).plusHours(3));
+        vueloRepository.saveAndFlush(vuelo);
+    }
 
     protected String loginAdmin() throws Exception {
         return login("admin", "admin123");
