@@ -94,9 +94,7 @@ public class DescuentoServiceImpl implements DescuentoService {
         descuentoRepository.delete(descuento); // lo borra de la base de verdad
     }
 
-    //¿La fecha de fin es posterior a la de inicio?
-    //Si es porcentaje, ¿no pasa el 100%?
-    //Si es monto fijo, ¿no es más grande que el precio del vuelo?
+
     private void validarRequest(DescuentoRequest request, Vuelo vuelo) {
         if (request.getFechaHasta().isBefore(request.getFechaDesde())) {
             throw new BadRequestException("La fecha de fin no puede ser anterior a la de inicio");

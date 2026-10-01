@@ -21,7 +21,6 @@ public class DescuentoResponse {
     private LocalDate fechaDesde;
     private LocalDate fechaHasta;
     private Boolean activo;
-
     private boolean vigente;
 
     public static DescuentoResponse desde(Descuento descuento) {
