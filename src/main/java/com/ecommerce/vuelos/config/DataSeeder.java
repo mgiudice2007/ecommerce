@@ -58,8 +58,8 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Se agrega cada aeropuerto que falte (no solo con la base vacia), asi una
-        // base que ya existia tambien recibe los destinos nuevos.
+        // Los aeropuertos se guardan siempre: el codigo IATA es la clave, asi que los
+        // que faltan se agregan y los que ya estaban se actualizan (nombres con tilde, etc.).
         List.of(
                 aeropuerto("EZE", "Ministro Pistarini", "Buenos Aires", "Buenos Aires", "Argentina"),
                 aeropuerto("AEP", "Jorge Newbery", "Buenos Aires", "Buenos Aires", "Argentina"),
@@ -82,11 +82,7 @@ public class DataSeeder implements CommandLineRunner {
                 aeropuerto("MAD", "Barajas", "Madrid", "Madrid", "España", "Europe/Madrid"),
                 aeropuerto("BCN", "El Prat", "Barcelona", "Cataluña", "España", "Europe/Madrid"),
                 aeropuerto("FCO", "Fiumicino", "Roma", "Lacio", "Italia", "Europe/Rome"))
-                .forEach(aeropuerto -> {
-                    if (!aeropuertoRepository.existsById(aeropuerto.getCodigoIata())) {
-                        aeropuertoRepository.save(aeropuerto);
-                    }
-                });
+                .forEach(aeropuertoRepository::save);
 
         if (categoriaRepository.count() == 0) {
             categoriaRepository.saveAll(List.of(
