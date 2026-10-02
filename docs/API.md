@@ -21,9 +21,12 @@ Roles (`Rol`): `COMPRADOR`, `VENDEDOR`, `ADMIN`.
 | `vendedor` | `vendedor123` | VENDEDOR |
 | `comprador` | `comprador123` | COMPRADOR |
 
-Catálogo semilla: 6 aeropuertos (EZE, AEP, COR, MDZ, MAD, MIA), 3 categorías (Cabotaje,
-Regional, Internacional), 3 clases (Economica, Ejecutiva, Primera), 2 vuelos de ejemplo del
-usuario `vendedor` con su `Disponibilidad` cargada.
+Catálogo semilla: 19 aeropuertos (10 de Argentina y destinos de América y Europa), 3 categorías
+(Cabotaje, Regional, Internacional), 3 clases (Economica, Ejecutiva, Primera) y **17 vuelos de
+demostración** del usuario `vendedor`, con precios en pesos, clases, algunos descuentos vigentes y una
+foto cada uno (las imágenes están en `src/main/resources/fotos-ejemplo`). El seeder agrega lo que
+falte cada vez que arranca: los aeropuertos por código IATA y los vuelos por número de vuelo, así
+también funciona sobre una base que ya tenía datos. Un vuelo dado de baja no se vuelve a crear.
 
 ## Auth — `/api/auth`
 

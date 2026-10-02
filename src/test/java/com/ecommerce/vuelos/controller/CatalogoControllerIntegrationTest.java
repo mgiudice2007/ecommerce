@@ -23,7 +23,8 @@ class CatalogoControllerIntegrationTest extends IntegrationTestSupport {
     void listarAeropuertos_sinToken_usaElCodigoIataComoId() throws Exception {
         mockMvc.perform(get("/api/aeropuertos"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(6))
+                .andExpect(jsonPath("$.length()").value(19))
+                .andExpect(jsonPath("$[?(@.codigoIata == 'BRC')].ciudad").value("Bariloche"))
                 .andExpect(jsonPath("$[?(@.codigoIata == 'EZE')].ciudad").value("Buenos Aires"))
                 .andExpect(jsonPath("$[?(@.codigoIata == 'MAD')].pais").value("España"));
     }
