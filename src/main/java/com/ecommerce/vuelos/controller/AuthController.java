@@ -13,7 +13,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -37,7 +36,6 @@ public class AuthController {
     }
 
     @PostMapping("/registro/administrador")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponse> registrarAdministrador(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registrarAdministrador(request));
     }
@@ -53,14 +51,12 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponse(token));
     }
 
-    @PreAuthorize("isAuthenticated()")
     @PostMapping("/logout")
     public ResponseEntity<MensajeResponse> logout() {
         return ResponseEntity.ok(new MensajeResponse("Sesion cerrada correctamente"));
     }
 
     @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponse> me(@AuthenticationPrincipal UsuarioPrincipal principal) {
         return ResponseEntity.ok(UsuarioResponse.desde(principal.getUsuario()));
     }
@@ -69,7 +65,6 @@ public class AuthController {
      * El usuario completa o corrige sus propios datos, incluidos los de
      * pasajero. No cambia username, mail, password ni rol.
      */
-    @PreAuthorize("isAuthenticated()")
     @PutMapping("/me")
     public ResponseEntity<UsuarioResponse> actualizarPerfil(
             @AuthenticationPrincipal UsuarioPrincipal principal,

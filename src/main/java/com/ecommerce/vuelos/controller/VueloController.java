@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -60,7 +59,6 @@ public class VueloController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
     public ResponseEntity<VueloResponse> crear(@Valid @RequestBody VueloRequest request,
                                                @AuthenticationPrincipal UsuarioPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -68,7 +66,6 @@ public class VueloController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
     public ResponseEntity<VueloResponse> actualizar(@PathVariable Long id,
                                                     @Valid @RequestBody VueloRequest request,
                                                     @AuthenticationPrincipal UsuarioPrincipal principal) {
@@ -77,7 +74,6 @@ public class VueloController {
 
     /** Baja logica y cambios de estado (demorado, pausado, cancelado, eliminado): es un PATCH, no un DELETE. */
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
     public ResponseEntity<EstadoVueloResponse> cambiarEstado(@PathVariable Long id,
                                                              @Valid @RequestBody CambiarEstadoRequest request,
                                                              @AuthenticationPrincipal UsuarioPrincipal principal) {

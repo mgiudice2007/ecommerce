@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,7 +33,6 @@ public class FotoController {
 
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
     public ResponseEntity<FotoResponse> subir(@ModelAttribute FotoRequest request,
                                               @RequestParam("file") MultipartFile file,
                                               @AuthenticationPrincipal UsuarioPrincipal principal) {
@@ -57,7 +55,6 @@ public class FotoController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
     public ResponseEntity<MensajeResponse> eliminar(@PathVariable Long id,
                                                     @AuthenticationPrincipal UsuarioPrincipal principal) {
         fotoService.eliminar(id, principal);

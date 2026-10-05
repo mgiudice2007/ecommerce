@@ -36,6 +36,54 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void noSePuedeModificarNiBorrarElItemDeOtroComprador() throws Exception {
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 500.0, 10);
+        String dueno = registrarYLoguearComprador("carritodueno");
+        String intruso = registrarYLoguearComprador("carritointruso");
+
+        Long itemDelDueno = agregarAlCarrito(dueno, disponibilidadId, 2);
+
+        mockMvc.perform(put("/api/carrito/items/" + itemDelDueno)
+                        .header("Authorization", "Bearer " + intruso)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"cantidad\":5}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/carrito/items/" + itemDelDueno)
+                        .header("Authorization", "Bearer " + intruso))
+                .andExpect(status().isNotFound());
+
+        // el carrito del dueno quedo intacto
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + dueno))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].cantidad").value(2));
+    }
+
+    @Test
+    void elCheckoutDeUnCompradorNoToca_elCarritoDeOtro() throws Exception {
+        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 500.0, 10);
+        String uno = registrarYLoguearComprador("checkoutuno");
+        String dos = registrarYLoguearComprador("checkoutdos");
+
+        agregarAlCarrito(uno, disponibilidadId, 2);
+
+        // dos tiene el carrito vacio: su checkout falla y no se lleva el carrito de uno
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + dos))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + uno))
+                .andExpect(jsonPath("$.items.length()").value(1));
+    }
+
+    @Test
+    void carritoYOrdenes_sinToken_devuelven401() throws Exception {
+        mockMvc.perform(get("/api/carrito")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/carrito/checkout")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/ordenes")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/ordenes/1")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void agregarItem_superandoElStockDisponible_devuelve400() throws Exception {
         String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 2);

@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -48,6 +49,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (JwtException | UsernameNotFoundException ex) {
             SecurityContextHolder.clearContext();
+            // El filtro no corta la peticion: la deja pasar sin autenticar y la regla de la ruta
+            // responde 401. Dejamos el motivo para que el front sepa si tiene que volver a loguearse.
+            request.setAttribute(RestSecurityHandlers.JWT_ERROR_ATTRIBUTE,
+                    ex instanceof ExpiredJwtException ? "Token vencido" : "Token invalido");
         }
 
         filterChain.doFilter(request, response);
