@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -67,8 +69,11 @@ public class Vuelo {
     @Builder.Default
     private List<Descuento> descuentos = new ArrayList<>();
 
+    // Texto comun y no el ENUM de MySQL: ddl-auto=update no agrega valores a un ENUM ya creado,
+    // asi que sumar un estado (como DEMORADO) fallaria con "Data truncated" en una base existente.
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
     @Builder.Default
     private EstadoVuelo estado = EstadoVuelo.ACTIVO;
 
@@ -102,10 +107,16 @@ public class Vuelo {
         return (int) Duration.between(fechaSalida, fechaLlegada).toMinutes();
     }
 
-    /** Hay stock si el vuelo esta activo y al menos una clase tiene asientos. */
+    /** Un vuelo demorado sigue operando: se lista y se puede comprar. */
+    @Transient
+    public boolean estaOperativo() {
+        return estado == EstadoVuelo.ACTIVO || estado == EstadoVuelo.DEMORADO;
+    }
+
+    /** Hay stock si el vuelo esta operativo y al menos una clase tiene asientos. */
     @Transient
     public boolean isDisponible() {
-        return estado == EstadoVuelo.ACTIVO
+        return estaOperativo()
                 && disponibilidades.stream().anyMatch(Disponibilidad::hayStock);
     }
 }

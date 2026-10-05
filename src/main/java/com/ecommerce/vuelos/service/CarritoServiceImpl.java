@@ -6,7 +6,6 @@ import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.entity.Carrito;
 import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.EstadoOrden;
-import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.ItemCarrito;
 import com.ecommerce.vuelos.entity.ItemOrden;
 import com.ecommerce.vuelos.entity.Orden;
@@ -163,7 +162,7 @@ public class CarritoServiceImpl implements CarritoService {
     }
 
     private void validarPublicado(Vuelo vuelo) {
-        if (vuelo.getEstado() != EstadoVuelo.ACTIVO) {
+        if (!vuelo.estaOperativo()) {
             throw new BadRequestException("El vuelo " + vuelo.getNumeroVuelo() + " ya no esta disponible");
         }
         if (!vuelo.getFechaSalida().isAfter(LocalDateTime.now())) {
