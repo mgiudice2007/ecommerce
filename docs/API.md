@@ -226,6 +226,9 @@ cambie o se borre después.
 ## Colección de Insomnia
 
 `docs/insomnia_collection.json` trae el flujo completo de arriba en carpetas numeradas
-(0-Catálogo, 1-Auth, 2-Vuelos, 3-Disponibilidades, 4-Descuentos, 5-Fotos, 6-Carrito, 7-Órdenes),
-con los tokens e ids encadenados automáticamente entre requests (tag `{% response %}` de
-Insomnia — no hace falta copiar nada a mano). Importarla con File → Import.
+(0-Catálogo, 1-Auth, 2-Vuelos, 3-Disponibilidades, 4-Descuentos, 5-Fotos, 6-Carrito, 7-Órdenes,
+8-Seguridad y errores), con los tokens e ids encadenados automáticamente entre requests (tag
+`{% response %}` de Insomnia — no hace falta copiar nada a mano). La carpeta 8 reúne los casos que
+tienen que fallar a propósito (401, 403, 400, 405 y la lista vacía con `mensaje`). Correr el login de
+vendedor y de comprador primero; usuarios del seeder: `admin`, `vendedor` y `comprador`, con clave
+`<usuario>123`. Importarla con File → Import.

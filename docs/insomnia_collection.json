@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-09-04T00:00:00.000Z",
+  "__export_date": "2026-10-04T00:00:00.000Z",
   "__export_source": "insomnia.desktop.app:v8.6.1:tpo-vuelos",
   "resources": [
     {
@@ -9,7 +9,7 @@
       "_type": "workspace",
       "parentId": null,
       "name": "TPO Vuelos - Backend",
-      "description": "Entrega 1: backend + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 7.",
+      "description": "Backend de pasajes de avion: Spring Boot + MySQL + JWT. Correr el proyecto en :8080 y ejecutar las carpetas en orden 0 a 7. La carpeta 8 prueba los errores de seguridad y validacion. Usuarios del seeder: admin / vendedor / comprador, con clave <usuario>123.",
       "scope": "collection"
     },
     {
@@ -226,7 +226,7 @@
       "_type": "request",
       "parentId": "fld_auth",
       "name": "GET me",
-      "description": "Devuelve el usuario del token. Sin password: por eso hay DTO. Sin token da 401.",
+      "description": "Devuelve el usuario del token. Sin password: por eso hay DTO. Sin token da 401 'No autenticado'; con un token vencido o adulterado, 401 'Token vencido' / 'Token invalido'.",
       "method": "GET",
       "url": "{{ base_url }}/api/auth/me",
       "metaSortKey": -95,
@@ -305,7 +305,7 @@
       "_type": "request",
       "parentId": "fld_vuelos",
       "name": "GET vuelos (con filtros)",
-      "description": "Todos los filtros son opcionales y se combinan con Specifications. Los que estan deshabilitados se activan con el check.",
+      "description": "Todos los filtros son opcionales y se combinan con Specifications. Los que estan deshabilitados se activan con el check. La respuesta es una pagina (content, number, size, totalElements, totalPages, first, last, empty). Si no hay resultados trae ademas un campo 'mensaje'; con resultados ese campo no aparece.",
       "method": "GET",
       "url": "{{ base_url }}/api/vuelos",
       "metaSortKey": -100,
@@ -413,8 +413,8 @@
       "_id": "req_vuelo_actualizar",
       "_type": "request",
       "parentId": "fld_vuelos",
-      "name": "PUT vuelo (se demoro)",
-      "description": "Con otro token de vendedor da 400: solo el dueno puede tocarlo.",
+      "name": "PUT vuelo (modificar datos)",
+      "description": "Modifica los datos del vuelo (horarios, precio, descripcion). Para avisar una demora, cancelacion o baja NO se usa este PUT: se cambia el estado con el PATCH de abajo. Con otro token de vendedor da 400: solo el dueno puede tocarlo.",
       "method": "PUT",
       "url": "{{ base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
       "metaSortKey": -96,
@@ -435,19 +435,23 @@
       "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, DEMORADO\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0\n}"
+        "text": "{\n  \"numeroVuelo\": \"AR1500\",\n  \"descripcion\": \"Buenos Aires a Madrid, directo, nuevo horario\",\n  \"categoriaId\": \"{% response 'body', 'req_cat_categorias', '$[0].id', 'never', 60 %}\",\n  \"origenIata\": \"EZE\",\n  \"destinoIata\": \"MAD\",\n  \"fechaSalida\": \"2026-12-15T14:00:00\",\n  \"fechaLlegada\": \"2026-12-16T02:30:00\",\n  \"precio\": 1200.0\n}"
       }
     },
     {
       "_id": "req_vuelo_eliminar",
       "_type": "request",
       "parentId": "fld_vuelos",
-      "name": "DELETE vuelo (baja logica)",
-      "description": "No borra la fila: la deja en ELIMINADO para no romper las ordenes que la referencian. Despues de esto el vuelo desaparece del listado pero sigue respondiendo por id. NO correr antes del checkout.",
-      "method": "DELETE",
-      "url": "{{ base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+      "name": "PATCH estado -> ELIMINADO (baja logica)",
+      "description": "La baja logica es un PATCH de estado, no un DELETE: no se borra la fila, el vuelo queda en ELIMINADO para no romper las ordenes que lo referencian. Despues de esto desaparece del listado pero sigue respondiendo por id, y ya no se puede volver a modificar. Responde 200 con un mensaje. NO correr antes del checkout.",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}/estado",
       "metaSortKey": -95,
       "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
         {
           "name": "Authorization",
           "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
@@ -457,7 +461,11 @@
       "authentication": {},
       "settingStoreCookies": true,
       "settingSendCookies": true,
-      "settingEncodeUrl": true
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"estado\": \"ELIMINADO\"\n}"
+      }
     },
     {
       "_id": "fld_cupos",
@@ -992,6 +1000,252 @@
         }
       ],
       "parameters": [],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_vuelo_estado_demorado",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "PATCH estado -> DEMORADO",
+      "description": "El estado es un atributo propio del vuelo, no un texto de la descripcion. Un vuelo DEMORADO sigue listado y se puede comprar. Responde 200 con id, estado y un mensaje. Solo el dueno (o un ADMIN); con otro vendedor da 400.",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}/estado",
+      "metaSortKey": -95.75,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"estado\": \"DEMORADO\"\n}"
+      }
+    },
+    {
+      "_id": "req_vuelo_estado_activo",
+      "_type": "request",
+      "parentId": "fld_vuelos",
+      "name": "PATCH estado -> ACTIVO (vuelve a horario)",
+      "description": "Estados validos: ACTIVO, DEMORADO, PAUSADO, CANCELADO, ELIMINADO. Pedir el mismo estado en el que ya esta devuelve 400.",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}/estado",
+      "metaSortKey": -95.5,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"estado\": \"ACTIVO\"\n}"
+      }
+    },
+    {
+      "_id": "fld_seguridad",
+      "_type": "request_group",
+      "parentId": "wrk_vuelos_tpo",
+      "name": "8 - Seguridad y errores",
+      "description": "Casos que tienen que FALLAR a proposito. Muestran que las reglas de acceso viven en SecurityConfig: 401 = no se sabe quien sos (sin token, vencido o invalido), 403 = se sabe quien sos pero el rol no alcanza. Correr despues de las carpetas 0 a 7 (usan los tokens de los logins).",
+      "metaSortKey": -40
+    },
+    {
+      "_id": "req_err_sin_token",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "POST vuelo sin token -> 401",
+      "description": "Sin Authorization la ruta protegida contesta 401 con JSON: timestamp, status y error 'No autenticado'.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/vuelos",
+      "metaSortKey": -100,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"numeroVuelo\": \"X1\"\n}"
+      }
+    },
+    {
+      "_id": "req_err_token_invalido",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "GET carrito con token inventado -> 401",
+      "description": "Un token que no se puede leer o con la firma alterada da 401 'Token invalido'. Un token vencido da 401 'Token vencido'.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/carrito",
+      "metaSortKey": -99,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer esto.no.es.un.jwt"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_err_comprador_publica",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "POST vuelo con token de comprador -> 403",
+      "description": "Token valido pero rol COMPRADOR: no puede publicar. 403 'No tiene permisos para realizar esta accion'.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/vuelos",
+      "metaSortKey": -98,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"numeroVuelo\": \"X1\"\n}"
+      }
+    },
+    {
+      "_id": "req_err_vendedor_carrito",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "GET carrito con token de vendedor -> 403",
+      "description": "El carrito y las ordenes son solo del COMPRADOR. Un vendedor recibe 403.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/carrito",
+      "metaSortKey": -97,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_err_comprador_usuarios",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "GET usuarios con token de comprador -> 403",
+      "description": "La administracion de usuarios y roles es solo del ADMIN.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/usuarios",
+      "metaSortKey": -96,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_comprador', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_err_estado_invalido",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "PATCH estado inventado -> 400",
+      "description": "Un estado que no existe en el enum EstadoVuelo da 400. Mandar un cuerpo vacio ({}) tambien da 400.",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}/estado",
+      "metaSortKey": -95,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"estado\": \"VOLANDO\"\n}"
+      }
+    },
+    {
+      "_id": "req_err_delete_viejo",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "DELETE vuelo (ya no existe) -> 405",
+      "description": "El DELETE de vuelos se reemplazo por el PATCH de estado. La ruta existe pero ya no con ese metodo: 405.",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/vuelos/{% response 'body', 'req_vuelo_crear', '$.id', 'never', 60 %}",
+      "metaSortKey": -94,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {% response 'body', 'req_login_vendedor', '$.token', 'never', 60 %}"
+        }
+      ],
+      "authentication": {},
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingEncodeUrl": true
+    },
+    {
+      "_id": "req_err_sin_resultados",
+      "_type": "request",
+      "parentId": "fld_seguridad",
+      "name": "GET vuelos sin resultados -> mensaje",
+      "description": "Un filtro que no coincide con nada devuelve content vacio y un campo 'mensaje' que el front puede mostrar.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/vuelos",
+      "metaSortKey": -93,
+      "headers": [],
+      "parameters": [
+        {
+          "name": "origen",
+          "value": "ZZZZ",
+          "disabled": false
+        }
+      ],
       "authentication": {},
       "settingStoreCookies": true,
       "settingSendCookies": true,
