@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.PaginaResponse;
 import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
@@ -16,7 +17,6 @@ import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -38,9 +38,9 @@ public class VueloServiceImpl implements VueloService {
     private UsuarioRepository usuarioRepository;
 
     @Override
-    public Page<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
-                                      BigDecimal precioMin, BigDecimal precioMax, Long vendedorId,
-                                      PageRequest pageRequest) {
+    public PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
+                                                BigDecimal precioMin, BigDecimal precioMax, Long vendedorId,
+                                                PageRequest pageRequest) {
         // Cada Specification devuelve null si su filtro vino vacio, asi que las
         // combinamos todas y quedan solo las que el cliente realmente mando.
         Specification<Vuelo> spec = Specification.allOf(
@@ -54,7 +54,13 @@ public class VueloServiceImpl implements VueloService {
                 VueloSpecifications.precioMaximo(precioMax),
                 VueloSpecifications.delVendedor(vendedorId));
 
-        return vueloRepository.findAll(spec, pageRequest).map(VueloResponse::desde);
+        boolean hayFiltros = origen != null || destino != null || categoriaId != null || claseId != null
+                || precioMin != null || precioMax != null || vendedorId != null;
+        String mensajeSiVacia = hayFiltros
+                ? "No hay vuelos que coincidan con los filtros indicados"
+                : "No hay vuelos disponibles por el momento";
+
+        return PaginaResponse.desde(vueloRepository.findAll(spec, pageRequest).map(VueloResponse::desde), mensajeSiVacia);
     }
 
     @Override

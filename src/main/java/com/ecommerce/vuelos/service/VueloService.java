@@ -1,11 +1,11 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.PaginaResponse;
 import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
-import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
-import org.springframework.data.domain.Page;
+import com.ecommerce.vuelos.entity.EstadoVuelo;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public interface VueloService {
 
     /** Catalogo publico con filtros opcionales. Todos los filtros pueden venir en null. */
-    Page<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
+    PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
                                BigDecimal precioMin, BigDecimal precioMax, Long vendedorId,
                                PageRequest pageRequest);
 

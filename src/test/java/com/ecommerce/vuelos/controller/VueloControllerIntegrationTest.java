@@ -340,4 +340,22 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void busquedaSinResultados_devuelveMensaje() throws Exception {
+        mockMvc.perform(get("/api/vuelos").param("origen", "ZZZZ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.mensaje").value("No hay vuelos que coincidan con los filtros indicados"));
+    }
+
+    @Test
+    void busquedaConResultados_noTraeMensaje() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vconmensaje");
+        crearVuelo(vendedor, "MDZ", "COR", 250.0);
+
+        mockMvc.perform(get("/api/vuelos").param("origen", "MDZ"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.mensaje").doesNotExist());
+    }
 }

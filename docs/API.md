@@ -98,8 +98,10 @@ Administración de cuentas y asignación de permisos (roles).
 
 - `GET /api/vuelos` — público, filtros opcionales combinables: `origen`, `destino`,
   `categoriaId`, `claseId`, `precioMin`, `precioMax`, `vendedorId`, más `page`/`size` para
-  paginar (respuesta `Page<VueloResponse>`: `content`, `totalElements`, `totalPages`, etc.).
-  **No lista los vuelos que ya salieron** (`fechaSalida` pasada) ni los eliminados.
+  paginar (respuesta `PaginaResponse<VueloResponse>`: `content`, `number`, `size`,
+  `totalElements`, `totalPages`). **No lista los vuelos que ya salieron** (`fechaSalida` pasada)
+  ni los eliminados. Si la página viene vacía, la respuesta suma un campo `mensaje` (por ejemplo
+  `"No hay vuelos que coincidan con los filtros indicados"`); si hay resultados, el campo no aparece.
 - `GET /api/vuelos/{id}` — público, incluye `disponibilidades[]` y `hayStock`. Responde también
   por vuelos que ya salieron (las compras viejas los necesitan para mostrar sus datos).
 - `POST /api/vuelos` — requiere token con rol `VENDEDOR` o `ADMIN`. El vuelo nace **sin

@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.controller;
 
+import com.ecommerce.vuelos.dto.PaginaResponse;
 import com.ecommerce.vuelos.dto.vuelo.CambiarEstadoRequest;
 import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
@@ -8,7 +9,6 @@ import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.VueloService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +35,7 @@ public class VueloController {
 
 
     @GetMapping
-    public ResponseEntity<Page<VueloResponse>> buscar(
+    public ResponseEntity<PaginaResponse<VueloResponse>> buscar(
             @RequestParam(required = false) String origen,
             @RequestParam(required = false) String destino,
             @RequestParam(required = false) Long categoriaId,
