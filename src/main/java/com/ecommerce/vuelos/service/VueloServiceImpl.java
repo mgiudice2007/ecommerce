@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
 import com.ecommerce.vuelos.entity.Aeropuerto;
@@ -106,13 +107,36 @@ public class VueloServiceImpl implements VueloService {
 
     @Override
     @Transactional
-    public void eliminar(Long id, UsuarioPrincipal principal) {
+    public EstadoVueloResponse cambiarEstado(Long id, EstadoVuelo nuevoEstado, UsuarioPrincipal principal) {
         Vuelo vuelo = buscarPorId(id);
         validarPropiedad(vuelo, principal);
 
-        vuelo.setEstado(EstadoVuelo.ELIMINADO);
-        vuelo.setFechaBaja(LocalDateTime.now());
+        if (vuelo.getEstado() == EstadoVuelo.ELIMINADO) {
+            throw new BadRequestException("El vuelo fue eliminado y ya no se puede modificar");
+        }
+        if (vuelo.getEstado() == nuevoEstado) {
+            throw new BadRequestException("El vuelo ya esta en estado " + nuevoEstado);
+        }
+
+        vuelo.setEstado(nuevoEstado);
+        // La baja logica deja la fecha: el vuelo sigue en la base para no romper las ordenes que lo referencian.
+        if (nuevoEstado == EstadoVuelo.ELIMINADO) {
+            vuelo.setFechaBaja(LocalDateTime.now());
+        }
         vueloRepository.save(vuelo);
+
+        return new EstadoVueloResponse(vuelo.getId(), nuevoEstado, mensajeDeEstado(vuelo, nuevoEstado));
+    }
+
+    private String mensajeDeEstado(Vuelo vuelo, EstadoVuelo estado) {
+        String numero = vuelo.getNumeroVuelo();
+        return switch (estado) {
+            case ACTIVO -> "El vuelo " + numero + " esta activo";
+            case DEMORADO -> "El vuelo " + numero + " fue marcado como demorado";
+            case PAUSADO -> "El vuelo " + numero + " fue pausado";
+            case CANCELADO -> "El vuelo " + numero + " fue cancelado";
+            case ELIMINADO -> "El vuelo " + numero + " fue eliminado correctamente";
+        };
     }
 
     /** Solo el vendedor que publico el vuelo, o un ADMIN, pueden tocarlo. */

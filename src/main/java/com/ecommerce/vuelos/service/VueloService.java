@@ -1,7 +1,9 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
+import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,5 +23,6 @@ public interface VueloService {
 
     VueloResponse actualizar(Long id, VueloRequest request, UsuarioPrincipal principal);
 
-    void eliminar(Long id, UsuarioPrincipal principal);
+    /** Cambia el estado del vuelo (demorado, pausado, cancelado, eliminado) sin tocar el resto de sus datos. */
+    EstadoVueloResponse cambiarEstado(Long id, EstadoVuelo nuevoEstado, UsuarioPrincipal principal);
 }

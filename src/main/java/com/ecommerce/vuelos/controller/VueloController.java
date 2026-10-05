@@ -1,6 +1,7 @@
 package com.ecommerce.vuelos.controller;
 
-import com.ecommerce.vuelos.dto.MensajeResponse;
+import com.ecommerce.vuelos.dto.vuelo.CambiarEstadoRequest;
+import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -13,8 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -74,11 +75,12 @@ public class VueloController {
         return ResponseEntity.ok(vueloService.actualizar(id, request, principal));
     }
 
-    @DeleteMapping("/{id}")
+    /** Baja logica y cambios de estado (demorado, pausado, cancelado, eliminado): es un PATCH, no un DELETE. */
+    @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('VENDEDOR','ADMIN')")
-    public ResponseEntity<MensajeResponse> eliminar(@PathVariable Long id,
-                                                    @AuthenticationPrincipal UsuarioPrincipal principal) {
-        vueloService.eliminar(id, principal);
-        return ResponseEntity.ok(new MensajeResponse("Vuelo eliminado correctamente"));
+    public ResponseEntity<EstadoVueloResponse> cambiarEstado(@PathVariable Long id,
+                                                             @Valid @RequestBody CambiarEstadoRequest request,
+                                                             @AuthenticationPrincipal UsuarioPrincipal principal) {
+        return ResponseEntity.ok(vueloService.cambiarEstado(id, request.getEstado(), principal));
     }
 }

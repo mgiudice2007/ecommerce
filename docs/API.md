@@ -121,9 +121,18 @@ Administración de cuentas y asignación de permisos (roles).
   `precioConDescuento` = `precio`.
 - `PUT /api/vuelos/{id}` — solo el vendedor dueño (o un ADMIN) puede modificarlo; con el token
   de otro vendedor devuelve `400`.
-- `DELETE /api/vuelos/{id}` — **baja lógica** (pasa a `estado=ELIMINADO`, no borra la fila —
-  así no rompe las órdenes que ya lo referencian). Desaparece del listado pero sigue
-  respondiendo por id. Devuelve `200` con `{ "mensaje": "Vuelo eliminado correctamente" }`.
+- `PATCH /api/vuelos/{id}/estado` — cambia el estado del vuelo sin tocar el resto de sus datos
+  (ni la descripción). Solo el vendedor dueño (o un ADMIN); con otro token devuelve `400`.
+  ```json
+  { "estado": "DEMORADO" }
+  ```
+  Estados válidos: `ACTIVO`, `DEMORADO`, `PAUSADO`, `CANCELADO`, `ELIMINADO`. Un vuelo
+  `DEMORADO` sigue listado y se puede comprar; `PAUSADO` y `CANCELADO` no se pueden comprar.
+  `ELIMINADO` es la **baja lógica**: no borra la fila (así no rompe las órdenes que ya lo
+  referencian), desaparece del listado, sigue respondiendo por id y ya no se puede volver a
+  modificar. Devuelve `200` con `{ "id": 7, "estado": "DEMORADO", "mensaje": "El vuelo AR1500 fue
+  marcado como demorado" }`. `400` si el estado no existe, falta, o el vuelo ya está en ese estado.
+  Reemplaza al viejo `DELETE /api/vuelos/{id}`, que ya no existe (devuelve `405`).
 
 ## Descuentos (promociones por vuelo) — `/api/descuentos`
 

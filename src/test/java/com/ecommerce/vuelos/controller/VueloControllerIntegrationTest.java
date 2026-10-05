@@ -10,6 +10,7 @@ import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -219,24 +220,124 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isBadRequest());
     }
 
+    private void cambiarEstado(String token, Long vueloId, String estado, int statusEsperado) throws Exception {
+        mockMvc.perform(patch("/api/vuelos/" + vueloId + "/estado")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"estado\":\"" + estado + "\"}"))
+                .andExpect(status().is(statusEsperado));
+    }
+
     @Test
-    void eliminarVuelo_esBajaLogicaYDejaDeListarse() throws Exception {
+    void eliminarVuelo_esBajaLogicaPorPatchYDejaDeListarse() throws Exception {
         String vendedor = registrarYLoguearVendedor("vbaja");
         Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
 
-        mockMvc.perform(delete("/api/vuelos/" + vueloId)
-                        .header("Authorization", "Bearer " + vendedor))
+        mockMvc.perform(patch("/api/vuelos/" + vueloId + "/estado")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"estado\":\"ELIMINADO\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.mensaje").value("Vuelo eliminado correctamente"));
-
+                .andExpect(jsonPath("$.estado").value("ELIMINADO"))
+                .andExpect(jsonPath("$.mensaje").isNotEmpty());
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("ELIMINADO"));
 
-
         mockMvc.perform(get("/api/vuelos").param("origen", "MDZ"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(0));
     }
+
+    @Test
+    void eliminarVuelo_yaNoExisteElDelete() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vsindelete");
+        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+
+        mockMvc.perform(delete("/api/vuelos/" + vueloId)
+                        .header("Authorization", "Bearer " + vendedor))
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    @Test
+    void marcarVueloDemorado_loDejaListadoYNoTocaLaDescripcion() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vdemora");
+        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+
+        mockMvc.perform(patch("/api/vuelos/" + vueloId + "/estado")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"estado\":\"DEMORADO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("DEMORADO"))
+                .andExpect(jsonPath("$.mensaje").isNotEmpty());
+
+        // la descripcion no se toca: el estado es un atributo propio del vuelo
+        mockMvc.perform(get("/api/vuelos/" + vueloId))
+                .andExpect(jsonPath("$.estado").value("DEMORADO"))
+                .andExpect(jsonPath("$.descripcion").value("Vuelo de prueba"));
+
+        mockMvc.perform(get("/api/vuelos").param("origen", "MDZ"))
+                .andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    void vueloDemorado_sePuedeComprar_peroPausadoNo() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vcompra");
+        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 250.0);
+        String comprador = registrarYLoguearComprador("compradorestado");
+
+        cambiarEstado(vendedor, vueloId, "DEMORADO", 200);
+        agregarAlCarrito(comprador, cupoId, 1);
+
+        cambiarEstado(vendedor, vueloId, "PAUSADO", 200);
+        mockMvc.perform(post("/api/carrito/items")
+                        .header("Authorization", "Bearer " + comprador)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"disponibilidadId\":" + cupoId + ",\"cantidad\":1}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cambiarEstadoDeVueloAjeno_devuelve400() throws Exception {
+        String dueno = registrarYLoguearVendedor("vduenoestado");
+        Long vueloId = crearVuelo(dueno, "MDZ", "COR", 250.0);
+        String intruso = registrarYLoguearVendedor("vintrusoestado");
+
+        cambiarEstado(intruso, vueloId, "CANCELADO", 400);
+    }
+
+    @Test
+    void cambiarEstado_aUnoInvalidoORepetido_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vestadoinv");
+        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+
+        cambiarEstado(vendedor, vueloId, "VOLANDO", 400);
+        cambiarEstado(vendedor, vueloId, "ACTIVO", 400);
+        mockMvc.perform(patch("/api/vuelos/" + vueloId + "/estado")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void vueloEliminado_noSePuedeVolverAModificar() throws Exception {
+        String vendedor = registrarYLoguearVendedor("vreviv");
+        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+
+        cambiarEstado(vendedor, vueloId, "ELIMINADO", 200);
+        cambiarEstado(vendedor, vueloId, "ACTIVO", 400);
+    }
+
+    @Test
+    void cambiarEstado_sinToken_devuelve401() throws Exception {
+        mockMvc.perform(patch("/api/vuelos/1/estado")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"estado\":\"DEMORADO\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
 }
