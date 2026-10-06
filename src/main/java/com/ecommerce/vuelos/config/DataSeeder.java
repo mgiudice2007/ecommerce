@@ -152,13 +152,13 @@ public class DataSeeder implements CommandLineRunner {
                     298_500, 689_000, 0, 0, "santiago.jpg", "Santiago de Chile",
                     "Santiago de Chile, con la cordillera de los Andes como telón de fondo."),
             new RutaDemo(2602, "EZE", "CUN", "Regional", 40, LocalTime.of(23, 55), 540,
-                    1_180_000, 2_850_000, 0, 15, "cancun.jpg", "Cancún",
+                    1_180_000, 2_850_000, 5_600_000, 15, "cancun.jpg", "Cancún",
                     "Caribe mexicano: playas de arena blanca y mar turquesa en Cancún."),
             new RutaDemo(2640, "EZE", "PUJ", "Regional", 45, LocalTime.of(22, 40), 520,
-                    1_095_000, 2_690_000, 0, 0, "puntacana.jpg", "Punta Cana",
+                    1_095_000, 2_690_000, 5_300_000, 0, "puntacana.jpg", "Punta Cana",
                     "Punta Cana, en República Dominicana: palmeras, resorts y aguas cálidas."),
             new RutaDemo(2800, "EZE", "MIA", "Regional", 28, LocalTime.of(23, 10), 540,
-                    1_290_000, 3_150_000, 0, 0, "miami.jpg", "Miami",
+                    1_290_000, 3_150_000, 6_200_000, 0, "miami.jpg", "Miami",
                     "Vuelo nocturno directo a Miami: playas, compras y conexiones a todo Estados Unidos."),
             new RutaDemo(2900, "EZE", "JFK", "Regional", 52, LocalTime.of(22, 15), 660,
                     1_420_000, 3_480_000, 6_900_000, 0, "nuevayork.jpg", "Nueva York",
@@ -169,7 +169,7 @@ public class DataSeeder implements CommandLineRunner {
                     1_690_000, 4_250_000, 7_900_000, 12, "madrid.jpg", "Madrid",
                     "Vuelo directo a Madrid, la mejor puerta de entrada a Europa."),
             new RutaDemo(3150, "EZE", "BCN", "Internacional", 60, LocalTime.of(20, 45), 775,
-                    1_740_000, 4_390_000, 0, 0, "barcelona.jpg", "Barcelona",
+                    1_740_000, 4_390_000, 8_100_000, 0, "barcelona.jpg", "Barcelona",
                     "Barcelona: la Sagrada Familia, el Park Güell y el Mediterráneo."),
             new RutaDemo(3310, "EZE", "FCO", "Internacional", 70, LocalTime.of(19, 55), 800,
                     1_850_000, 4_620_000, 8_400_000, 0, "roma.jpg", "Roma",
@@ -220,7 +220,10 @@ public class DataSeeder implements CommandLineRunner {
     private void crearVuelo(Usuario admin, String numero, String origen, String destino, RutaDemo ruta,
                             LocalDateTime salida, int ajustePrecio, int porcentajeDescuento,
                             String foto, String descripcion) {
-        if (vueloRepository.existsByNumeroVuelo(numero)) {
+        Vuelo existente = vueloRepository.findFirstByNumeroVuelo(numero).orElse(null);
+        if (existente != null) {
+            // El vuelo ya estaba: no se toca, salvo sumarle Primera si la ruta ahora la tiene
+            agregarPrimeraSiFalta(existente, ruta, ajustePrecio);
             return;
         }
 
@@ -257,6 +260,20 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         cargarFoto(vuelo, foto);
+    }
+
+    /**
+     * Para las bases que ya tenian los vuelos de demo: si la ruta ofrece Primera
+     * y el vuelo todavia no tiene ese cupo, se lo agrega.
+     */
+    private void agregarPrimeraSiFalta(Vuelo vuelo, RutaDemo ruta, int ajustePrecio) {
+        if (ruta.primera() == 0) {
+            return;
+        }
+        Long primeraId = claseRepository.findByNombre("Primera").orElseThrow().getId();
+        if (!disponibilidadRepository.existsByVueloIdAndClaseId(vuelo.getId(), primeraId)) {
+            disponibilidadRepository.save(cupo(vuelo, "Primera", 8, ajustar(ruta.primera(), ajustePrecio)));
+        }
     }
 
     /** Aplica el porcentaje y redondea a centenas, como un precio de verdad. */
