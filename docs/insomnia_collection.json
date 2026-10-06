@@ -96,7 +96,7 @@
       "_id": "req_login_vendedor",
       "_type": "request",
       "parentId": "fld_auth",
-      "name": "POST login vendedor",
+      "name": "POST login admin (unico vendedor)",
       "description": "Corre esta primero: las carpetas 2 y 3 toman el token de aca.",
       "method": "POST",
       "url": "{{ base_url }}/api/auth/login",
@@ -114,7 +114,7 @@
       "settingEncodeUrl": true,
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"username\": \"vendedor\",\n  \"password\": \"vendedor123\"\n}"
+        "text": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
       }
     },
     {
@@ -296,7 +296,7 @@
       "_id": "fld_vuelos",
       "_type": "request_group",
       "parentId": "wrk_vuelos_tpo",
-      "name": "2 - Vuelos (vendedor)",
+      "name": "2 - Vuelos (admin)",
       "description": "Publicacion del pasaje. Solo VENDEDOR o ADMIN, y solo el dueno puede modificar.",
       "metaSortKey": -80
     },
@@ -1145,7 +1145,7 @@
       "_id": "req_err_vendedor_carrito",
       "_type": "request",
       "parentId": "fld_seguridad",
-      "name": "GET carrito con token de vendedor -> 403",
+      "name": "GET carrito con token de admin -> 403",
       "description": "El carrito y las ordenes son solo del COMPRADOR. Un vendedor recibe 403.",
       "method": "GET",
       "url": "{{ _.base_url }}/api/carrito",

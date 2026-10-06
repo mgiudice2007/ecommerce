@@ -33,6 +33,9 @@ public class RegisterRequest {
     @NotBlank
     private String apellido;
 
-    @NotNull(message = "El rol es obligatorio: COMPRADOR o VENDEDOR")
+    /**
+     * Opcional. El registro publico crea siempre un COMPRADOR (hay un unico
+     * vendedor, el de la aerolinea); si llega otro rol se rechaza.
+     */
     private Rol rol;
 }

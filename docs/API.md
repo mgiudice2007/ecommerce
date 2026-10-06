@@ -5,34 +5,36 @@ Base URL: `http://localhost:8080`
 Autenticación por **JWT** (`Authorization: Bearer <token>`), stateless. El token se obtiene
 en `POST /api/auth/login` y expira a las 24hs. No hay cookies de sesión ni estado en el servidor.
 
-## Modelo: marketplace multi-vendedor
+## Modelo: una aerolínea con un único vendedor
 
-Cualquier usuario con rol `VENDEDOR` publica sus propios vuelos (no hay una "aerolínea" fija
-cargada por un admin). Un mismo vuelo se vende en varias clases al mismo tiempo, cada una con
-su propio stock y precio (`Disponibilidad`).
+La aerolínea tiene **un único vendedor: el administrador**. Solo los usuarios con rol `ADMIN`
+publican, modifican, cambian de estado y dan de baja vuelos, y manejan sus cupos, descuentos y
+fotos. Los pasajeros se registran como `COMPRADOR`. Un mismo vuelo se vende en varias clases al
+mismo tiempo, cada una con su propio stock y precio (`Disponibilidad`).
 
-Roles (`Rol`): `COMPRADOR`, `VENDEDOR`, `ADMIN`.
+Roles (`Rol`): `COMPRADOR`, `ADMIN` (el rol `VENDEDOR` sigue existiendo en el enum, pero no tiene
+permisos para manejar vuelos).
 
 ## Usuarios de prueba (seed inicial, solo si la base está vacía al arrancar)
 
 | username | password | rol |
 |---|---|---|
 | `admin` | `admin123` | ADMIN |
-| `vendedor` | `vendedor123` | VENDEDOR |
 | `comprador` | `comprador123` | COMPRADOR |
 
 Catálogo semilla: 19 aeropuertos (10 de Argentina y destinos de América y Europa), 3 categorías
-(Cabotaje, Regional, Internacional), 3 clases (Economica, Ejecutiva, Primera) y **17 vuelos de
-demostración** del usuario `vendedor`, con precios en pesos, clases, algunos descuentos vigentes y una
-foto cada uno (las imágenes están en `src/main/resources/fotos-ejemplo`). El seeder agrega lo que
+(Cabotaje, Regional, Internacional), 3 clases (Economica, Ejecutiva, Primera) y **102 vuelos de
+demostración** publicados por el `admin`: 17 rutas desde Buenos Aires con 3 vuelos de ida y 3 de
+vuelta cada una (números pares para la ida y la siguiente impar para la vuelta, por ejemplo BC1402 y
+BC1403), con precios en pesos, clases, algunos descuentos vigentes y una foto cada uno (las imágenes están en `src/main/resources/fotos-ejemplo`). El seeder agrega lo que
 falte cada vez que arranca: los aeropuertos por código IATA y los vuelos por número de vuelo, así
 también funciona sobre una base que ya tenía datos. Un vuelo dado de baja no se vuelve a crear.
 
 ## Auth — `/api/auth`
 
 ### POST `/api/auth/registro` (público)
-Registro genérico — el rol es un campo del body, solo acepta `COMPRADOR` o `VENDEDOR`
-(mandar `ADMIN` acá devuelve `400`).
+Registro de pasajeros: crea siempre un `COMPRADOR`. El campo `rol` es opcional; si se manda
+`VENDEDOR` o `ADMIN` devuelve `400` (los administradores se crean con el endpoint de abajo).
 ```json
 {
   "username": "mile",
@@ -83,7 +85,7 @@ Administración de cuentas y asignación de permisos (roles).
   `nombre`, `apellido`, `rol`, `fechaRegistro` (sin datos de pasajero ni contraseña).
 - `PUT /api/usuarios/{id}/rol` — cambia el rol de una cuenta:
   ```json
-  { "rol": "VENDEDOR" }
+  { "rol": "ADMIN" }
   ```
   Acepta `COMPRADOR`, `VENDEDOR` o `ADMIN`. El cambio rige enseguida (el rol se lee de la base en
   cada request, no del token). Un admin no puede cambiar su propio rol → `400`. Con otro rol → `403`.
@@ -104,7 +106,7 @@ Administración de cuentas y asignación de permisos (roles).
   `"No hay vuelos que coincidan con los filtros indicados"`); si hay resultados, el campo no aparece.
 - `GET /api/vuelos/{id}` — público, incluye `disponibilidades[]` y `hayStock`. Responde también
   por vuelos que ya salieron (las compras viejas los necesitan para mostrar sus datos).
-- `POST /api/vuelos` — requiere token con rol `VENDEDOR` o `ADMIN`. El vuelo nace **sin
+- `POST /api/vuelos` — requiere token con rol `ADMIN`. El vuelo nace **sin
   asientos** — el cupo se carga aparte con `Disponibilidad`.
   ```json
   {
@@ -121,10 +123,9 @@ Administración de cuentas y asignación de permisos (roles).
   `precioConDescuento` en la respuesta ya no viene de un campo fijo en el vuelo: se calcula
   solo, buscando si hay un `Descuento` vigente hoy (ver más abajo). Sin descuento vigente,
   `precioConDescuento` = `precio`.
-- `PUT /api/vuelos/{id}` — solo el vendedor dueño (o un ADMIN) puede modificarlo; con el token
-  de otro vendedor devuelve `400`.
+- `PUT /api/vuelos/{id}` — solo un `ADMIN` puede modificarlo; con un token de comprador devuelve `403`.
 - `PATCH /api/vuelos/{id}/estado` — cambia el estado del vuelo sin tocar el resto de sus datos
-  (ni la descripción). Solo el vendedor dueño (o un ADMIN); con otro token devuelve `400`.
+  (ni la descripción). Solo un `ADMIN`; con un token de comprador devuelve `403`.
   ```json
   { "estado": "DEMORADO" }
   ```
@@ -144,7 +145,7 @@ y la fecha de hoy está entre `fechaDesde` y `fechaHasta`.
 
 - `GET /api/descuentos?vueloId={id}` — público, lista todos los descuentos del vuelo (vigentes o no)
 - `GET /api/descuentos/{id}` — público
-- `POST /api/descuentos` — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo.
+- `POST /api/descuentos` — requiere token `ADMIN`.
   ```json
   {
     "vueloId": 1,
@@ -172,7 +173,7 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   `tamano`) — **no** trae el binario, para no inflar la respuesta.
 - `GET /api/fotos/{id}` — público, devuelve el binario directo con el `Content-Type` según la
   extensión del archivo.
-- `POST /api/fotos` (multipart) — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo. Campos:
+- `POST /api/fotos` (multipart) — requiere token `ADMIN`. Campos:
   `vueloId`, `file` (el binario — **ojo con el nombre del campo**, no es `archivo`), `orden`
   (opcional — si no viene, se calcula solo como la siguiente posición). Solo acepta archivos con
   `Content-Type` que empiece con `image/`.
@@ -182,7 +183,7 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 
 - `GET /api/disponibilidades?vueloId={id}` — público, lista los cupos de un vuelo
 - `GET /api/disponibilidades/{id}` — público
-- `POST /api/disponibilidades` — requiere token `VENDEDOR`/`ADMIN` dueño del vuelo. Repetir la
+- `POST /api/disponibilidades` — requiere token `ADMIN`. Repetir la
   misma clase para el mismo vuelo da `400` (hay un `UNIQUE(vuelo_id, clase_id)`).
   ```json
   { "vueloId": 1, "claseId": 1, "asientosTotales": 30, "precio": 1200.0 }
@@ -218,7 +219,7 @@ cambie o se borre después.
 ## Flujo típico de prueba
 
 1. `GET /api/categorias`, `/api/aeropuertos`, `/api/clases` para tener los ids del catálogo.
-2. `POST /api/auth/login` con `vendedor`/`vendedor123` → crear un vuelo → cargar su
+2. `POST /api/auth/login` con `admin`/`admin123` → crear un vuelo → cargar su
    `Disponibilidad` (clase + stock + precio).
 3. `POST /api/auth/login` con `comprador`/`comprador123` → agregar esa `disponibilidadId` al
    carrito → `POST /api/carrito/checkout` → `GET /api/ordenes`.
@@ -230,5 +231,4 @@ cambie o se borre después.
 8-Seguridad y errores), con los tokens e ids encadenados automáticamente entre requests (tag
 `{% response %}` de Insomnia — no hace falta copiar nada a mano). La carpeta 8 reúne los casos que
 tienen que fallar a propósito (401, 403, 400, 405 y la lista vacía con `mensaje`). Correr el login de
-vendedor y de comprador primero; usuarios del seeder: `admin`, `vendedor` y `comprador`, con clave
-`<usuario>123`. Importarla con File → Import.
+admin y de comprador primero; usuarios del seeder: `admin` y `comprador`, con clave `<usuario>123`. Importarla con File → Import.

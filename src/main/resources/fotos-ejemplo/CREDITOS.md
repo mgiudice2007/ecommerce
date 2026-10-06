@@ -6,6 +6,7 @@ Las carga el `DataSeeder` en los vuelos de demostración. Todas son de
 
 | Archivo | Foto |
 |---|---|
+| buenosaires.jpg | https://unsplash.com/photos/ifHKdVfSf9E |
 | bariloche.jpg | https://unsplash.com/photos/zsgJdHDP4IE |
 | iguazu.jpg | https://unsplash.com/photos/esZgjkS2amQ |
 | ushuaia.jpg | https://unsplash.com/photos/lbaXsukt7Cs |

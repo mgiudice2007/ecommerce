@@ -44,7 +44,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void descuentoPorcentual_vigente_bajaElPrecioDelVuelo() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtoporc");
+        String vendedor = registrarYLoguearAdmin("vdtoporc");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 25), 201);
@@ -60,7 +60,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void descuentoDeMontoFijo_restaLaPlataDirecto() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtomonto");
+        String vendedor = registrarYLoguearAdmin("vdtomonto");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         crear(vendedor, vigenteHoy(vueloId, "MONTO_FIJO", 150), 201);
@@ -72,7 +72,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void descuentoFueraDeVigencia_noTocaElPrecio() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtoviejo");
+        String vendedor = registrarYLoguearAdmin("vdtoviejo");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         crear(vendedor, body(vueloId, "PORCENTAJE", 50,
@@ -92,7 +92,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void dosDescuentosQueSeSolapan_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtosolapa");
+        String vendedor = registrarYLoguearAdmin("vdtosolapa");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         crear(vendedor, body(vueloId, "PORCENTAJE", 10,
@@ -109,38 +109,38 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void porcentajeMayorA100_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdto101");
+        String vendedor = registrarYLoguearAdmin("vdto101");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
         crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 150), 400);
     }
 
     @Test
     void montoFijoMayorAlPrecio_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtocaro");
+        String vendedor = registrarYLoguearAdmin("vdtocaro");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 500.0);
         crear(vendedor, vigenteHoy(vueloId, "MONTO_FIJO", 900), 400);
     }
 
     @Test
     void fechaHastaAnteriorADesde_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtofechas");
+        String vendedor = registrarYLoguearAdmin("vdtofechas");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
         crear(vendedor, body(vueloId, "PORCENTAJE", 10,
                 LocalDate.now().plusDays(30), LocalDate.now()), 400);
     }
 
     @Test
-    void cargarDescuentoEnVueloAjeno_devuelve400() throws Exception {
-        String dueno = registrarYLoguearVendedor("vdtodueno");
-        Long vueloId = crearVuelo(dueno, "EZE", "MAD", 1000.0);
+    void cargarDescuento_comoPasajero_devuelve403() throws Exception {
+        String admin = registrarYLoguearAdmin("vdtodueno");
+        Long vueloId = crearVuelo(admin, "EZE", "MAD", 1000.0);
 
-        String intruso = registrarYLoguearVendedor("vdtointruso");
-        crear(intruso, vigenteHoy(vueloId, "PORCENTAJE", 10), 400);
+        String intruso = registrarYLoguearComprador("vdtointruso");
+        crear(intruso, vigenteHoy(vueloId, "PORCENTAJE", 10), 403);
     }
 
     @Test
     void cargarDescuentoComoComprador_devuelve403() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtoparacomp");
+        String vendedor = registrarYLoguearAdmin("vdtoparacomp");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
         String comprador = registrarYLoguearComprador("cdto");
 
@@ -149,7 +149,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void obtenerDescuentoPorId_esPublicoYCalculaSiEstaVigente() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtoporid");
+        String vendedor = registrarYLoguearAdmin("vdtoporid");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         MvcResult creado = crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 15), 201);
@@ -168,7 +168,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void modificarDescuento_cambiaElTipoYRecalculaElPrecio() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtoedita");
+        String vendedor = registrarYLoguearAdmin("vdtoedita");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         MvcResult creado = crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 20), 201);
@@ -192,17 +192,17 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.precioConDescuento").value(650.0));
 
 
-        String intruso = registrarYLoguearVendedor("vdtoeditaajeno");
+        String intruso = registrarYLoguearComprador("vdtoeditaajeno");
         mockMvc.perform(put("/api/descuentos/" + descuentoId)
                         .header("Authorization", "Bearer " + intruso)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(aMontoFijo)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void eliminarDescuento_devuelveElPrecioOriginal() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtoborra");
+        String vendedor = registrarYLoguearAdmin("vdtoborra");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         MvcResult creado = crear(vendedor, vigenteHoy(vueloId, "PORCENTAJE", 20), 201);
@@ -224,7 +224,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_congelaElDescuentoAplicadoAunqueDespuesSeApague() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vdtocheckout");
+        String vendedor = registrarYLoguearAdmin("vdtocheckout");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
         Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 1000.0);
 

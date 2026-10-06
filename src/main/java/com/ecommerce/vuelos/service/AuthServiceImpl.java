@@ -24,14 +24,18 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** Registro publico. Solo permite COMPRADOR o VENDEDOR. */
+    /**
+     * Registro publico: solo para pasajeros (COMPRADOR). La aerolinea tiene un
+     * unico vendedor, que se crea con el seeder; un ADMIN puede asignar roles
+     * desde la administracion de usuarios.
+     */
     @Override
     @Transactional
     public UsuarioResponse registrar(RegisterRequest request) {
-        if (request.getRol() == Rol.ADMIN) {
-            throw new BadRequestException("No es posible registrarse como ADMIN");
+        if (request.getRol() != null && request.getRol() != Rol.COMPRADOR) {
+            throw new BadRequestException("El registro es solo para pasajeros (rol COMPRADOR)");
         }
-        return crear(request, request.getRol());
+        return crear(request, Rol.COMPRADOR);
     }
 
     /** Alta de administrador. Solo la puede invocar un ADMIN autenticado. */

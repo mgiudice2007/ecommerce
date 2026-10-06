@@ -65,16 +65,20 @@ public abstract class IntegrationTestSupport {
         return login(username, "123456");
     }
 
-    protected String registrarYLoguearVendedor(String username) throws Exception {
+    /**
+     * La aerolinea tiene un unico vendedor: el administrador. Para los tests que
+     * publican vuelos se crea un admin nuevo (lo da de alta el admin del seeder).
+     */
+    protected String registrarYLoguearAdmin(String username) throws Exception {
         Map<String, String> body = Map.of(
                 "username", username,
                 "mail", username + "@test.com",
                 "password", "123456",
                 "nombre", "Test",
-                "apellido", "Vendedor",
-                "rol", "VENDEDOR"
+                "apellido", "Admin"
         );
-        mockMvc.perform(post("/api/auth/registro")
+        mockMvc.perform(post("/api/auth/registro/administrador")
+                        .header("Authorization", "Bearer " + loginAdmin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated());

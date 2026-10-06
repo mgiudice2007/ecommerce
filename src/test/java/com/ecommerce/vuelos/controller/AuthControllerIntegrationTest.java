@@ -126,6 +126,39 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void registrarseComoVendedor_devuelve400() throws Exception {
+        // La aerolinea tiene un unico vendedor (el admin): el registro publico es solo para pasajeros
+        Map<String, String> body = Map.of(
+                "username", "quierovender",
+                "mail", "quierovender@test.com",
+                "password", "123456",
+                "nombre", "Ana",
+                "apellido", "Perez",
+                "rol", "VENDEDOR"
+        );
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registrarse_sinRol_creaUnComprador() throws Exception {
+        Map<String, String> body = Map.of(
+                "username", "sinrol",
+                "mail", "sinrol@test.com",
+                "password", "123456",
+                "nombre", "Ana",
+                "apellido", "Perez"
+        );
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rol").value("COMPRADOR"));
+    }
+
+    @Test
     void registrarComprador_conUsernameDuplicado_devuelve400() throws Exception {
         Map<String, String> body = Map.of(
                 "username", "duplicado",

@@ -64,10 +64,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/registro/administrador", "/api/usuarios/**").hasRole("ADMIN")
                         // Solo COMPRADOR: su carrito y sus ordenes (el dueno sale siempre del token).
                         .requestMatchers("/api/carrito/**", "/api/ordenes/**").hasRole("COMPRADOR")
-                        // VENDEDOR o ADMIN: publicar y gestionar vuelos, cupos, descuentos y fotos.
-                        // Que sea el dueno del vuelo lo valida cada servicio.
+                        // Solo ADMIN: la aerolinea tiene un unico vendedor, que es el administrador.
+                        // Publicar y gestionar vuelos, cupos, descuentos y fotos.
                         .requestMatchers("/api/vuelos/**", "/api/disponibilidades/**", "/api/descuentos/**",
-                                "/api/fotos/**").hasAnyRole("VENDEDOR", "ADMIN")
+                                "/api/fotos/**").hasRole("ADMIN")
                         // Cualquier otra ruta (por ejemplo /api/auth/me y /logout) pide estar logueado.
                         .anyRequest().authenticated()
                 )

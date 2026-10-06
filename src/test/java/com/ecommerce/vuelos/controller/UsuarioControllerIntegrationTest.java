@@ -50,7 +50,7 @@ class UsuarioControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void cambiarRol_deCompradorAVendedor_leDaPermisosDeVendedorEnseguida() throws Exception {
+    void cambiarRol_deCompradorAAdmin_leDaPermisosEnseguida() throws Exception {
         String comprador = registrarYLoguearComprador("ascendido");
         String admin = loginAdmin();
         Long id = idDeUsuario(admin, "ascendido");
@@ -58,11 +58,11 @@ class UsuarioControllerIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(put("/api/usuarios/" + id + "/rol")
                         .header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(Map.of("rol", "VENDEDOR"))))
+                        .content(objectMapper.writeValueAsString(Map.of("rol", "ADMIN"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.rol").value("VENDEDOR"));
+                .andExpect(jsonPath("$.rol").value("ADMIN"));
 
-        // Con el mismo token de antes ya puede publicar vuelos: el rol se lee de la base
+        // Con el mismo token de antes ya puede publicar vuelos (solo el admin puede): el rol se lee de la base
         crearVuelo(comprador, "AEP", "COR", 400.0);
 
         mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
@@ -71,7 +71,7 @@ class UsuarioControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cambiarRol_deVendedorAComprador_puedeUsarElCarrito() throws Exception {
-        String vendedor = registrarYLoguearVendedor("degradado");
+        String vendedor = registrarYLoguearAdmin("degradado");
         String admin = loginAdmin();
         Long id = idDeUsuario(admin, "degradado");
 
@@ -100,11 +100,11 @@ class UsuarioControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void cambiarRol_comoVendedor_devuelve403() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vendedorvivo");
+    void cambiarRol_comoComprador_devuelve403() throws Exception {
+        String comprador = registrarYLoguearComprador("compradorvivo");
 
         mockMvc.perform(put("/api/usuarios/1/rol")
-                        .header("Authorization", "Bearer " + vendedor)
+                        .header("Authorization", "Bearer " + comprador)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("rol", "ADMIN"))))
                 .andExpect(status().isForbidden());

@@ -106,7 +106,7 @@ class SecurityJwtIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void vendedorNoPuedeUsarCarritoNiOrdenes_devuelve403() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vendedorrol");
+        String vendedor = registrarYLoguearAdmin("vendedorrol");
 
         mockMvc.perform(get("/api/carrito").header("Authorization", bearer(vendedor)))
                 .andExpect(status().isForbidden());
@@ -118,16 +118,16 @@ class SecurityJwtIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void soloAdminAdministraUsuariosYDaAltaDeAdministradores() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vendedoradmin");
+        String otroComprador = registrarYLoguearComprador("vendedoradmin");
         String comprador = registrarYLoguearComprador("compradoradmin");
         String admin = loginAdmin();
 
-        mockMvc.perform(get("/api/usuarios").header("Authorization", bearer(vendedor)))
+        mockMvc.perform(get("/api/usuarios").header("Authorization", bearer(otroComprador)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(put("/api/usuarios/1/rol").header("Authorization", bearer(comprador))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"rol\":\"ADMIN\"}"))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/auth/registro/administrador").header("Authorization", bearer(vendedor))
+        mockMvc.perform(post("/api/auth/registro/administrador").header("Authorization", bearer(otroComprador))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isForbidden());
 
@@ -146,7 +146,7 @@ class SecurityJwtIntegrationTest extends IntegrationTestSupport {
     @Test
     void rutasDeUsuarioLogueado_pidenToken_peroNoRol() throws Exception {
         String comprador = registrarYLoguearComprador("cualquierrol");
-        String vendedor = registrarYLoguearVendedor("cualquierrol2");
+        String vendedor = registrarYLoguearAdmin("cualquierrol2");
 
         mockMvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/auth/me").header("Authorization", bearer(comprador))).andExpect(status().isOk());

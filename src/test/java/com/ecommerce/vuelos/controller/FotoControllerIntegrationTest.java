@@ -44,7 +44,7 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void subirFoto_comoDuenoDelVuelo_guardaNombreYTamano() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vfoto");
+        String vendedor = registrarYLoguearAdmin("vfoto");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
 
         mockMvc.perform(multipart("/api/fotos")
@@ -62,7 +62,7 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void verFoto_devuelveLosBytesTalCualConSuContentType() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vbytes");
+        String vendedor = registrarYLoguearAdmin("vbytes");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
         Long fotoId = subir(vendedor, vueloId, "imagen.png", null);
 
@@ -76,21 +76,21 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void subirFoto_aUnVueloAjeno_devuelve400() throws Exception {
-        String dueno = registrarYLoguearVendedor("vduenofoto");
-        Long vueloId = crearVuelo(dueno, "EZE", "MAD", 900.0);
+    void subirFoto_comoPasajero_devuelve403() throws Exception {
+        String admin = registrarYLoguearAdmin("vduenofoto");
+        Long vueloId = crearVuelo(admin, "EZE", "MAD", 900.0);
 
-        String intruso = registrarYLoguearVendedor("vintrusofoto");
+        String intruso = registrarYLoguearComprador("vintrusofoto");
         mockMvc.perform(multipart("/api/fotos")
                         .file(png("ajena.png"))
                         .param("vueloId", vueloId.toString())
                         .header("Authorization", "Bearer " + intruso))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void subirAlgoQueNoEsImagen_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vpdf");
+        String vendedor = registrarYLoguearAdmin("vpdf");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
 
         mockMvc.perform(multipart("/api/fotos")
@@ -103,7 +103,7 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void subirFoto_sinSerVendedor_devuelve403() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vparacomprador");
+        String vendedor = registrarYLoguearAdmin("vparacomprador");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
         String comprador = registrarYLoguearComprador("cfoto");
 
@@ -116,7 +116,7 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void listarFotos_vienenOrdenadasYSinBinario() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vlista");
+        String vendedor = registrarYLoguearAdmin("vlista");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
         subir(vendedor, vueloId, "segunda.png", 2);
         subir(vendedor, vueloId, "primera.png", 1);
@@ -131,7 +131,7 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void eliminarFoto_laSacaDelListado() throws Exception {
-        String vendedor = registrarYLoguearVendedor("vborra");
+        String vendedor = registrarYLoguearAdmin("vborra");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
         Long fotoId = subir(vendedor, vueloId, "sobra.png", null);
 

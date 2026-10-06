@@ -22,7 +22,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cadaCompradorVeSoloSuPropioCarrito() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 500.0, 10);
         String uno = registrarYLoguearComprador("carritouno");
         String dos = registrarYLoguearComprador("carritodos");
@@ -37,7 +37,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void noSePuedeModificarNiBorrarElItemDeOtroComprador() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 500.0, 10);
         String dueno = registrarYLoguearComprador("carritodueno");
         String intruso = registrarYLoguearComprador("carritointruso");
@@ -61,7 +61,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void elCheckoutDeUnCompradorNoToca_elCarritoDeOtro() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 500.0, 10);
         String uno = registrarYLoguearComprador("checkoutuno");
         String dos = registrarYLoguearComprador("checkoutdos");
@@ -85,7 +85,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void agregarItem_superandoElStockDisponible_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 2);
         String pasajero = registrarYLoguearComprador("pasajerostock");
 
@@ -95,7 +95,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void agregarElMismoVueloDosVeces_acumulaLaCantidad() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajeroacumula");
 
@@ -109,7 +109,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void actualizarYEliminarItemDelCarrito() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajeroupdateitem");
         Long itemId = agregarAlCarrito(pasajero, cupoId, 1);
@@ -125,7 +125,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void agregarItem_deUnVueloQueYaSalio_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long vueloId = crearVuelo(vendedor, "AEP", "COR", 300.0);
         Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 300.0);
         hacerQueYaSalio(vueloId);
@@ -141,7 +141,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_conUnVueloQueSalioMientrasEstabaEnElCarrito_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long vueloId = crearVuelo(vendedor, "AEP", "MDZ", 300.0);
         Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 300.0);
         String pasajero = registrarYLoguearComprador("pasajerodistraido");
@@ -166,7 +166,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_generaOrdenYDescuentaStock() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
         String pasajero = registrarYLoguearComprador("pasajerocheckout");
         agregarAlCarrito(pasajero, cupoId, 4);
@@ -187,7 +187,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void checkout_siElStockBajaDespuesDeAgregarAlCarrito_fallaYNoDescuentaNadaDeNingunVuelo() throws Exception {
-        String vendedor = registrarYLoguearVendedor("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long cupoOk = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         Long cupoSinStock = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 5);
 

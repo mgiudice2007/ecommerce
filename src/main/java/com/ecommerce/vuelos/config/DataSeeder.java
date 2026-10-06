@@ -99,8 +99,8 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         if (usuarioRepository.count() == 0) {
+            // La aerolinea tiene un unico vendedor: el administrador publica y gestiona los vuelos.
             usuarioRepository.save(usuario("admin", "admin@vuelos.com", "Admin", "Sistema", Rol.ADMIN));
-            usuarioRepository.save(usuario("vendedor", "vendedor@vuelos.com", "Vane", "Vendedora", Rol.VENDEDOR));
             usuarioRepository.save(usuario("comprador", "comprador@vuelos.com", "Caro", "Compradora", Rol.COMPRADOR));
         }
 
@@ -108,123 +108,160 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     /**
-     * Un vuelo de la demo: ruta, horario, precios por clase (en pesos) y su foto.
-     * Precio de Primera en 0 = el vuelo no tiene esa clase.
+     * Una ruta de la demo con su vuelo de ida (desde Buenos Aires) y los datos para
+     * armar los de vuelta. Precio de Primera en 0 = el vuelo no tiene esa clase.
      */
-    private record VueloDemo(String numero, String origen, String destino, String categoria,
-                             int diasDesdeHoy, LocalTime hora, int duracionMinutos,
-                             int economica, int ejecutiva, int primera,
-                             int porcentajeDescuento, String foto, String descripcion) {
+    private record RutaDemo(int numeroBase, String origen, String destino, String categoria,
+                            int diasDesdeHoy, LocalTime hora, int duracionMinutos,
+                            int economica, int ejecutiva, int primera,
+                            int porcentajeDescuento, String foto, String ciudad, String descripcion) {
     }
 
-    private static final List<VueloDemo> VUELOS_DEMO = List.of(
+    private static final List<RutaDemo> RUTAS_DEMO = List.of(
             // Cabotaje: salen de Aeroparque
-            new VueloDemo("BC1402", "AEP", "BRC", "Cabotaje", 18, LocalTime.of(7, 15), 140,
-                    145_900, 349_000, 0, 15, "bariloche.jpg",
+            new RutaDemo(1402, "AEP", "BRC", "Cabotaje", 18, LocalTime.of(7, 15), 140,
+                    145_900, 349_000, 0, 15, "bariloche.jpg", "Bariloche",
                     "Vuelo directo a Bariloche. Lagos, bosques y centros de ski en la Patagonia andina."),
-            new VueloDemo("BC1736", "AEP", "IGR", "Cabotaje", 12, LocalTime.of(9, 40), 115,
-                    128_400, 298_000, 0, 20, "iguazu.jpg",
+            new RutaDemo(1736, "AEP", "IGR", "Cabotaje", 12, LocalTime.of(9, 40), 115,
+                    128_400, 298_000, 0, 20, "iguazu.jpg", "Puerto Iguazú",
                     "Directo a Puerto Iguazú para conocer las Cataratas, una de las maravillas naturales del mundo."),
-            new VueloDemo("BC1880", "AEP", "USH", "Cabotaje", 25, LocalTime.of(6, 30), 215,
-                    189_700, 432_000, 0, 0, "ushuaia.jpg",
+            new RutaDemo(1880, "AEP", "USH", "Cabotaje", 25, LocalTime.of(6, 30), 215,
+                    189_700, 432_000, 0, 0, "ushuaia.jpg", "Ushuaia",
                     "Viajá al fin del mundo: Canal Beagle, Parque Nacional Tierra del Fuego y glaciares."),
-            new VueloDemo("BC1866", "AEP", "FTE", "Cabotaje", 31, LocalTime.of(8, 5), 200,
-                    176_200, 405_000, 0, 0, "calafate.jpg",
+            new RutaDemo(1866, "AEP", "FTE", "Cabotaje", 31, LocalTime.of(8, 5), 200,
+                    176_200, 405_000, 0, 0, "calafate.jpg", "El Calafate",
                     "Directo a El Calafate, la puerta de entrada al glaciar Perito Moreno."),
-            new VueloDemo("BC1450", "AEP", "SLA", "Cabotaje", 15, LocalTime.of(11, 20), 130,
-                    118_900, 276_000, 0, 10, "salta.jpg",
+            new RutaDemo(1450, "AEP", "SLA", "Cabotaje", 15, LocalTime.of(11, 20), 130,
+                    118_900, 276_000, 0, 10, "salta.jpg", "Salta",
                     "Salta la Linda: cerros de colores, quebradas y la mejor gastronomía del norte."),
-            new VueloDemo("BC1510", "AEP", "MDZ", "Cabotaje", 9, LocalTime.of(14, 50), 115,
-                    109_300, 254_000, 0, 0, "mendoza.jpg",
+            new RutaDemo(1510, "AEP", "MDZ", "Cabotaje", 9, LocalTime.of(14, 50), 115,
+                    109_300, 254_000, 0, 0, "mendoza.jpg", "Mendoza",
                     "Mendoza al pie de la cordillera: bodegas, viñedos y el Aconcagua."),
-            new VueloDemo("BC1320", "AEP", "COR", "Cabotaje", 7, LocalTime.of(18, 10), 80,
-                    86_500, 198_000, 0, 0, "cordoba.jpg",
+            new RutaDemo(1320, "AEP", "COR", "Cabotaje", 7, LocalTime.of(18, 10), 80,
+                    86_500, 198_000, 0, 0, "cordoba.jpg", "Córdoba",
                     "Vuelo corto a Córdoba, ideal para una escapada a las sierras."),
-            new VueloDemo("BC1210", "AEP", "MDQ", "Cabotaje", 20, LocalTime.of(10, 0), 55,
-                    74_800, 172_000, 0, 10, "mardelplata.jpg",
+            new RutaDemo(1210, "AEP", "MDQ", "Cabotaje", 20, LocalTime.of(10, 0), 55,
+                    74_800, 172_000, 0, 10, "mardelplata.jpg", "Mar del Plata",
                     "La Feliz en menos de una hora: playas, rambla y el puerto de Mar del Plata."),
 
             // Regionales (America): salen de Ezeiza
-            new VueloDemo("BC2210", "EZE", "GIG", "Regional", 22, LocalTime.of(8, 45), 180,
-                    389_000, 912_000, 0, 0, "rio.jpg",
+            new RutaDemo(2210, "EZE", "GIG", "Regional", 22, LocalTime.of(8, 45), 180,
+                    389_000, 912_000, 0, 0, "rio.jpg", "Río de Janeiro",
                     "Directo a Río de Janeiro: Pan de Azúcar, Copacabana e Ipanema."),
-            new VueloDemo("BC2104", "EZE", "SCL", "Regional", 14, LocalTime.of(13, 30), 130,
-                    298_500, 689_000, 0, 0, "santiago.jpg",
+            new RutaDemo(2104, "EZE", "SCL", "Regional", 14, LocalTime.of(13, 30), 130,
+                    298_500, 689_000, 0, 0, "santiago.jpg", "Santiago de Chile",
                     "Santiago de Chile, con la cordillera de los Andes como telón de fondo."),
-            new VueloDemo("BC2602", "EZE", "CUN", "Regional", 40, LocalTime.of(23, 55), 540,
-                    1_180_000, 2_850_000, 0, 15, "cancun.jpg",
+            new RutaDemo(2602, "EZE", "CUN", "Regional", 40, LocalTime.of(23, 55), 540,
+                    1_180_000, 2_850_000, 0, 15, "cancun.jpg", "Cancún",
                     "Caribe mexicano: playas de arena blanca y mar turquesa en Cancún."),
-            new VueloDemo("BC2640", "EZE", "PUJ", "Regional", 45, LocalTime.of(22, 40), 520,
-                    1_095_000, 2_690_000, 0, 0, "puntacana.jpg",
+            new RutaDemo(2640, "EZE", "PUJ", "Regional", 45, LocalTime.of(22, 40), 520,
+                    1_095_000, 2_690_000, 0, 0, "puntacana.jpg", "Punta Cana",
                     "Punta Cana, en República Dominicana: palmeras, resorts y aguas cálidas."),
-            new VueloDemo("BC2800", "EZE", "MIA", "Regional", 28, LocalTime.of(23, 10), 540,
-                    1_290_000, 3_150_000, 0, 0, "miami.jpg",
+            new RutaDemo(2800, "EZE", "MIA", "Regional", 28, LocalTime.of(23, 10), 540,
+                    1_290_000, 3_150_000, 0, 0, "miami.jpg", "Miami",
                     "Vuelo nocturno directo a Miami: playas, compras y conexiones a todo Estados Unidos."),
-            new VueloDemo("BC2900", "EZE", "JFK", "Regional", 52, LocalTime.of(22, 15), 660,
-                    1_420_000, 3_480_000, 6_900_000, 0, "nuevayork.jpg",
+            new RutaDemo(2900, "EZE", "JFK", "Regional", 52, LocalTime.of(22, 15), 660,
+                    1_420_000, 3_480_000, 6_900_000, 0, "nuevayork.jpg", "Nueva York",
                     "Directo a Nueva York: Manhattan, Central Park y Broadway."),
 
             // Internacionales (intercontinentales): salen de Ezeiza
-            new VueloDemo("BC3130", "EZE", "MAD", "Internacional", 35, LocalTime.of(21, 30), 760,
-                    1_690_000, 4_250_000, 7_900_000, 12, "madrid.jpg",
+            new RutaDemo(3130, "EZE", "MAD", "Internacional", 35, LocalTime.of(21, 30), 760,
+                    1_690_000, 4_250_000, 7_900_000, 12, "madrid.jpg", "Madrid",
                     "Vuelo directo a Madrid, la mejor puerta de entrada a Europa."),
-            new VueloDemo("BC3150", "EZE", "BCN", "Internacional", 60, LocalTime.of(20, 45), 775,
-                    1_740_000, 4_390_000, 0, 0, "barcelona.jpg",
+            new RutaDemo(3150, "EZE", "BCN", "Internacional", 60, LocalTime.of(20, 45), 775,
+                    1_740_000, 4_390_000, 0, 0, "barcelona.jpg", "Barcelona",
                     "Barcelona: la Sagrada Familia, el Park Güell y el Mediterráneo."),
-            new VueloDemo("BC3310", "EZE", "FCO", "Internacional", 70, LocalTime.of(19, 55), 800,
-                    1_850_000, 4_620_000, 8_400_000, 0, "roma.jpg",
+            new RutaDemo(3310, "EZE", "FCO", "Internacional", 70, LocalTime.of(19, 55), 800,
+                    1_850_000, 4_620_000, 8_400_000, 0, "roma.jpg", "Roma",
                     "Directo a Roma: el Coliseo, el Vaticano y la mejor cocina italiana."));
 
+    /** Vuelos por sentido en cada ruta (en distintos dias y horarios). */
+    private static final int FRECUENCIAS = 3;
+    /** Variacion de precio de cada frecuencia respecto del precio base, en porcentaje. */
+    private static final int[] AJUSTE_PRECIO = {100, 108, 94};
+    /** Dias que el pasajero se queda en el destino antes de volver. */
+    private static final int DIAS_DE_ESTADIA = 6;
+
     /**
-     * Carga cada vuelo de la demo que todavia no exista (se busca por numero de
-     * vuelo). Asi funciona igual en una base nueva que en una que ya tenia datos,
-     * y si un vuelo se da de baja no se vuelve a crear.
+     * Por cada ruta arma 3 vuelos de ida y 3 de vuelta. Los numeros siguen la
+     * costumbre de las aerolineas: par para la ida (BC1402, BC1404, BC1406) e
+     * impar para la vuelta (BC1403, BC1405, BC1407).
+     *
+     * Solo se crea cada vuelo que todavia no exista (se busca por numero), asi
+     * funciona igual en una base nueva que en una que ya tenia datos, y si un
+     * vuelo se da de baja no se vuelve a crear.
      */
     private void cargarVuelosDeDemostracion() {
-        Usuario vendedor = usuarioRepository.findByUsername("vendedor").orElse(null);
-        if (vendedor == null) {
+        Usuario admin = usuarioRepository.findByUsername("admin").orElse(null);
+        if (admin == null) {
             return;
         }
 
-        for (VueloDemo demo : VUELOS_DEMO) {
-            if (vueloRepository.existsByNumeroVuelo(demo.numero())) {
-                continue;
+        for (RutaDemo ruta : RUTAS_DEMO) {
+            for (int i = 0; i < FRECUENCIAS; i++) {
+                int dias = ruta.diasDesdeHoy() + i * 5;
+                int ajuste = AJUSTE_PRECIO[i];
+
+                // Ida: desde Buenos Aires al destino, con la promo de la ruta si tiene
+                LocalTime horaIda = ruta.hora().plusMinutes(i * 335L);
+                crearVuelo(admin, "BC" + (ruta.numeroBase() + 2 * i), ruta.origen(), ruta.destino(),
+                        ruta, LocalDate.now().plusDays(dias).atTime(horaIda), ajuste,
+                        ruta.porcentajeDescuento(), ruta.foto(), ruta.descripcion());
+
+                // Vuelta: del destino a Buenos Aires, unos dias despues
+                LocalTime horaVuelta = ruta.hora().plusMinutes(540 + i * 255L);
+                crearVuelo(admin, "BC" + (ruta.numeroBase() + 2 * i + 1), ruta.destino(), ruta.origen(),
+                        ruta, LocalDate.now().plusDays(dias + DIAS_DE_ESTADIA).atTime(horaVuelta), ajuste,
+                        0, "buenosaires.jpg", "Regreso directo desde " + ruta.ciudad() + " a Buenos Aires.");
             }
-
-            LocalDateTime salida = LocalDate.now().plusDays(demo.diasDesdeHoy()).atTime(demo.hora());
-            Vuelo vuelo = vueloRepository.save(Vuelo.builder()
-                    .vendedor(vendedor)
-                    .categoria(categoriaRepository.findByNombre(demo.categoria()).get(0))
-                    .origen(aeropuertoRepository.findById(demo.origen()).orElseThrow())
-                    .destino(aeropuertoRepository.findById(demo.destino()).orElseThrow())
-                    .numeroVuelo(demo.numero())
-                    .descripcion(demo.descripcion())
-                    .fechaSalida(salida)
-                    .fechaLlegada(salida.plusMinutes(demo.duracionMinutos()))
-                    .precio(BigDecimal.valueOf(demo.economica()))
-                    .estado(EstadoVuelo.ACTIVO)
-                    .fechaAlta(LocalDateTime.now())
-                    .build());
-
-            disponibilidadRepository.save(cupo(vuelo, "Economica", 156, demo.economica()));
-            disponibilidadRepository.save(cupo(vuelo, "Ejecutiva", 24, demo.ejecutiva()));
-            if (demo.primera() > 0) {
-                disponibilidadRepository.save(cupo(vuelo, "Primera", 8, demo.primera()));
-            }
-
-            if (demo.porcentajeDescuento() > 0) {
-                descuentoRepository.save(Descuento.builder()
-                        .vuelo(vuelo)
-                        .tipoDescuento(TipoDescuento.PORCENTAJE)
-                        .valor(BigDecimal.valueOf(demo.porcentajeDescuento()))
-                        .fechaDesde(LocalDate.now().minusDays(1))
-                        .fechaHasta(LocalDate.now().plusMonths(2))
-                        .activo(true)
-                        .build());
-            }
-
-            cargarFoto(vuelo, demo.foto());
         }
+    }
+
+    private void crearVuelo(Usuario admin, String numero, String origen, String destino, RutaDemo ruta,
+                            LocalDateTime salida, int ajustePrecio, int porcentajeDescuento,
+                            String foto, String descripcion) {
+        if (vueloRepository.existsByNumeroVuelo(numero)) {
+            return;
+        }
+
+        int economica = ajustar(ruta.economica(), ajustePrecio);
+        Vuelo vuelo = vueloRepository.save(Vuelo.builder()
+                .vendedor(admin)
+                .categoria(categoriaRepository.findByNombre(ruta.categoria()).get(0))
+                .origen(aeropuertoRepository.findById(origen).orElseThrow())
+                .destino(aeropuertoRepository.findById(destino).orElseThrow())
+                .numeroVuelo(numero)
+                .descripcion(descripcion)
+                .fechaSalida(salida)
+                .fechaLlegada(salida.plusMinutes(ruta.duracionMinutos()))
+                .precio(BigDecimal.valueOf(economica))
+                .estado(EstadoVuelo.ACTIVO)
+                .fechaAlta(LocalDateTime.now())
+                .build());
+
+        disponibilidadRepository.save(cupo(vuelo, "Economica", 156, economica));
+        disponibilidadRepository.save(cupo(vuelo, "Ejecutiva", 24, ajustar(ruta.ejecutiva(), ajustePrecio)));
+        if (ruta.primera() > 0) {
+            disponibilidadRepository.save(cupo(vuelo, "Primera", 8, ajustar(ruta.primera(), ajustePrecio)));
+        }
+
+        if (porcentajeDescuento > 0) {
+            descuentoRepository.save(Descuento.builder()
+                    .vuelo(vuelo)
+                    .tipoDescuento(TipoDescuento.PORCENTAJE)
+                    .valor(BigDecimal.valueOf(porcentajeDescuento))
+                    .fechaDesde(LocalDate.now().minusDays(1))
+                    .fechaHasta(LocalDate.now().plusMonths(2))
+                    .activo(true)
+                    .build());
+        }
+
+        cargarFoto(vuelo, foto);
+    }
+
+    /** Aplica el porcentaje y redondea a centenas, como un precio de verdad. */
+    private int ajustar(int precio, int porcentaje) {
+        return Math.round(precio * porcentaje / 10_000f) * 100;
     }
 
     /** Lee la imagen de src/main/resources/fotos-ejemplo y la guarda como foto del vuelo. */
