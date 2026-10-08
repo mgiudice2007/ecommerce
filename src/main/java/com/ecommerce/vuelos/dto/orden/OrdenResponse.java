@@ -19,6 +19,9 @@ public class OrdenResponse {
     private BigDecimal total;
 
     private BigDecimal descuentoTotal;
+    private Integer millasGanadas;
+    private Integer millasUsadas;
+    private BigDecimal descuentoMillas;
     private LocalDateTime fecha;
     private EstadoOrden estado;
     private List<ItemOrdenResponse> items;
@@ -28,6 +31,9 @@ public class OrdenResponse {
                 .id(orden.getId())
                 .total(orden.getTotal())
                 .descuentoTotal(orden.getDescuentoTotal())
+                .millasGanadas(orden.getMillasGanadas())
+                .millasUsadas(orden.getMillasUsadas())
+                .descuentoMillas(orden.getDescuentoMillas())
                 .fecha(orden.getFecha())
                 .estado(orden.getEstado())
                 .items(orden.getItems().stream()

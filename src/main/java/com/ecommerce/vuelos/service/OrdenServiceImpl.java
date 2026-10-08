@@ -5,10 +5,12 @@ import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.EstadoOrden;
 import com.ecommerce.vuelos.entity.ItemOrden;
 import com.ecommerce.vuelos.entity.Orden;
+import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.OrdenRepository;
+import com.ecommerce.vuelos.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ public class OrdenServiceImpl implements OrdenService {
     private OrdenRepository ordenRepository;
     @Autowired
     private DisponibilidadRepository disponibilidadRepository;
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Override
     public List<OrdenResponse> historial(Long usuarioId) {
@@ -51,6 +55,12 @@ public class OrdenServiceImpl implements OrdenService {
                     disponibilidad.getAsientosDisponibles() + item.getCantidad());
             disponibilidadRepository.save(disponibilidad);
         }
+
+        // Devuelve las millas que uso y le saca las que habia ganado con esta compra
+        Usuario usuario = orden.getUsuario();
+        int saldo = usuario.getMillas() + orden.getMillasUsadas() - orden.getMillasGanadas();
+        usuario.setMillas(Math.max(saldo, 0));
+        usuarioRepository.save(usuario);
 
         orden.setEstado(EstadoOrden.CANCELADA);
         return OrdenResponse.desde(ordenRepository.save(orden));

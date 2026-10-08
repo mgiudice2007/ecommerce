@@ -57,6 +57,14 @@ public class Usuario {
     @Column(nullable = false)
     private Rol rol;
 
+    /** Saldo de millas del pasajero: se suman al comprar y se pueden usar para pagar. */
+    @Column
+    private Integer millas;
+
+    public Integer getMillas() {
+        return millas == null ? 0 : millas;
+    }
+
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private Carrito carrito;
 

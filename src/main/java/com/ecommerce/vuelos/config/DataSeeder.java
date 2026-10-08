@@ -97,6 +97,10 @@ public class DataSeeder implements CommandLineRunner {
                     clase("Ejecutiva", "Mayor espacio y comidas", true),
                     clase("Primera", "Cabina privada", true)));
         }
+        // Cuantas veces suma millas cada clase (tambien para las bases que ya tenian las clases)
+        cargarMultiplicadorMillas("Economica", 1);
+        cargarMultiplicadorMillas("Ejecutiva", 2);
+        cargarMultiplicadorMillas("Primera", 3);
 
         if (usuarioRepository.count() == 0) {
             // La aerolinea tiene un unico vendedor: el administrador publica y gestiona los vuelos.
@@ -104,7 +108,27 @@ public class DataSeeder implements CommandLineRunner {
             usuarioRepository.save(usuario("comprador", "comprador@vuelos.com", "Caro", "Compradora", Rol.COMPRADOR));
         }
 
+        // El comprador de la demo arranca con millas para poder probar el canje
+        // (solo la primera vez: cuando su saldo todavia no existe en la base)
+        if (usuarioRepository.existsByUsernameAndMillasIsNull("comprador")) {
+            Usuario comprador = usuarioRepository.findByUsername("comprador").orElseThrow();
+            comprador.setMillas(MILLAS_DEMO);
+            usuarioRepository.save(comprador);
+        }
+
         cargarVuelosDeDemostracion();
+    }
+
+    private static final int MILLAS_DEMO = 150_000;
+
+    /** Solo lo carga si la clase todavia no tiene el dato, asi no pisa un valor cambiado en la base. */
+    private void cargarMultiplicadorMillas(String nombreClase, int multiplicador) {
+        claseRepository.findByNombre(nombreClase).ifPresent(clase -> {
+            if (clase.getMultiplicadorMillas() == null) {
+                clase.setMultiplicadorMillas(multiplicador);
+                claseRepository.save(clase);
+            }
+        });
     }
 
     /**

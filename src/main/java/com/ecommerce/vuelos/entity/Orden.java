@@ -38,6 +38,17 @@ public class Orden {
     @Builder.Default
     private BigDecimal descuentoTotal = BigDecimal.ZERO;
 
+    /** Millas que sumo el comprador con esta orden. */
+    @Column
+    private Integer millasGanadas;
+
+    /** Millas que uso para pagar y cuantos pesos le descontaron por ellas. */
+    @Column
+    private Integer millasUsadas;
+
+    @Column
+    private BigDecimal descuentoMillas;
+
     @Column(nullable = false)
     private LocalDateTime fecha;
 
@@ -48,4 +59,17 @@ public class Orden {
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ItemOrden> items = new ArrayList<>();
+
+    // Las ordenes viejas (de antes de las millas) no tienen estos datos
+    public Integer getMillasGanadas() {
+        return millasGanadas == null ? 0 : millasGanadas;
+    }
+
+    public Integer getMillasUsadas() {
+        return millasUsadas == null ? 0 : millasUsadas;
+    }
+
+    public BigDecimal getDescuentoMillas() {
+        return descuentoMillas == null ? BigDecimal.ZERO : descuentoMillas;
+    }
 }

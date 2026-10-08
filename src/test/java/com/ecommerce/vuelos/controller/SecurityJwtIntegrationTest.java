@@ -54,8 +54,12 @@ class SecurityJwtIntegrationTest extends IntegrationTestSupport {
     @Test
     void tokenAdulterado_devuelve401() throws Exception {
         String token = registrarYLoguearComprador("tokenadulterado");
-        // cambiar el ultimo caracter de la firma invalida el token
-        String adulterado = token.substring(0, token.length() - 1) + (token.endsWith("A") ? "B" : "A");
+        // Cambiamos el primer caracter de la firma. (El ultimo no sirve: en base64 tiene bits
+        // de relleno y a veces cambiarlo no cambia la firma, y el test fallaba de casualidad.)
+        int inicioFirma = token.lastIndexOf('.') + 1;
+        char original = token.charAt(inicioFirma);
+        String adulterado = token.substring(0, inicioFirma) + (original == 'A' ? 'B' : 'A')
+                + token.substring(inicioFirma + 1);
 
         mockMvc.perform(get("/api/carrito").header("Authorization", bearer(adulterado)))
                 .andExpect(status().isUnauthorized())

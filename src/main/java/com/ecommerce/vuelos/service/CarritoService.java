@@ -14,5 +14,5 @@ public interface CarritoService {
 
     CarritoResponse eliminarItem(Long usuarioId, Long itemId);
 
-    OrdenResponse checkout(Long usuarioId);
+    OrdenResponse checkout(Long usuarioId, Integer millas);
 }

@@ -23,6 +23,7 @@ public class UsuarioResponse {
     private String telefono;
 
     private String rol;
+    private Integer millas;
     private LocalDateTime fechaRegistro;
 
 
@@ -36,6 +37,7 @@ public class UsuarioResponse {
                 .fechaNacimiento(usuario.getFechaNacimiento())
                 .telefono(usuario.getTelefono())
                 .rol(usuario.getRol().name())
+                .millas(usuario.getMillas())
                 .fechaRegistro(usuario.getFechaRegistro())
                 .build();
     }

@@ -34,4 +34,8 @@ public class Clase {
     @Column(nullable = false)
     @Builder.Default
     private Boolean equipajeBodega = false;
+
+    /** Cuantas veces se multiplican las millas al comprar en esta clase (Economica 1, Ejecutiva 2...). */
+    @Column
+    private Integer multiplicadorMillas;
 }

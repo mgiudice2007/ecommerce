@@ -19,10 +19,12 @@ import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.OrdenRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,10 +41,16 @@ public class CarritoServiceImpl implements CarritoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    // Reglas de las millas, configurables en application.properties (no estan fijas en el codigo)
+    @Value("${millas.pesos-por-milla}")
+    private BigDecimal pesosPorMilla;
+    @Value("${millas.valor-en-pesos}")
+    private BigDecimal valorMilla;
+
     @Override
     @Transactional
     public CarritoResponse obtenerCarrito(Long usuarioId) {
-        return CarritoResponse.desde(buscarCarrito(usuarioId));
+        return respuesta(buscarCarrito(usuarioId));
     }
 
     @Override
@@ -78,7 +86,7 @@ public class CarritoServiceImpl implements CarritoService {
         }
 
         carritoRepository.save(carrito);
-        return CarritoResponse.desde(carrito);
+        return respuesta(carrito);
     }
 
     @Override
@@ -91,7 +99,7 @@ public class CarritoServiceImpl implements CarritoService {
         validarStock(item.getDisponibilidad(), otrosPasajeros + cantidad);
         item.setCantidad(cantidad);
         carritoRepository.save(carrito);
-        return CarritoResponse.desde(carrito);
+        return respuesta(carrito);
     }
 
     @Override
@@ -102,12 +110,12 @@ public class CarritoServiceImpl implements CarritoService {
 
         carrito.getItems().remove(item);
         carritoRepository.save(carrito);
-        return CarritoResponse.desde(carrito);
+        return respuesta(carrito);
     }
 
     @Override
     @Transactional
-    public OrdenResponse checkout(Long usuarioId) {
+    public OrdenResponse checkout(Long usuarioId, Integer millasAUsar) {
         Carrito carrito = buscarCarrito(usuarioId);
 
         if (carrito.getItems().isEmpty()) {
@@ -123,6 +131,7 @@ public class CarritoServiceImpl implements CarritoService {
         List<ItemOrden> itemsOrden = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal descuentoTotal = BigDecimal.ZERO;
+        BigDecimal montoParaMillas = BigDecimal.ZERO; // lo gastado, multiplicado segun la clase
 
         for (ItemCarrito item : carrito.getItems()) {
             Disponibilidad disponibilidad = item.getDisponibilidad();
@@ -147,12 +156,36 @@ public class CarritoServiceImpl implements CarritoService {
 
             total = total.add(precioUnitario.multiply(cantidad));
             descuentoTotal = descuentoTotal.add(descuentoUnitario.multiply(cantidad));
+            montoParaMillas = montoParaMillas.add(precioUnitario.multiply(cantidad)
+                    .multiply(BigDecimal.valueOf(disponibilidad.getClase().getMultiplicadorMillas())));
         }
+
+        // Millas: las que usa se descuentan del total, y solo suma millas lo que paga con plata
+        Usuario usuario = carrito.getUsuario();
+        int millasUsadas = millasAUsar == null ? 0 : millasAUsar;
+        if (millasUsadas > usuario.getMillas()) {
+            throw new BadRequestException("No tenes suficientes millas: tu saldo es de " + usuario.getMillas());
+        }
+        BigDecimal descuentoMillas = valorMilla.multiply(BigDecimal.valueOf(millasUsadas));
+        if (descuentoMillas.compareTo(total) > 0) {
+            throw new BadRequestException("Con esas millas pagarias mas que el total de la compra");
+        }
+        BigDecimal aPagar = total.subtract(descuentoMillas);
+        int millasGanadas = total.signum() == 0 ? 0 : montoParaMillas
+                .multiply(aPagar)
+                .divide(total.multiply(pesosPorMilla), 0, RoundingMode.DOWN)
+                .intValue();
+
+        usuario.setMillas(usuario.getMillas() - millasUsadas + millasGanadas);
+        usuarioRepository.save(usuario);
 
         Orden orden = Orden.builder()
                 .usuario(carrito.getUsuario())
-                .total(total)
+                .total(aPagar)
                 .descuentoTotal(descuentoTotal)
+                .millasGanadas(millasGanadas)
+                .millasUsadas(millasUsadas)
+                .descuentoMillas(descuentoMillas)
                 .fecha(LocalDateTime.now())
                 .estado(EstadoOrden.CONFIRMADA)
                 .items(new ArrayList<>())
@@ -186,6 +219,24 @@ public class CarritoServiceImpl implements CarritoService {
                     + disponibilidad.getClase().getNombre() + " para el vuelo "
                     + disponibilidad.getVuelo().getNumeroVuelo());
         }
+    }
+
+    /** El carrito con las millas que sumaria la compra y el saldo que tiene para usar. */
+    private CarritoResponse respuesta(Carrito carrito) {
+        BigDecimal montoParaMillas = BigDecimal.ZERO;
+        for (ItemCarrito item : carrito.getItems()) {
+            Disponibilidad disponibilidad = item.getDisponibilidad();
+            BigDecimal precioUnitario = item.getTipoPasajero().aplicar(disponibilidad.getPrecioConDescuento());
+            montoParaMillas = montoParaMillas.add(precioUnitario
+                    .multiply(BigDecimal.valueOf(item.getCantidad()))
+                    .multiply(BigDecimal.valueOf(disponibilidad.getClase().getMultiplicadorMillas())));
+        }
+
+        return CarritoResponse.desde(carrito).toBuilder()
+                .millasAGanar(montoParaMillas.divide(pesosPorMilla, 0, RoundingMode.DOWN).intValue())
+                .millasDisponibles(carrito.getUsuario().getMillas())
+                .valorMilla(valorMilla)
+                .build();
     }
 
     /** Cuantos pasajeros hay en el carrito para ese vuelo y clase (sumando todos los tipos). */

@@ -206,9 +206,26 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   del carrito y de la orden devuelven `tipoPasajero`.
 - `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
-- `POST /api/carrito/checkout` — sin body. Operación transaccional: valida el stock de todos
-  los ítems, descuenta asientos de cada `Disponibilidad`, crea la `Orden` con el precio
-  **congelado** al momento de la compra, y vacía el carrito. Si algo falla, se revierte entero.
+- `POST /api/carrito/checkout` — body opcional `{ "millas": 5000 }` para pagar una parte con
+  millas. Operación transaccional: valida el stock de todos los ítems, descuenta asientos de cada
+  `Disponibilidad`, crea la `Orden` con el precio **congelado** al momento de la compra, suma o
+  resta las millas del usuario y vacía el carrito. Si algo falla, se revierte entero. Usar más
+  millas de las que se tienen, o que valgan más que el total, da `400`.
+
+## Millas
+
+Se calculan en el backend con el precio real de cada compra; nada está fijo por vuelo.
+
+- **Ganar:** por cada `millas.pesos-por-milla` pesos pagados con plata (100) se suma 1 milla,
+  multiplicada por el `multiplicadorMillas` de la clase (tabla `clases`: Económica 1, Ejecutiva 2,
+  Primera 3). Lo pagado con millas no suma millas.
+- **Usar:** cada milla descuenta `millas.valor-en-pesos` pesos (1). Las dos reglas están en
+  `application.properties`.
+- **Cancelar** una orden devuelve las millas usadas y resta las ganadas.
+- `GET /api/carrito` suma `millasAGanar`, `millasDisponibles` y `valorMilla`; `GET /api/auth/me`
+  trae `millas` (el saldo); cada orden trae `millasGanadas`, `millasUsadas` y `descuentoMillas`
+  (el `total` de la orden es lo pagado con plata).
+- El comprador de la demo (`comprador`) arranca con 150.000 millas para probar el canje.
 
 ## Órdenes — `/api/ordenes` (requiere token con rol COMPRADOR)
 
@@ -216,6 +233,7 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 - `GET /api/ordenes/{id}` — la orden de otro usuario da `404` (no `403`, para no confirmar que
   ese id existe)
 - `POST /api/ordenes/{id}/cancelar` — devuelve los asientos a la `Disponibilidad` correspondiente
+  y ajusta las millas del usuario
 
 Cada `Orden` trae `descuentoTotal` y cada ítem trae `descuentoAplicado` — el monto exacto
 descontado en ese momento, congelado para siempre en la orden aunque el `Descuento` original

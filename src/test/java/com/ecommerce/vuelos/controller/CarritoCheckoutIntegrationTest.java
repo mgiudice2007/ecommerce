@@ -49,6 +49,81 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         agregarPasajeros(comprador, disponibilidadId, 1, "NINO", 400);
     }
 
+    /** El multiplicador de millas sale del catalogo, no lo suponemos en el test. */
+    private int multiplicadorDeLaClasePorDefecto() throws Exception {
+        String clases = mockMvc.perform(get("/api/clases")).andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(clases).get(0).get("multiplicadorMillas").asInt();
+    }
+
+    private int saldoDeMillas(String token) throws Exception {
+        String perfil = mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(perfil).get("millas").asInt();
+    }
+
+    private Long comprar(String token, Integer millas) throws Exception {
+        var pedido = post("/api/carrito/checkout").header("Authorization", "Bearer " + token);
+        String respuesta = mockMvc.perform(millas == null ? pedido : json(pedido, Map.of("millas", millas)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(respuesta).get("id").asLong();
+    }
+
+    @Test
+    void comprar_sumaMillasSegunLoPagadoYLaClase() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("millero");
+        int multiplicador = multiplicadorDeLaClasePorDefecto();
+
+        agregarAlCarrito(comprador, disponibilidadId, 2);
+        // $2000 pagados: 1 milla cada $100, por el multiplicador de la clase
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
+                .andExpect(jsonPath("$.millasAGanar").value(20 * multiplicador))
+                .andExpect(jsonPath("$.millasDisponibles").value(0));
+
+        comprar(comprador, null);
+        org.junit.jupiter.api.Assertions.assertEquals(20 * multiplicador, saldoDeMillas(comprador));
+    }
+
+    @Test
+    void usarMillas_descuentaDelTotal_yCancelarLasDevuelve() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long caro = crearVueloConCupo(vendedor, "EZE", "MIA", 100000.0, 10);
+        Long barato = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("canjeador");
+
+        // Primera compra: junta millas
+        agregarAlCarrito(comprador, caro, 1);
+        comprar(comprador, null);
+        int saldoInicial = saldoDeMillas(comprador);
+
+        // Segunda compra: paga $500 con millas y el resto con plata
+        agregarAlCarrito(comprador, barato, 1);
+        Long ordenId = comprar(comprador, 500);
+        mockMvc.perform(get("/api/ordenes/" + ordenId).header("Authorization", "Bearer " + comprador))
+                .andExpect(jsonPath("$.total").value(500.0))
+                .andExpect(jsonPath("$.millasUsadas").value(500))
+                .andExpect(jsonPath("$.descuentoMillas").value(500.0));
+
+        // Al cancelar vuelve al saldo que tenia antes de esa compra
+        mockMvc.perform(post("/api/ordenes/" + ordenId + "/cancelar").header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isOk());
+        org.junit.jupiter.api.Assertions.assertEquals(saldoInicial, saldoDeMillas(comprador));
+    }
+
+    @Test
+    void usarMasMillasDeLasQueTiene_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("sinmillas");
+
+        agregarAlCarrito(comprador, disponibilidadId, 1);
+        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador),
+                        Map.of("millas", 100)))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     void compradorDelSeeder_naceConCarrito() throws Exception {
         String comprador = login("comprador", "comprador123");

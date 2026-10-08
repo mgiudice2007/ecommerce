@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.dto.carrito.ActualizarCantidadRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
+import com.ecommerce.vuelos.dto.carrito.CheckoutRequest;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -45,7 +46,10 @@ public class CarritoController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<OrdenResponse> checkout(@AuthenticationPrincipal UsuarioPrincipal principal) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(principal.getId()));
+    public ResponseEntity<OrdenResponse> checkout(@AuthenticationPrincipal UsuarioPrincipal principal,
+                                                  @Valid @RequestBody(required = false) CheckoutRequest request) {
+        // El body es opcional: sin body (o sin millas) se paga todo con plata
+        Integer millas = request == null ? null : request.getMillas();
+        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(principal.getId(), millas));
     }
 }

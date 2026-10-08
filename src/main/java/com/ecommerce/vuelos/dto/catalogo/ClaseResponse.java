@@ -14,6 +14,7 @@ public class ClaseResponse {
     private String nombre;
     private String descripcion;
     private Boolean equipajeBodega;
+    private Integer multiplicadorMillas;
 
     public static ClaseResponse desde(Clase clase) {
         return ClaseResponse.builder()
@@ -21,6 +22,7 @@ public class ClaseResponse {
                 .nombre(clase.getNombre())
                 .descripcion(clase.getDescripcion())
                 .equipajeBodega(clase.getEquipajeBodega())
+                .multiplicadorMillas(clase.getMultiplicadorMillas())
                 .build();
     }
 }
