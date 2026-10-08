@@ -204,6 +204,9 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   precio de un adulto (también del descuento). Todos ocupan un asiento del mismo cupo, así que el
   stock se controla sumando los pasajeros de ese vuelo y clase que ya hay en el carrito. Los items
   del carrito y de la orden devuelven `tipoPasajero`.
+- `POST /api/carrito/pasajes` — agrega de una vez los pasajeros de un vuelo y clase:
+  `{ "disponibilidadId": 1, "adultos": 2, "ninos": 1, "bebes": 0 }`. Crea un ítem por cada tipo
+  con cantidad mayor a 0. No puede haber más bebés que adultos (`400`).
 - `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
 - `POST /api/carrito/checkout` — body opcional `{ "millas": 5000 }` para pagar una parte con

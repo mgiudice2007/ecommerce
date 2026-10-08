@@ -40,6 +40,31 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void agregarPasajes_cargaAdultosNinosYBebesEnUnSoloPedido() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("familiajunta");
+
+        // 2 adultos x 1000 + 1 nino al 75% (sin bebes)
+        mockMvc.perform(json(post("/api/carrito/pasajes").header("Authorization", "Bearer " + comprador),
+                        Map.of("disponibilidadId", disponibilidadId, "adultos", 2, "ninos", 1, "bebes", 0)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.total").value(2750.0));
+    }
+
+    @Test
+    void agregarPasajes_masBebesQueAdultos_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("muchosbebes");
+
+        mockMvc.perform(json(post("/api/carrito/pasajes").header("Authorization", "Bearer " + comprador),
+                        Map.of("disponibilidadId", disponibilidadId, "adultos", 1, "ninos", 0, "bebes", 2)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void todosLosPasajerosOcupanAsientos_delMismoCupo() throws Exception {
         String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 2);

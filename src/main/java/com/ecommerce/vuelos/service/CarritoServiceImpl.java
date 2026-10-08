@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
+import com.ecommerce.vuelos.dto.carrito.PasajesRequest;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.entity.Carrito;
 import com.ecommerce.vuelos.entity.Disponibilidad;
@@ -87,6 +88,33 @@ public class CarritoServiceImpl implements CarritoService {
 
         carritoRepository.save(carrito);
         return respuesta(carrito);
+    }
+
+    @Override
+    @Transactional
+    public CarritoResponse agregarPasajes(Long usuarioId, PasajesRequest request) {
+        if (request.getAdultos() + request.getNinos() + request.getBebes() == 0) {
+            throw new BadRequestException("Elegi al menos un pasajero");
+        }
+        if (request.getBebes() > request.getAdultos()) {
+            throw new BadRequestException("Cada bebe tiene que viajar con un adulto");
+        }
+
+        // Un item por cada tipo de pasajero. Si algo falla, la transaccion deshace todo.
+        CarritoResponse carrito = null;
+        if (request.getAdultos() > 0) {
+            carrito = agregarItem(usuarioId, new ItemCarritoRequest(
+                    request.getDisponibilidadId(), request.getAdultos(), TipoPasajero.ADULTO));
+        }
+        if (request.getNinos() > 0) {
+            carrito = agregarItem(usuarioId, new ItemCarritoRequest(
+                    request.getDisponibilidadId(), request.getNinos(), TipoPasajero.NINO));
+        }
+        if (request.getBebes() > 0) {
+            carrito = agregarItem(usuarioId, new ItemCarritoRequest(
+                    request.getDisponibilidadId(), request.getBebes(), TipoPasajero.BEBE));
+        }
+        return carrito;
     }
 
     @Override
@@ -232,11 +260,8 @@ public class CarritoServiceImpl implements CarritoService {
                     .multiply(BigDecimal.valueOf(disponibilidad.getClase().getMultiplicadorMillas())));
         }
 
-        return CarritoResponse.desde(carrito).toBuilder()
-                .millasAGanar(montoParaMillas.divide(pesosPorMilla, 0, RoundingMode.DOWN).intValue())
-                .millasDisponibles(carrito.getUsuario().getMillas())
-                .valorMilla(valorMilla)
-                .build();
+        int millasAGanar = montoParaMillas.divide(pesosPorMilla, 0, RoundingMode.DOWN).intValue();
+        return CarritoResponse.desde(carrito, millasAGanar, carrito.getUsuario().getMillas(), valorMilla);
     }
 
     /** Cuantos pasajeros hay en el carrito para ese vuelo y clase (sumando todos los tipos). */

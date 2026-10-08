@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
-@Builder(toBuilder = true)
+@Builder
 @AllArgsConstructor
 public class CarritoResponse {
 
@@ -22,7 +22,8 @@ public class CarritoResponse {
     private Integer millasDisponibles;
     private BigDecimal valorMilla;
 
-    public static CarritoResponse desde(Carrito carrito) {
+    public static CarritoResponse desde(Carrito carrito, Integer millasAGanar, Integer millasDisponibles,
+                                        BigDecimal valorMilla) {
         List<ItemCarritoResponse> items = carrito.getItems().stream()
                 .map(ItemCarritoResponse::desde)
                 .toList();
@@ -34,6 +35,9 @@ public class CarritoResponse {
         return CarritoResponse.builder()
                 .items(items)
                 .total(total)
+                .millasAGanar(millasAGanar)
+                .millasDisponibles(millasDisponibles)
+                .valorMilla(valorMilla)
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import com.ecommerce.vuelos.dto.carrito.ActualizarCantidadRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.CheckoutRequest;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
+import com.ecommerce.vuelos.dto.carrito.PasajesRequest;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.CarritoService;
@@ -30,6 +31,13 @@ public class CarritoController {
     public ResponseEntity<CarritoResponse> agregarItem(@AuthenticationPrincipal UsuarioPrincipal principal,
                                                          @Valid @RequestBody ItemCarritoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.agregarItem(principal.getId(), request));
+    }
+
+    /** Agrega de una vez los adultos, ninos y bebes elegidos para un vuelo y clase. */
+    @PostMapping("/pasajes")
+    public ResponseEntity<CarritoResponse> agregarPasajes(@AuthenticationPrincipal UsuarioPrincipal principal,
+                                                          @Valid @RequestBody PasajesRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.agregarPasajes(principal.getId(), request));
     }
 
     @PutMapping("/items/{itemId}")
