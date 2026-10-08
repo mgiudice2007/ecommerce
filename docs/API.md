@@ -99,7 +99,8 @@ Administración de cuentas y asignación de permisos (roles).
 ## Vuelos — `/api/vuelos`
 
 - `GET /api/vuelos` — público, filtros opcionales combinables: `origen`, `destino`,
-  `categoriaId`, `claseId`, `precioMin`, `precioMax`, `vendedorId`, más `page`/`size` para
+  `categoriaId`, `claseId`, `precioMin`, `precioMax`, `fechaDesde`, `fechaHasta` (días de salida,
+  formato `2026-10-20`, ambos incluidos), `vendedorId`, más `page`/`size` para
   paginar (respuesta `PaginaResponse<VueloResponse>`: `content`, `number`, `size`,
   `totalElements`, `totalPages`). **No lista los vuelos que ya salieron** (`fechaSalida` pasada)
   ni los eliminados. Si la página viene vacía, la respuesta suma un campo `mensaje` (por ejemplo

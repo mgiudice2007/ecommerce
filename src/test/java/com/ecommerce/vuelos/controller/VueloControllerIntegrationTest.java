@@ -4,6 +4,7 @@ import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,6 +55,27 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
         // Las compras viejas lo siguen necesitando para mostrar sus datos
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void buscar_filtrandoPorFecha_soloDevuelveLosQueSalenEsosDias() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vfecha");
+        Long vueloId = crearVuelo(vendedor, "COR", "USH", 300.0); // sale dentro de 10 dias
+        String diaDelVuelo = LocalDate.now().plusDays(10).toString();
+        String diaSiguiente = LocalDate.now().plusDays(11).toString();
+
+        mockMvc.perform(get("/api/vuelos")
+                        .param("origen", "COR")
+                        .param("fechaDesde", diaDelVuelo)
+                        .param("fechaHasta", diaDelVuelo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + vueloId + ")]").isNotEmpty());
+
+        mockMvc.perform(get("/api/vuelos")
+                        .param("origen", "COR")
+                        .param("fechaDesde", diaSiguiente))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + vueloId + ")]").isEmpty());
     }
 
     @Test

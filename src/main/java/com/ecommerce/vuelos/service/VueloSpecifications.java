@@ -5,6 +5,7 @@ import com.ecommerce.vuelos.entity.Vuelo;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public final class VueloSpecifications {
@@ -70,6 +71,18 @@ public final class VueloSpecifications {
     public static Specification<Vuelo> precioMinimo(BigDecimal precioMin) {
         return (root, query, cb) -> precioMin == null ? null
                 : cb.greaterThanOrEqualTo(root.get("precio"), precioMin);
+    }
+
+    /** Vuelos que salen ese dia o despues (para el calendario de la busqueda). */
+    public static Specification<Vuelo> saleDesde(LocalDate fechaDesde) {
+        return (root, query, cb) -> fechaDesde == null ? null
+                : cb.greaterThanOrEqualTo(root.get("fechaSalida"), fechaDesde.atStartOfDay());
+    }
+
+    /** Vuelos que salen ese dia o antes. */
+    public static Specification<Vuelo> saleHasta(LocalDate fechaHasta) {
+        return (root, query, cb) -> fechaHasta == null ? null
+                : cb.lessThan(root.get("fechaSalida"), fechaHasta.plusDays(1).atStartOfDay());
     }
 
     public static Specification<Vuelo> precioMaximo(BigDecimal precioMax) {

@@ -9,12 +9,14 @@ import com.ecommerce.vuelos.entity.EstadoVuelo;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public interface VueloService {
 
     /** Catalogo publico con filtros opcionales. Todos los filtros pueden venir en null. */
     PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
-                               BigDecimal precioMin, BigDecimal precioMax, Long vendedorId,
+                               BigDecimal precioMin, BigDecimal precioMax,
+                                         LocalDate fechaDesde, LocalDate fechaHasta, Long vendedorId,
                                PageRequest pageRequest);
 
     VueloResponse obtener(Long id);

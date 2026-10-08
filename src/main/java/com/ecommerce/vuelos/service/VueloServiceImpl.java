@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -39,7 +40,8 @@ public class VueloServiceImpl implements VueloService {
 
     @Override
     public PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
-                                                BigDecimal precioMin, BigDecimal precioMax, Long vendedorId,
+                                                BigDecimal precioMin, BigDecimal precioMax,
+                                                LocalDate fechaDesde, LocalDate fechaHasta, Long vendedorId,
                                                 PageRequest pageRequest) {
         // Cada Specification devuelve null si su filtro vino vacio, asi que las
         // combinamos todas y quedan solo las que el cliente realmente mando.
@@ -52,10 +54,13 @@ public class VueloServiceImpl implements VueloService {
                 VueloSpecifications.deClase(claseId),
                 VueloSpecifications.precioMinimo(precioMin),
                 VueloSpecifications.precioMaximo(precioMax),
+                VueloSpecifications.saleDesde(fechaDesde),
+                VueloSpecifications.saleHasta(fechaHasta),
                 VueloSpecifications.delVendedor(vendedorId));
 
         boolean hayFiltros = origen != null || destino != null || categoriaId != null || claseId != null
-                || precioMin != null || precioMax != null || vendedorId != null;
+                || precioMin != null || precioMax != null || fechaDesde != null || fechaHasta != null
+                || vendedorId != null;
         String mensajeSiVacia = hayFiltros
                 ? "No hay vuelos que coincidan con los filtros indicados"
                 : "No hay vuelos disponibles por el momento";

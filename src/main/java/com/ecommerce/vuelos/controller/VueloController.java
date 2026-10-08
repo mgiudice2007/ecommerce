@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/vuelos")
@@ -41,6 +42,8 @@ public class VueloController {
             @RequestParam(required = false) Long claseId,
             @RequestParam(required = false) BigDecimal precioMin,
             @RequestParam(required = false) BigDecimal precioMax,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long vendedorId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
@@ -50,7 +53,7 @@ public class VueloController {
                 : PageRequest.of(page, size);
 
         return ResponseEntity.ok(vueloService.buscar(
-                origen, destino, categoriaId, claseId, precioMin, precioMax, vendedorId, pageRequest));
+                origen, destino, categoriaId, claseId, precioMin, precioMax, fechaDesde, fechaHasta, vendedorId, pageRequest));
     }
 
     @GetMapping("/{id}")
