@@ -9,6 +9,7 @@ import com.ecommerce.vuelos.entity.EstadoOrden;
 import com.ecommerce.vuelos.entity.ItemCarrito;
 import com.ecommerce.vuelos.entity.ItemOrden;
 import com.ecommerce.vuelos.entity.Orden;
+import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.entity.Vuelo;
 import com.ecommerce.vuelos.exception.BadRequestException;
@@ -52,22 +53,27 @@ public class CarritoServiceImpl implements CarritoService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Disponibilidad no encontrada: " + request.getDisponibilidadId()));
 
-        validarPublicado(disponibilidad.getVuelo());
-        validarStock(disponibilidad, request.getCantidad());
+        TipoPasajero tipo = request.getTipoPasajero() == null ? TipoPasajero.ADULTO : request.getTipoPasajero();
 
+        validarPublicado(disponibilidad.getVuelo());
+        // Adultos, ninos y bebes del mismo vuelo y clase ocupan los mismos asientos
+        validarStock(disponibilidad, asientosEnCarrito(carrito, disponibilidad) + request.getCantidad());
+
+        // Si ya habia pasajeros de ese tipo en ese vuelo y clase, se suman
         ItemCarrito itemExistente = carrito.getItems().stream()
                 .filter(item -> item.getDisponibilidad().getId().equals(disponibilidad.getId()))
+                .filter(item -> item.getTipoPasajero() == tipo)
                 .findFirst()
                 .orElse(null);
 
         if (itemExistente != null) {
-            validarStock(disponibilidad, itemExistente.getCantidad() + request.getCantidad());
             itemExistente.setCantidad(itemExistente.getCantidad() + request.getCantidad());
         } else {
             carrito.getItems().add(ItemCarrito.builder()
                     .carrito(carrito)
                     .disponibilidad(disponibilidad)
                     .cantidad(request.getCantidad())
+                    .tipoPasajero(tipo)
                     .build());
         }
 
@@ -81,7 +87,8 @@ public class CarritoServiceImpl implements CarritoService {
         Carrito carrito = buscarCarrito(usuarioId);
         ItemCarrito item = obtenerItemDelCarrito(carrito, itemId);
 
-        validarStock(item.getDisponibilidad(), cantidad);
+        int otrosPasajeros = asientosEnCarrito(carrito, item.getDisponibilidad()) - item.getCantidad();
+        validarStock(item.getDisponibilidad(), otrosPasajeros + cantidad);
         item.setCantidad(cantidad);
         carritoRepository.save(carrito);
         return CarritoResponse.desde(carrito);
@@ -110,7 +117,7 @@ public class CarritoServiceImpl implements CarritoService {
         // Validar el stock de todos los items antes de descontar nada.
         for (ItemCarrito item : carrito.getItems()) {
             validarPublicado(item.getDisponibilidad().getVuelo());
-            validarStock(item.getDisponibilidad(), item.getCantidad());
+            validarStock(item.getDisponibilidad(), asientosEnCarrito(carrito, item.getDisponibilidad()));
         }
 
         List<ItemOrden> itemsOrden = new ArrayList<>();
@@ -120,8 +127,10 @@ public class CarritoServiceImpl implements CarritoService {
         for (ItemCarrito item : carrito.getItems()) {
             Disponibilidad disponibilidad = item.getDisponibilidad();
             BigDecimal cantidad = BigDecimal.valueOf(item.getCantidad());
-            BigDecimal precioUnitario = disponibilidad.getPrecioConDescuento();
-            BigDecimal descuentoUnitario = disponibilidad.getDescuentoUnitario();
+            // Ninos y bebes pagan un porcentaje de la tarifa (y del descuento) de un adulto
+            TipoPasajero tipo = item.getTipoPasajero();
+            BigDecimal precioUnitario = tipo.aplicar(disponibilidad.getPrecioConDescuento());
+            BigDecimal descuentoUnitario = tipo.aplicar(disponibilidad.getDescuentoUnitario());
 
             disponibilidad.setAsientosDisponibles(
                     disponibilidad.getAsientosDisponibles() - item.getCantidad());
@@ -131,6 +140,7 @@ public class CarritoServiceImpl implements CarritoService {
             itemsOrden.add(ItemOrden.builder()
                     .disponibilidad(disponibilidad)
                     .cantidad(item.getCantidad())
+                    .tipoPasajero(tipo)
                     .precioUnitario(precioUnitario)
                     .descuentoAplicado(descuentoUnitario)
                     .build());
@@ -176,6 +186,14 @@ public class CarritoServiceImpl implements CarritoService {
                     + disponibilidad.getClase().getNombre() + " para el vuelo "
                     + disponibilidad.getVuelo().getNumeroVuelo());
         }
+    }
+
+    /** Cuantos pasajeros hay en el carrito para ese vuelo y clase (sumando todos los tipos). */
+    private int asientosEnCarrito(Carrito carrito, Disponibilidad disponibilidad) {
+        return carrito.getItems().stream()
+                .filter(item -> item.getDisponibilidad().getId().equals(disponibilidad.getId()))
+                .mapToInt(ItemCarrito::getCantidad)
+                .sum();
     }
 
     private ItemCarrito obtenerItemDelCarrito(Carrito carrito, Long itemId) {

@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.dto.orden;
 
 import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.ItemOrden;
+import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.entity.Vuelo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class ItemOrdenResponse {
     private String origen;
     private String destino;
     private String claseNombre;
+    private TipoPasajero tipoPasajero;
     private Integer cantidad;
     private BigDecimal precioUnitario;
 
@@ -39,6 +41,7 @@ public class ItemOrdenResponse {
                 .origen(vuelo.getOrigen().getCiudad())
                 .destino(vuelo.getDestino().getCiudad())
                 .claseNombre(disponibilidad.getClase().getNombre())
+                .tipoPasajero(item.getTipoPasajero())
                 .cantidad(item.getCantidad())
                 .precioUnitario(item.getPrecioUnitario())
                 .descuentoAplicado(item.getDescuentoAplicado())

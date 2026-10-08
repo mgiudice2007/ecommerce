@@ -11,6 +11,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
 
+    private void agregarPasajeros(String token, Long disponibilidadId, int cantidad, String tipo,
+                                  int statusEsperado) throws Exception {
+        mockMvc.perform(json(post("/api/carrito/items").header("Authorization", "Bearer " + token),
+                        Map.of("disponibilidadId", disponibilidadId, "cantidad", cantidad, "tipoPasajero", tipo)))
+                .andExpect(status().is(statusEsperado));
+    }
+
+    @Test
+    void ninosYBebes_paganUnPorcentajeDelPrecioDeUnAdulto() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("familia");
+
+        agregarPasajeros(comprador, disponibilidadId, 2, "ADULTO", 201);
+        agregarPasajeros(comprador, disponibilidadId, 1, "NINO", 201);
+        agregarPasajeros(comprador, disponibilidadId, 1, "BEBE", 201);
+
+        // 2 adultos x 1000 + 1 nino al 75% + 1 bebe al 10%
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.total").value(2850.0));
+
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value(2850.0))
+                .andExpect(jsonPath("$.items[?(@.tipoPasajero == 'NINO')].precioUnitario").value(750.0));
+    }
+
+    @Test
+    void todosLosPasajerosOcupanAsientos_delMismoCupo() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 2);
+        String comprador = registrarYLoguearComprador("sinlugar");
+
+        agregarPasajeros(comprador, disponibilidadId, 2, "ADULTO", 201);
+        agregarPasajeros(comprador, disponibilidadId, 1, "NINO", 400);
+    }
+
     @Test
     void compradorDelSeeder_naceConCarrito() throws Exception {
         String comprador = login("comprador", "comprador123");

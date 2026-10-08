@@ -33,6 +33,15 @@ public class ItemOrden {
     @Column(nullable = false)
     private Integer cantidad;
 
+    /** Adulto, nino o bebe. Los items viejos (antes de existir el campo) cuentan como adulto. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private TipoPasajero tipoPasajero;
+
+    public TipoPasajero getTipoPasajero() {
+        return tipoPasajero == null ? TipoPasajero.ADULTO : tipoPasajero;
+    }
+
     @Column(nullable = false)
     private BigDecimal precioUnitario;
 

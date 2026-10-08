@@ -198,8 +198,12 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 - `POST /api/carrito/items` — se elige vuelo **y clase** en un solo id (`disponibilidadId`).
   Pedir más asientos de los que hay disponibles da `400`, y lo mismo si el vuelo ya salió.
   ```json
-  { "disponibilidadId": 1, "cantidad": 2 }
+  { "disponibilidadId": 1, "cantidad": 2, "tipoPasajero": "NINO" }
   ```
+  `tipoPasajero` es opcional (`ADULTO` por defecto): `NINO` paga el 75% y `BEBE` el 10% del
+  precio de un adulto (también del descuento). Todos ocupan un asiento del mismo cupo, así que el
+  stock se controla sumando los pasajeros de ese vuelo y clase que ya hay en el carrito. Los items
+  del carrito y de la orden devuelven `tipoPasajero`.
 - `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
 - `POST /api/carrito/checkout` — sin body. Operación transaccional: valida el stock de todos

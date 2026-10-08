@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.dto.carrito;
 
+import com.ecommerce.vuelos.entity.TipoPasajero;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -19,4 +20,7 @@ public class ItemCarritoRequest {
     @NotNull
     @Min(1)
     private Integer cantidad;
+
+    /** ADULTO, NINO o BEBE. Si no viene, es ADULTO. */
+    private TipoPasajero tipoPasajero;
 }
