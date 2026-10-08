@@ -219,10 +219,11 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 
 Se calculan en el backend con el precio real de cada compra; nada está fijo por vuelo.
 
-- **Ganar:** por cada `millas.pesos-por-milla` pesos pagados con plata (100) se suma 1 milla,
+- **Ganar:** por cada `millas.pesos-por-milla` pesos pagados con plata (250) se suma 1 milla,
   multiplicada por el `multiplicadorMillas` de la clase (tabla `clases`: Económica 1, Ejecutiva 2,
   Primera 3). Lo pagado con millas no suma millas.
-- **Usar:** cada milla descuenta `millas.valor-en-pesos` pesos (1). Las dos reglas están en
+- **Usar:** cada milla descuenta `millas.valor-en-pesos` pesos (10). En Económica se recupera
+  alrededor del 4% de lo pagado, parecido a los programas de las aerolíneas. Las dos reglas están en
   `application.properties`.
 - **Cancelar** una orden devuelve las millas usadas y resta las ganadas.
 - `GET /api/carrito` suma `millasAGanar`, `millasDisponibles` y `valorMilla`; `GET /api/auth/me`

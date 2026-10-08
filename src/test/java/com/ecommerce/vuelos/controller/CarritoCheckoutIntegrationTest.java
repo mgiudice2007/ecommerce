@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Map;
 
@@ -9,6 +10,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
+
+    // Las reglas de las millas se leen de application.properties, igual que en el service
+    @Value("${millas.pesos-por-milla}")
+    private int pesosPorMilla;
+    @Value("${millas.valor-en-pesos}")
+    private int valorMilla;
 
 
     private void agregarPasajeros(String token, Long disponibilidadId, int cantidad, String tipo,
@@ -97,18 +104,19 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     @Test
     void comprar_sumaMillasSegunLoPagadoYLaClase() throws Exception {
         String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
-        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 10000.0, 10);
         String comprador = registrarYLoguearComprador("millero");
         int multiplicador = multiplicadorDeLaClasePorDefecto();
+        // $20000 pagados: 1 milla cada "pesosPorMilla", por el multiplicador de la clase
+        int esperadas = 20000 * multiplicador / pesosPorMilla;
 
         agregarAlCarrito(comprador, disponibilidadId, 2);
-        // $2000 pagados: 1 milla cada $100, por el multiplicador de la clase
         mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
-                .andExpect(jsonPath("$.millasAGanar").value(20 * multiplicador))
+                .andExpect(jsonPath("$.millasAGanar").value(esperadas))
                 .andExpect(jsonPath("$.millasDisponibles").value(0));
 
         comprar(comprador, null);
-        org.junit.jupiter.api.Assertions.assertEquals(20 * multiplicador, saldoDeMillas(comprador));
+        org.junit.jupiter.api.Assertions.assertEquals(esperadas, saldoDeMillas(comprador));
     }
 
     @Test
@@ -124,11 +132,12 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         int saldoInicial = saldoDeMillas(comprador);
 
         // Segunda compra: paga $500 con millas y el resto con plata
+        int millasPara500 = 500 / valorMilla;
         agregarAlCarrito(comprador, barato, 1);
-        Long ordenId = comprar(comprador, 500);
+        Long ordenId = comprar(comprador, millasPara500);
         mockMvc.perform(get("/api/ordenes/" + ordenId).header("Authorization", "Bearer " + comprador))
                 .andExpect(jsonPath("$.total").value(500.0))
-                .andExpect(jsonPath("$.millasUsadas").value(500))
+                .andExpect(jsonPath("$.millasUsadas").value(millasPara500))
                 .andExpect(jsonPath("$.descuentoMillas").value(500.0));
 
         // Al cancelar vuelve al saldo que tenia antes de esa compra
