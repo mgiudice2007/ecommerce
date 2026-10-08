@@ -33,7 +33,7 @@ public class CarritoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.agregarItem(principal.getId(), request));
     }
 
-    /** Agrega de una vez los adultos, ninos y bebes elegidos para un vuelo y clase. */
+    /** Agrega de una vez los adultos, niños y bebés elegidos para un vuelo y clase. */
     @PostMapping("/pasajes")
     public ResponseEntity<CarritoResponse> agregarPasajes(@AuthenticationPrincipal UsuarioPrincipal principal,
                                                           @Valid @RequestBody PasajesRequest request) {

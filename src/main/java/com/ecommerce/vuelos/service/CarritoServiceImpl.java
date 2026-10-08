@@ -65,7 +65,7 @@ public class CarritoServiceImpl implements CarritoService {
         TipoPasajero tipo = request.getTipoPasajero() == null ? TipoPasajero.ADULTO : request.getTipoPasajero();
 
         validarPublicado(disponibilidad.getVuelo());
-        // Adultos, ninos y bebes del mismo vuelo y clase ocupan los mismos asientos
+        // Adultos, niños y bebés del mismo vuelo y clase ocupan los mismos asientos
         validarStock(disponibilidad, asientosEnCarrito(carrito, disponibilidad) + request.getCantidad());
 
         // Si ya habia pasajeros de ese tipo en ese vuelo y clase, se suman
@@ -94,10 +94,10 @@ public class CarritoServiceImpl implements CarritoService {
     @Transactional
     public CarritoResponse agregarPasajes(Long usuarioId, PasajesRequest request) {
         if (request.getAdultos() + request.getNinos() + request.getBebes() == 0) {
-            throw new BadRequestException("Elegi al menos un pasajero");
+            throw new BadRequestException("Elegí al menos un pasajero");
         }
         if (request.getBebes() > request.getAdultos()) {
-            throw new BadRequestException("Cada bebe tiene que viajar con un adulto");
+            throw new BadRequestException("Cada bebé tiene que viajar con un adulto");
         }
 
         // Un item por cada tipo de pasajero. Si algo falla, la transaccion deshace todo.
@@ -164,7 +164,7 @@ public class CarritoServiceImpl implements CarritoService {
         for (ItemCarrito item : carrito.getItems()) {
             Disponibilidad disponibilidad = item.getDisponibilidad();
             BigDecimal cantidad = BigDecimal.valueOf(item.getCantidad());
-            // Ninos y bebes pagan un porcentaje de la tarifa (y del descuento) de un adulto
+            // Niños y bebés pagan un porcentaje de la tarifa (y del descuento) de un adulto
             TipoPasajero tipo = item.getTipoPasajero();
             BigDecimal precioUnitario = tipo.aplicar(disponibilidad.getPrecioConDescuento());
             BigDecimal descuentoUnitario = tipo.aplicar(disponibilidad.getDescuentoUnitario());
@@ -192,11 +192,11 @@ public class CarritoServiceImpl implements CarritoService {
         Usuario usuario = carrito.getUsuario();
         int millasUsadas = millasAUsar == null ? 0 : millasAUsar;
         if (millasUsadas > usuario.getMillas()) {
-            throw new BadRequestException("No tenes suficientes millas: tu saldo es de " + usuario.getMillas());
+            throw new BadRequestException("No tenés suficientes millas: tu saldo es de " + usuario.getMillas());
         }
         BigDecimal descuentoMillas = valorMilla.multiply(BigDecimal.valueOf(millasUsadas));
         if (descuentoMillas.compareTo(total) > 0) {
-            throw new BadRequestException("Con esas millas pagarias mas que el total de la compra");
+            throw new BadRequestException("Con esas millas pagarías más que el total de la compra");
         }
         BigDecimal aPagar = total.subtract(descuentoMillas);
         int millasGanadas = total.signum() == 0 ? 0 : montoParaMillas

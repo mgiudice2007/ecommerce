@@ -31,7 +31,7 @@ public class ItemCarritoResponse {
     public static ItemCarritoResponse desde(ItemCarrito item) {
         Disponibilidad disponibilidad = item.getDisponibilidad();
         Vuelo vuelo = disponibilidad.getVuelo();
-        // El precio de la clase es el de un adulto; ninos y bebes pagan un porcentaje
+        // El precio de la clase es el de un adulto; niños y bebés pagan un porcentaje
         BigDecimal precioUnitario = item.getTipoPasajero().aplicar(disponibilidad.getPrecioConDescuento());
 
         return ItemCarritoResponse.builder()

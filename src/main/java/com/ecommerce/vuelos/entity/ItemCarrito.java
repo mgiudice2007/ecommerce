@@ -31,7 +31,7 @@ public class ItemCarrito {
     @Column(nullable = false)
     private Integer cantidad;
 
-    /** Adulto, nino o bebe. Los items viejos (antes de existir el campo) cuentan como adulto. */
+    /** Adulto, niño o bebé. Los items viejos (antes de existir el campo) cuentan como adulto. */
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private TipoPasajero tipoPasajero;

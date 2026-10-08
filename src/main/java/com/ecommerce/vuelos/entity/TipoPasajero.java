@@ -4,8 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Tipo de pasajero segun la edad, como en las aerolineas: el nino paga el 75%
- * de la tarifa y el bebe (viaja a upa de un adulto) el 10%.
+ * Tipo de pasajero segun la edad, como en las aerolineas: el niño paga el 75%
+ * de la tarifa y el bebé (viaja a upa de un adulto) el 10%.
+ * NINO y BEBE van sin ñ ni tilde porque son nombres de codigo.
  */
 public enum TipoPasajero {
     ADULTO(100),

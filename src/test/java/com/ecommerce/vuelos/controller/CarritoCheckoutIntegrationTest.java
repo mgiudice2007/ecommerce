@@ -35,7 +35,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         agregarPasajeros(comprador, disponibilidadId, 1, "NINO", 201);
         agregarPasajeros(comprador, disponibilidadId, 1, "BEBE", 201);
 
-        // 2 adultos x 1000 + 1 nino al 75% + 1 bebe al 10%
+        // 2 adultos x 1000 + 1 niño al 75% + 1 bebé al 10%
         mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
                 .andExpect(jsonPath("$.items.length()").value(3))
                 .andExpect(jsonPath("$.total").value(2850.0));
@@ -52,7 +52,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
         String comprador = registrarYLoguearComprador("familiajunta");
 
-        // 2 adultos x 1000 + 1 nino al 75% (sin bebes)
+        // 2 adultos x 1000 + 1 niño al 75% (sin bebés)
         mockMvc.perform(json(post("/api/carrito/pasajes").header("Authorization", "Bearer " + comprador),
                         Map.of("disponibilidadId", disponibilidadId, "adultos", 2, "ninos", 1, "bebes", 0)))
                 .andExpect(status().isCreated())
