@@ -215,8 +215,10 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   viajan a upa: no ocupan asiento ni descuentan del cupo. Los items del carrito y de la orden
   devuelven `tipoPasajero` y `asientos`.
 - `POST /api/carrito/pasajes` — agrega de una vez los pasajeros de un vuelo y clase:
-  `{ "disponibilidadId": 1, "adultos": 2, "ninos": 1, "bebes": 0 }`. Crea un ítem por cada tipo
-  con cantidad mayor a 0. No puede haber más bebés que adultos (`400`).
+  `{ "disponibilidadId": 1, "adultos": 2, "ninos": 1, "bebes": 0, "asientos": ["12A", "12B", "12C"] }`.
+  Crea un ítem por cada tipo con cantidad mayor a 0 y guarda los asientos elegidos (opcional; se
+  reparten primero entre los adultos). Tiene que viajar al menos un adulto y no puede haber más
+  bebés que adultos (`400`). El checkout también rechaza un vuelo con menores y sin adultos.
 - `PUT /api/carrito/asientos` — elige los asientos de un vuelo y clase del carrito:
   `{ "disponibilidadId": 1, "asientos": ["12A", "12B"] }`. Se reparten primero entre los adultos y
   después entre los niños. Da `400` si hay más asientos que pasajeros, si un asiento no existe en la

@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 /** Los pasajeros que se agregan juntos al carrito para un vuelo y clase (la disponibilidad). */
 @Getter
 @Setter
@@ -28,4 +30,7 @@ public class PasajesRequest {
     @NotNull
     @Min(0)
     private Integer bebes;
+
+    /** Asientos elegidos para los adultos y los niños (opcional; los bebés viajan a upa). */
+    private List<String> asientos;
 }

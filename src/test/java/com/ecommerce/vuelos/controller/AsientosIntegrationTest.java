@@ -93,6 +93,22 @@ class AsientosIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void agregarPasajesConAsientos_losGuardaEnElCarrito() throws Exception {
+        String admin = registrarYLoguearAdmin("vpasajesasientos");
+        Long disponibilidadId = crearVueloConCupo(admin, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("eligeantes");
+        List<String> elegidos = primerosAsientos(disponibilidadId, 3);
+
+        // 2 adultos y 1 niño con sus asientos elegidos antes de agregar al carrito
+        mockMvc.perform(json(post("/api/carrito/pasajes").header("Authorization", "Bearer " + comprador),
+                        Map.of("disponibilidadId", disponibilidadId, "adultos", 2, "ninos", 1, "bebes", 0,
+                                "asientos", elegidos)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.items[?(@.tipoPasajero == 'ADULTO')].asientos[0]").value(elegidos.get(0)))
+                .andExpect(jsonPath("$.items[?(@.tipoPasajero == 'NINO')].asientos[0]").value(elegidos.get(2)));
+    }
+
+    @Test
     void elegirUnAsientoYaVendido_devuelve400() throws Exception {
         String admin = registrarYLoguearAdmin("vocupado");
         Long disponibilidadId = crearVueloConCupo(admin, "EZE", "MIA", 1000.0, 10);

@@ -126,6 +126,19 @@ public class CarritoServiceImpl implements CarritoService {
             carrito = agregarItem(usuarioId, new ItemCarritoRequest(
                     request.getDisponibilidadId(), request.getBebes(), TipoPasajero.BEBE));
         }
+
+        // Si eligio asientos en el detalle del vuelo, se guardan junto con los que ya
+        // tenia ese vuelo y clase en el carrito (se reparten primero entre los adultos)
+        if (request.getAsientos() != null && !request.getAsientos().isEmpty()) {
+            Carrito actualizado = buscarCarrito(usuarioId);
+            Disponibilidad disponibilidad = disponibilidadRepository.findById(request.getDisponibilidadId()).orElseThrow();
+            List<String> todos = new ArrayList<>();
+            for (ItemCarrito item : itemsConAsiento(actualizado, disponibilidad)) {
+                todos.addAll(item.getAsientos());
+            }
+            todos.addAll(request.getAsientos());
+            carrito = elegirAsientos(usuarioId, new AsientosRequest(request.getDisponibilidadId(), todos));
+        }
         return carrito;
     }
 
