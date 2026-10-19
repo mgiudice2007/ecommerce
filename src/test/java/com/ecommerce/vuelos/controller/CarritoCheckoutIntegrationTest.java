@@ -61,6 +61,30 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void agregarPasajes_sinNingunAdulto_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("solomenores");
+
+        mockMvc.perform(json(post("/api/carrito/pasajes").header("Authorization", "Bearer " + comprador),
+                        Map.of("disponibilidadId", disponibilidadId, "adultos", 0, "ninos", 2, "bebes", 0)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void comprarSoloConMenores_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);
+        String comprador = registrarYLoguearComprador("ninosolo");
+
+        // Un niño suelto en el carrito (por ejemplo, despues de borrar al adulto)
+        agregarPasajeros(comprador, disponibilidadId, 1, "NINO", 201);
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("al menos un adulto")));
+    }
+
+    @Test
     void agregarPasajes_masBebesQueAdultos_devuelve400() throws Exception {
         String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
         Long disponibilidadId = crearVueloConCupo(vendedor, "EZE", "MIA", 1000.0, 10);

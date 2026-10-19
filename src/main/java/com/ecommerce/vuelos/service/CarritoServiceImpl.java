@@ -105,6 +105,9 @@ public class CarritoServiceImpl implements CarritoService {
         if (request.getAdultos() + request.getNinos() + request.getBebes() == 0) {
             throw new BadRequestException("Elegí al menos un pasajero");
         }
+        if (request.getAdultos() == 0) {
+            throw new BadRequestException("Tiene que viajar al menos un adulto");
+        }
         if (request.getBebes() > request.getAdultos()) {
             throw new BadRequestException("Cada bebé tiene que viajar con un adulto");
         }
@@ -217,7 +220,7 @@ public class CarritoServiceImpl implements CarritoService {
         for (ItemCarrito item : carrito.getItems()) {
             validarPublicado(item.getDisponibilidad().getVuelo());
             validarStock(item.getDisponibilidad(), asientosEnCarrito(carrito, item.getDisponibilidad()));
-            validarBebes(carrito, item.getDisponibilidad());
+            validarAdultos(carrito, item.getDisponibilidad());
         }
 
         // Asientos: los que eligio tienen que seguir libres, y a los pasajeros que no
@@ -387,8 +390,11 @@ public class CarritoServiceImpl implements CarritoService {
         return items;
     }
 
-    /** Cada bebé viaja a upa de un adulto del mismo vuelo y clase. */
-    private void validarBebes(Carrito carrito, Disponibilidad disponibilidad) {
+    /**
+     * En cada vuelo y clase tiene que viajar al menos un adulto (los menores no viajan
+     * solos) y cada bebé viaja a upa de un adulto.
+     */
+    private void validarAdultos(Carrito carrito, Disponibilidad disponibilidad) {
         int adultos = 0;
         int bebes = 0;
         for (ItemCarrito item : carrito.getItems()) {
@@ -400,6 +406,10 @@ public class CarritoServiceImpl implements CarritoService {
                     bebes += item.getCantidad();
                 }
             }
+        }
+        if (adultos == 0) {
+            throw new BadRequestException("Tiene que viajar al menos un adulto en el vuelo "
+                    + disponibilidad.getVuelo().getNumeroVuelo());
         }
         if (bebes > adultos) {
             throw new BadRequestException("Cada bebé tiene que viajar con un adulto en el vuelo "
