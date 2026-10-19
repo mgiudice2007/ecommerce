@@ -773,7 +773,7 @@
       "_type": "request",
       "parentId": "fld_fotos",
       "name": "GET ver la imagen",
-      "description": "Devuelve los bytes con su Content-Type, asi Insomnia muestra la imagen en el panel de respuesta en vez de un Base64.",
+      "description": "Devuelve la imagen en Base64 dentro de un JSON ({ id, file, tipo }), como en el ejemplo de clase de subida de imagenes.",
       "method": "GET",
       "url": "{{ base_url }}/api/fotos/{% response 'body', 'req_foto_subir', '$.id', 'never', 60 %}",
       "metaSortKey": -98,

@@ -61,18 +61,20 @@ class FotoControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void verFoto_devuelveLosBytesTalCualConSuContentType() throws Exception {
+    void verFoto_devuelveLaImagenEnBase64ConSuTipo() throws Exception {
         String vendedor = registrarYLoguearAdmin("vbytes");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 900.0);
         Long fotoId = subir(vendedor, vueloId, "imagen.png", null);
 
         MvcResult result = mockMvc.perform(get("/api/fotos/" + fotoId))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.IMAGE_PNG))
+                .andExpect(jsonPath("$.id").value(fotoId))
+                .andExpect(jsonPath("$.tipo").value("image/png"))
                 .andReturn();
 
-        assertArrayEquals(PNG_1X1, result.getResponse().getContentAsByteArray(),
-                "los bytes que salen tienen que ser los mismos que entraron");
+        String base64 = objectMapper.readTree(result.getResponse().getContentAsString()).get("file").asText();
+        assertArrayEquals(PNG_1X1, java.util.Base64.getDecoder().decode(base64),
+                "la imagen decodificada tiene que ser la misma que se subio");
     }
 
     @Test

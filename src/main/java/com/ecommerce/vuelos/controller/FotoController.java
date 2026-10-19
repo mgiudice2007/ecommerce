@@ -3,6 +3,7 @@ package com.ecommerce.vuelos.controller;
 import com.ecommerce.vuelos.dto.MensajeResponse;
 import com.ecommerce.vuelos.dto.vuelo.FotoRequest;
 import com.ecommerce.vuelos.dto.vuelo.FotoResponse;
+import com.ecommerce.vuelos.dto.vuelo.ImagenResponse;
 import com.ecommerce.vuelos.entity.Foto;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import com.ecommerce.vuelos.service.FotoService;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
@@ -46,12 +48,16 @@ public class FotoController {
         return ResponseEntity.ok(fotoService.listarPorVuelo(vueloId));
     }
 
+    /** Como en el ejemplo de clase: devuelve la imagen codificada en Base64 dentro de un JSON. */
     @GetMapping("/{id}")
-    public ResponseEntity<byte[]> ver(@PathVariable Long id) {
+    public ResponseEntity<ImagenResponse> ver(@PathVariable Long id) {
         Foto foto = fotoService.obtenerBinario(id);
-        return ResponseEntity.ok()
-                .contentType(tipoSegunExtension(foto.getNombreArchivo()))
-                .body(foto.getDatos());
+        String base64 = Base64.getEncoder().encodeToString(foto.getDatos());
+        return ResponseEntity.ok(ImagenResponse.builder()
+                .id(foto.getId())
+                .file(base64)
+                .tipo(tipoSegunExtension(foto.getNombreArchivo()).toString())
+                .build());
     }
 
     @DeleteMapping("/{id}")

@@ -172,8 +172,9 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 
 - `GET /api/fotos?vueloId={id}` — público, solo metadata (`id`, `nombreArchivo`, `orden`,
   `tamano`) — **no** trae el binario, para no inflar la respuesta.
-- `GET /api/fotos/{id}` — público, devuelve el binario directo con el `Content-Type` según la
-  extensión del archivo.
+- `GET /api/fotos/{id}` — público. Como en el ejemplo de clase de subida de imágenes, devuelve la
+  imagen codificada en Base64 dentro de un JSON: `{ "id": 5, "file": "/9j/4AAQ...", "tipo": "image/jpeg" }`.
+  El frontend la muestra con `src="data:{tipo};base64,{file}"`.
 - `POST /api/fotos` (multipart) — requiere token `ADMIN`. Campos:
   `vueloId`, `file` (el binario — **ojo con el nombre del campo**, no es `archivo`), `orden`
   (opcional — si no viene, se calcula solo como la siguiente posición). Solo acepta archivos con
