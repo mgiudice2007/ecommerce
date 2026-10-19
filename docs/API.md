@@ -29,6 +29,9 @@ vuelta cada una (números pares para la ida y la siguiente impar para la vuelta,
 BC1403), con precios en pesos, clases, algunos descuentos vigentes y una foto cada uno (las imágenes están en `src/main/resources/fotos-ejemplo`). El seeder agrega lo que
 falte cada vez que arranca: los aeropuertos por código IATA y los vuelos por número de vuelo, así
 también funciona sobre una base que ya tenía datos. Un vuelo dado de baja no se vuelve a crear.
+Como las fechas de la demo son relativas al día en que se cargaron, cada vez que arranca también
+reprograma los vuelos de la demo que ya salieron (a la misma fecha relativa a hoy) y extiende las
+promociones de la demo que vencieron. Los vuelos eliminados por el admin no se tocan.
 
 ## Auth — `/api/auth`
 

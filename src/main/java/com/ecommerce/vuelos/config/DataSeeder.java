@@ -246,8 +246,11 @@ public class DataSeeder implements CommandLineRunner {
                             String foto, String descripcion) {
         Vuelo existente = vueloRepository.findFirstByNumeroVuelo(numero).orElse(null);
         if (existente != null) {
-            // El vuelo ya estaba: no se toca, salvo sumarle Primera si la ruta ahora la tiene
+            // El vuelo ya estaba: se le suma Primera si la ruta ahora la tiene, y si ya
+            // salio se le renuevan las fechas para que la demo siempre tenga vuelos futuros
             agregarPrimeraSiFalta(existente, ruta, ajustePrecio);
+            renovarSiYaSalio(existente, salida, ruta);
+            renovarPromocionVencida(existente);
             return;
         }
 
@@ -297,6 +300,33 @@ public class DataSeeder implements CommandLineRunner {
         Long primeraId = claseRepository.findByNombre("Primera").orElseThrow().getId();
         if (!disponibilidadRepository.existsByVueloIdAndClaseId(vuelo.getId(), primeraId)) {
             disponibilidadRepository.save(cupo(vuelo, "Primera", 8, ajustar(ruta.primera(), ajustePrecio)));
+        }
+    }
+
+    /**
+     * Los vuelos de la demo tienen fechas fijas desde que se cargaron por primera vez,
+     * asi que con los dias van saliendo. Si uno ya salio, se lo vuelve a programar en
+     * la misma fecha relativa a hoy que tendria en una base nueva. Los que el admin
+     * dio de baja (ELIMINADO) no se tocan.
+     */
+    private void renovarSiYaSalio(Vuelo vuelo, LocalDateTime nuevaSalida, RutaDemo ruta) {
+        boolean yaSalio = vuelo.getFechaSalida().isBefore(LocalDateTime.now());
+        if (!yaSalio || vuelo.getEstado() == EstadoVuelo.ELIMINADO) {
+            return;
+        }
+        vuelo.setFechaSalida(nuevaSalida);
+        vuelo.setFechaLlegada(nuevaSalida.plusMinutes(ruta.duracionMinutos()));
+        vueloRepository.save(vuelo);
+    }
+
+    /** Si la promocion de la demo vencio y sigue activa, se la extiende dos meses mas desde hoy. */
+    private void renovarPromocionVencida(Vuelo vuelo) {
+        for (Descuento descuento : descuentoRepository.findByVueloIdAndActivoTrue(vuelo.getId())) {
+            if (descuento.getFechaHasta().isBefore(LocalDate.now())) {
+                descuento.setFechaDesde(LocalDate.now().minusDays(1));
+                descuento.setFechaHasta(LocalDate.now().plusMonths(2));
+                descuentoRepository.save(descuento);
+            }
         }
     }
 
