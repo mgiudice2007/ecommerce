@@ -38,4 +38,8 @@ public class Clase {
     /** Cuantas veces se multiplican las millas al comprar en esta clase (Economica 1, Ejecutiva 2...). */
     @Column
     private Integer multiplicadorMillas;
+
+    /** Asientos por fila en el mapa del avion (Economica 6, Ejecutiva 4, Primera 2). */
+    @Column
+    private Integer asientosPorFila;
 }

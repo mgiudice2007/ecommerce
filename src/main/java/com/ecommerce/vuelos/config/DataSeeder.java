@@ -101,6 +101,10 @@ public class DataSeeder implements CommandLineRunner {
         cargarMultiplicadorMillas("Economica", 1);
         cargarMultiplicadorMillas("Ejecutiva", 2);
         cargarMultiplicadorMillas("Primera", 3);
+        // Cuantos asientos tiene cada fila en el mapa del avion
+        cargarAsientosPorFila("Economica", 6);
+        cargarAsientosPorFila("Ejecutiva", 4);
+        cargarAsientosPorFila("Primera", 2);
 
         if (usuarioRepository.count() == 0) {
             // La aerolinea tiene un unico vendedor: el administrador publica y gestiona los vuelos.
@@ -120,6 +124,15 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private static final int MILLAS_DEMO = 150_000;
+
+    private void cargarAsientosPorFila(String nombreClase, int asientosPorFila) {
+        claseRepository.findByNombre(nombreClase).ifPresent(clase -> {
+            if (clase.getAsientosPorFila() == null) {
+                clase.setAsientosPorFila(asientosPorFila);
+                claseRepository.save(clase);
+            }
+        });
+    }
 
     /** Solo lo carga si la clase todavia no tiene el dato, asi no pisa un valor cambiado en la base. */
     private void cargarMultiplicadorMillas(String nombreClase, int multiplicador) {

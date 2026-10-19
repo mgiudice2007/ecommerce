@@ -188,6 +188,11 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
 
 - `GET /api/disponibilidades?vueloId={id}` — público, lista los cupos de un vuelo
 - `GET /api/disponibilidades/{id}` — público
+- `GET /api/disponibilidades/{id}/asientos` — público, el mapa de asientos de ese vuelo y clase:
+  `{ disponibilidadId, claseNombre, letras: ["A","B","C","D","E","F"], filas: [{ numero: 11, asientos: ["11A", ...] }], ocupados: ["11A"] }`.
+  Cada fila tiene `asientosPorFila` asientos según la clase (tabla `clases`: Económica 6, Ejecutiva 4,
+  Primera 2) y las filas se numeran de corrido como en un avión: primero las cabinas con menos
+  asientos por fila (Primera, Ejecutiva) y después Económica.
 - `POST /api/disponibilidades` — requiere token `ADMIN`. Repetir la
   misma clase para el mismo vuelo da `400` (hay un `UNIQUE(vuelo_id, clase_id)`).
   ```json
@@ -205,18 +210,25 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   { "disponibilidadId": 1, "cantidad": 2, "tipoPasajero": "NINO" }
   ```
   `tipoPasajero` es opcional (`ADULTO` por defecto): `NINO` paga el 75% y `BEBE` el 10% del
-  precio de un adulto (también del descuento). Todos ocupan un asiento del mismo cupo, así que el
-  stock se controla sumando los pasajeros de ese vuelo y clase que ya hay en el carrito. Los items
-  del carrito y de la orden devuelven `tipoPasajero`.
+  precio de un adulto (también del descuento). Adultos y niños ocupan un asiento del mismo cupo,
+  así que el stock se controla sumando los de ese vuelo y clase que ya hay en el carrito. Los bebés
+  viajan a upa: no ocupan asiento ni descuentan del cupo. Los items del carrito y de la orden
+  devuelven `tipoPasajero` y `asientos`.
 - `POST /api/carrito/pasajes` — agrega de una vez los pasajeros de un vuelo y clase:
   `{ "disponibilidadId": 1, "adultos": 2, "ninos": 1, "bebes": 0 }`. Crea un ítem por cada tipo
   con cantidad mayor a 0. No puede haber más bebés que adultos (`400`).
+- `PUT /api/carrito/asientos` — elige los asientos de un vuelo y clase del carrito:
+  `{ "disponibilidadId": 1, "asientos": ["12A", "12B"] }`. Se reparten primero entre los adultos y
+  después entre los niños. Da `400` si hay más asientos que pasajeros, si un asiento no existe en la
+  clase o si ya está vendido. Elegir es opcional y gratis.
 - `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
 - `POST /api/carrito/checkout` — body opcional `{ "millas": 5000 }` para pagar una parte con
   millas. Operación transaccional: valida el stock de todos los ítems, descuenta asientos de cada
-  `Disponibilidad`, crea la `Orden` con el precio **congelado** al momento de la compra, suma o
-  resta las millas del usuario y vacía el carrito. Si algo falla, se revierte entero. Usar más
+  `Disponibilidad`, vende los asientos elegidos (a los pasajeros sin asiento les asigna asientos
+  libres, como en el check-in), crea la `Orden` con el precio **congelado** al momento de la compra,
+  suma o resta las millas del usuario y vacía el carrito. Si un asiento elegido se vendió mientras
+  tanto, da `400` para elegir otro. Si algo falla, se revierte entero. Usar más
   millas de las que se tienen, o que valgan más que el total, da `400`.
 
 ## Millas
@@ -240,8 +252,8 @@ Se calculan en el backend con el precio real de cada compra; nada está fijo por
 - `GET /api/ordenes` — historial, solo las del usuario del token
 - `GET /api/ordenes/{id}` — la orden de otro usuario da `404` (no `403`, para no confirmar que
   ese id existe)
-- `POST /api/ordenes/{id}/cancelar` — devuelve los asientos a la `Disponibilidad` correspondiente
-  y ajusta las millas del usuario
+- `POST /api/ordenes/{id}/cancelar` — devuelve los asientos a la `Disponibilidad` correspondiente,
+  libera los asientos elegidos y ajusta las millas del usuario
 
 Cada `Orden` trae `descuentoTotal` y cada ítem trae `descuentoAplicado` — el monto exacto
 descontado en ese momento, congelado para siempre en la orden aunque el `Descuento` original

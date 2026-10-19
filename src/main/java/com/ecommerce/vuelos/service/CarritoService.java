@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.carrito.AsientosRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
 import com.ecommerce.vuelos.dto.carrito.PasajesRequest;
@@ -12,6 +13,8 @@ public interface CarritoService {
     CarritoResponse agregarItem(Long usuarioId, ItemCarritoRequest request);
 
     CarritoResponse agregarPasajes(Long usuarioId, PasajesRequest request);
+
+    CarritoResponse elegirAsientos(Long usuarioId, AsientosRequest request);
 
     CarritoResponse actualizarItem(Long usuarioId, Long itemId, Integer cantidad);
 

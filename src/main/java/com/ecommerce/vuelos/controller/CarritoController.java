@@ -1,6 +1,7 @@
 package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.dto.carrito.ActualizarCantidadRequest;
+import com.ecommerce.vuelos.dto.carrito.AsientosRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.CheckoutRequest;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
@@ -38,6 +39,13 @@ public class CarritoController {
     public ResponseEntity<CarritoResponse> agregarPasajes(@AuthenticationPrincipal UsuarioPrincipal principal,
                                                           @Valid @RequestBody PasajesRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.agregarPasajes(principal.getId(), request));
+    }
+
+    /** Guarda los asientos elegidos para los pasajeros de un vuelo y clase del carrito. */
+    @PutMapping("/asientos")
+    public ResponseEntity<CarritoResponse> elegirAsientos(@AuthenticationPrincipal UsuarioPrincipal principal,
+                                                          @Valid @RequestBody AsientosRequest request) {
+        return ResponseEntity.ok(carritoService.elegirAsientos(principal.getId(), request));
     }
 
     @PutMapping("/items/{itemId}")

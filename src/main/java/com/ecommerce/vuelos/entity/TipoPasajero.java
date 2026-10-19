@@ -23,6 +23,11 @@ public enum TipoPasajero {
         return porcentaje;
     }
 
+    /** Los bebés viajan a upa de un adulto: no eligen asiento ni descuentan un lugar del cupo. */
+    public boolean ocupaAsiento() {
+        return this != BEBE;
+    }
+
     /** Lo que paga este pasajero sobre el precio de un adulto. */
     public BigDecimal aplicar(BigDecimal precioAdulto) {
         return precioAdulto.multiply(BigDecimal.valueOf(porcentaje))

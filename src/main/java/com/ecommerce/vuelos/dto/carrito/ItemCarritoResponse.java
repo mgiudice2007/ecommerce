@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -25,6 +27,7 @@ public class ItemCarritoResponse {
     private TipoPasajero tipoPasajero;
     private BigDecimal precioUnitario;
     private Integer cantidad;
+    private List<String> asientos;
     private BigDecimal subtotal;
 
 
@@ -45,6 +48,7 @@ public class ItemCarritoResponse {
                 .tipoPasajero(item.getTipoPasajero())
                 .precioUnitario(precioUnitario)
                 .cantidad(item.getCantidad())
+                .asientos(new ArrayList<>(item.getAsientos()))
                 .subtotal(precioUnitario.multiply(BigDecimal.valueOf(item.getCantidad())))
                 .build();
     }

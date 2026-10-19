@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "items_orden")
@@ -32,6 +34,11 @@ public class ItemOrden {
 
     @Column(nullable = false)
     private Integer cantidad;
+
+    /** Los asientos vendidos a estos pasajeros. Al cancelar la compra se borran y quedan libres. */
+    @OneToMany(mappedBy = "itemOrden", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<AsientoOcupado> asientos = new ArrayList<>();
 
     /** Adulto, niño o bebé. Los items viejos (antes de existir el campo) cuentan como adulto. */
     @Enumerated(EnumType.STRING)

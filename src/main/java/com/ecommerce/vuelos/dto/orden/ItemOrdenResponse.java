@@ -1,5 +1,6 @@
 package com.ecommerce.vuelos.dto.orden;
 
+import com.ecommerce.vuelos.entity.AsientoOcupado;
 import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.ItemOrden;
 import com.ecommerce.vuelos.entity.TipoPasajero;
@@ -9,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Builder
@@ -24,6 +26,7 @@ public class ItemOrdenResponse {
     private String claseNombre;
     private TipoPasajero tipoPasajero;
     private Integer cantidad;
+    private List<String> asientos;
     private BigDecimal precioUnitario;
 
     private BigDecimal descuentoAplicado;
@@ -43,6 +46,7 @@ public class ItemOrdenResponse {
                 .claseNombre(disponibilidad.getClase().getNombre())
                 .tipoPasajero(item.getTipoPasajero())
                 .cantidad(item.getCantidad())
+                .asientos(item.getAsientos().stream().map(AsientoOcupado::getCodigo).toList())
                 .precioUnitario(item.getPrecioUnitario())
                 .descuentoAplicado(item.getDescuentoAplicado())
                 .subtotal(item.getPrecioUnitario().multiply(BigDecimal.valueOf(item.getCantidad())))

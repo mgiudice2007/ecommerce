@@ -48,12 +48,16 @@ public class OrdenServiceImpl implements OrdenService {
             throw new BadRequestException("La orden ya se encuentra cancelada");
         }
 
-        // Cancelar devuelve los asientos al cupo del que salieron.
+        // Cancelar devuelve los asientos al cupo del que salieron (los bebés no ocupaban)
+        // y libera los asientos elegidos para que otro los pueda comprar.
         for (ItemOrden item : orden.getItems()) {
-            Disponibilidad disponibilidad = item.getDisponibilidad();
-            disponibilidad.setAsientosDisponibles(
-                    disponibilidad.getAsientosDisponibles() + item.getCantidad());
-            disponibilidadRepository.save(disponibilidad);
+            if (item.getTipoPasajero().ocupaAsiento()) {
+                Disponibilidad disponibilidad = item.getDisponibilidad();
+                disponibilidad.setAsientosDisponibles(
+                        disponibilidad.getAsientosDisponibles() + item.getCantidad());
+                disponibilidadRepository.save(disponibilidad);
+            }
+            item.getAsientos().clear();
         }
 
         // Devuelve las millas que uso y le saca las que habia ganado con esta compra

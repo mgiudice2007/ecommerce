@@ -1,9 +1,11 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.carrito.AsientosRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
 import com.ecommerce.vuelos.dto.carrito.PasajesRequest;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
+import com.ecommerce.vuelos.entity.AsientoOcupado;
 import com.ecommerce.vuelos.entity.Carrito;
 import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.EstadoOrden;
@@ -28,7 +30,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class CarritoServiceImpl implements CarritoService {
@@ -41,6 +47,8 @@ public class CarritoServiceImpl implements CarritoService {
     private OrdenRepository ordenRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private AsientoService asientoService;
 
     // Reglas de las millas, configurables en application.properties (no estan fijas en el codigo)
     @Value("${millas.pesos-por-milla}")
@@ -65,8 +73,9 @@ public class CarritoServiceImpl implements CarritoService {
         TipoPasajero tipo = request.getTipoPasajero() == null ? TipoPasajero.ADULTO : request.getTipoPasajero();
 
         validarPublicado(disponibilidad.getVuelo());
-        // Adultos, niños y bebés del mismo vuelo y clase ocupan los mismos asientos
-        validarStock(disponibilidad, asientosEnCarrito(carrito, disponibilidad) + request.getCantidad());
+        // Adultos y niños del mismo vuelo y clase ocupan asientos del mismo cupo; los bebés viajan a upa
+        int asientosNuevos = tipo.ocupaAsiento() ? request.getCantidad() : 0;
+        validarStock(disponibilidad, asientosEnCarrito(carrito, disponibilidad) + asientosNuevos);
 
         // Si ya habia pasajeros de ese tipo en ese vuelo y clase, se suman
         ItemCarrito itemExistente = carrito.getItems().stream()
@@ -123,9 +132,63 @@ public class CarritoServiceImpl implements CarritoService {
         Carrito carrito = buscarCarrito(usuarioId);
         ItemCarrito item = obtenerItemDelCarrito(carrito, itemId);
 
-        int otrosPasajeros = asientosEnCarrito(carrito, item.getDisponibilidad()) - item.getCantidad();
-        validarStock(item.getDisponibilidad(), otrosPasajeros + cantidad);
+        if (item.getTipoPasajero().ocupaAsiento()) {
+            int otrosPasajeros = asientosEnCarrito(carrito, item.getDisponibilidad()) - item.getCantidad();
+            validarStock(item.getDisponibilidad(), otrosPasajeros + cantidad);
+        }
         item.setCantidad(cantidad);
+        // Si bajo la cantidad, sobran asientos elegidos: se quedan los primeros
+        while (item.getAsientos().size() > cantidad) {
+            item.getAsientos().remove(item.getAsientos().size() - 1);
+        }
+        carritoRepository.save(carrito);
+        return respuesta(carrito);
+    }
+
+    @Override
+    @Transactional
+    public CarritoResponse elegirAsientos(Long usuarioId, AsientosRequest request) {
+        Carrito carrito = buscarCarrito(usuarioId);
+        Disponibilidad disponibilidad = disponibilidadRepository.findById(request.getDisponibilidadId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Disponibilidad no encontrada: " + request.getDisponibilidadId()));
+
+        // Los pasajeros que necesitan asiento: primero los adultos y despues los niños
+        List<ItemCarrito> conAsiento = itemsConAsiento(carrito, disponibilidad);
+        int pasajeros = conAsiento.stream().mapToInt(ItemCarrito::getCantidad).sum();
+        if (pasajeros == 0) {
+            throw new BadRequestException("No hay pasajeros en el carrito para ese vuelo y clase");
+        }
+
+        List<String> elegidos = request.getAsientos();
+        if (elegidos.size() > pasajeros) {
+            throw new BadRequestException("Elegiste " + elegidos.size() + " asientos pero hay "
+                    + pasajeros + " pasajeros");
+        }
+        if (new HashSet<>(elegidos).size() != elegidos.size()) {
+            throw new BadRequestException("Elegiste el mismo asiento dos veces");
+        }
+        List<String> existentes = asientoService.codigos(disponibilidad);
+        Set<String> ocupados = asientoService.ocupados(disponibilidad.getId());
+        for (String codigo : elegidos) {
+            if (!existentes.contains(codigo)) {
+                throw new BadRequestException("El asiento " + codigo + " no existe en esta clase");
+            }
+            if (ocupados.contains(codigo)) {
+                throw new BadRequestException("El asiento " + codigo + " ya está ocupado, elegí otro");
+            }
+        }
+
+        // Se reparten en orden: los primeros asientos para los adultos y el resto para los niños
+        int siguiente = 0;
+        for (ItemCarrito item : conAsiento) {
+            item.getAsientos().clear();
+            while (item.getAsientos().size() < item.getCantidad() && siguiente < elegidos.size()) {
+                item.getAsientos().add(elegidos.get(siguiente));
+                siguiente++;
+            }
+        }
+
         carritoRepository.save(carrito);
         return respuesta(carrito);
     }
@@ -154,6 +217,36 @@ public class CarritoServiceImpl implements CarritoService {
         for (ItemCarrito item : carrito.getItems()) {
             validarPublicado(item.getDisponibilidad().getVuelo());
             validarStock(item.getDisponibilidad(), asientosEnCarrito(carrito, item.getDisponibilidad()));
+            validarBebes(carrito, item.getDisponibilidad());
+        }
+
+        // Asientos: los que eligio tienen que seguir libres, y a los pasajeros que no
+        // eligieron se les asignan asientos libres, como en el check-in de las aerolineas
+        Map<Long, Set<String>> tomados = new HashMap<>();
+        for (ItemCarrito item : carrito.getItems()) {
+            Disponibilidad disponibilidad = item.getDisponibilidad();
+            Set<String> tomadosDelVuelo = tomados.computeIfAbsent(disponibilidad.getId(),
+                    id -> new HashSet<>(asientoService.ocupados(id)));
+            for (String codigo : item.getAsientos()) {
+                if (!tomadosDelVuelo.add(codigo)) {
+                    throw new BadRequestException("El asiento " + codigo + " del vuelo "
+                            + disponibilidad.getVuelo().getNumeroVuelo() + " ya fue tomado, elegí otro");
+                }
+            }
+        }
+        for (ItemCarrito item : carrito.getItems()) {
+            if (!item.getTipoPasajero().ocupaAsiento()) {
+                continue;
+            }
+            Set<String> tomadosDelVuelo = tomados.get(item.getDisponibilidad().getId());
+            for (String codigo : asientoService.codigos(item.getDisponibilidad())) {
+                if (item.getAsientos().size() >= item.getCantidad()) {
+                    break;
+                }
+                if (tomadosDelVuelo.add(codigo)) {
+                    item.getAsientos().add(codigo);
+                }
+            }
         }
 
         List<ItemOrden> itemsOrden = new ArrayList<>();
@@ -169,18 +262,28 @@ public class CarritoServiceImpl implements CarritoService {
             BigDecimal precioUnitario = tipo.aplicar(disponibilidad.getPrecioConDescuento());
             BigDecimal descuentoUnitario = tipo.aplicar(disponibilidad.getDescuentoUnitario());
 
-            disponibilidad.setAsientosDisponibles(
-                    disponibilidad.getAsientosDisponibles() - item.getCantidad());
-            disponibilidadRepository.save(disponibilidad);
+            // Los bebés viajan a upa: no descuentan asientos del cupo
+            if (tipo.ocupaAsiento()) {
+                disponibilidad.setAsientosDisponibles(
+                        disponibilidad.getAsientosDisponibles() - item.getCantidad());
+                disponibilidadRepository.save(disponibilidad);
+            }
 
-
-            itemsOrden.add(ItemOrden.builder()
+            ItemOrden itemOrden = ItemOrden.builder()
                     .disponibilidad(disponibilidad)
                     .cantidad(item.getCantidad())
                     .tipoPasajero(tipo)
                     .precioUnitario(precioUnitario)
                     .descuentoAplicado(descuentoUnitario)
-                    .build());
+                    .build();
+            for (String codigo : item.getAsientos()) {
+                itemOrden.getAsientos().add(AsientoOcupado.builder()
+                        .disponibilidad(disponibilidad)
+                        .itemOrden(itemOrden)
+                        .codigo(codigo)
+                        .build());
+            }
+            itemsOrden.add(itemOrden);
 
             total = total.add(precioUnitario.multiply(cantidad));
             descuentoTotal = descuentoTotal.add(descuentoUnitario.multiply(cantidad));
@@ -264,12 +367,44 @@ public class CarritoServiceImpl implements CarritoService {
         return CarritoResponse.desde(carrito, millasAGanar, carrito.getUsuario().getMillas(), valorMilla);
     }
 
-    /** Cuantos pasajeros hay en el carrito para ese vuelo y clase (sumando todos los tipos). */
+    /** Cuantos asientos necesitan los pasajeros del carrito para ese vuelo y clase (los bebés no cuentan). */
     private int asientosEnCarrito(Carrito carrito, Disponibilidad disponibilidad) {
-        return carrito.getItems().stream()
-                .filter(item -> item.getDisponibilidad().getId().equals(disponibilidad.getId()))
+        return itemsConAsiento(carrito, disponibilidad).stream()
                 .mapToInt(ItemCarrito::getCantidad)
                 .sum();
+    }
+
+    /** Los items de ese vuelo y clase que necesitan asiento: primero los adultos y despues los niños. */
+    private List<ItemCarrito> itemsConAsiento(Carrito carrito, Disponibilidad disponibilidad) {
+        List<ItemCarrito> items = new ArrayList<>();
+        for (TipoPasajero tipo : List.of(TipoPasajero.ADULTO, TipoPasajero.NINO)) {
+            for (ItemCarrito item : carrito.getItems()) {
+                if (item.getDisponibilidad().getId().equals(disponibilidad.getId()) && item.getTipoPasajero() == tipo) {
+                    items.add(item);
+                }
+            }
+        }
+        return items;
+    }
+
+    /** Cada bebé viaja a upa de un adulto del mismo vuelo y clase. */
+    private void validarBebes(Carrito carrito, Disponibilidad disponibilidad) {
+        int adultos = 0;
+        int bebes = 0;
+        for (ItemCarrito item : carrito.getItems()) {
+            if (item.getDisponibilidad().getId().equals(disponibilidad.getId())) {
+                if (item.getTipoPasajero() == TipoPasajero.ADULTO) {
+                    adultos += item.getCantidad();
+                }
+                if (item.getTipoPasajero() == TipoPasajero.BEBE) {
+                    bebes += item.getCantidad();
+                }
+            }
+        }
+        if (bebes > adultos) {
+            throw new BadRequestException("Cada bebé tiene que viajar con un adulto en el vuelo "
+                    + disponibilidad.getVuelo().getNumeroVuelo());
+        }
     }
 
     private ItemCarrito obtenerItemDelCarrito(Carrito carrito, Long itemId) {

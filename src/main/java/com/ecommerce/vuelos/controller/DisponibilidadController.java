@@ -2,7 +2,9 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadRequest;
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadResponse;
+import com.ecommerce.vuelos.dto.vuelo.MapaAsientosResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
+import com.ecommerce.vuelos.service.AsientoService;
 import com.ecommerce.vuelos.service.DisponibilidadService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,8 @@ public class DisponibilidadController {
 
     @Autowired
     private DisponibilidadService disponibilidadService;
+    @Autowired
+    private AsientoService asientoService;
 
     @GetMapping("/api/disponibilidades")
     public ResponseEntity<List<DisponibilidadResponse>> listar(@RequestParam Long vueloId) {
@@ -33,6 +37,12 @@ public class DisponibilidadController {
     @GetMapping("/api/disponibilidades/{id}")
     public ResponseEntity<DisponibilidadResponse> obtener(@PathVariable Long id) {
         return ResponseEntity.ok(disponibilidadService.obtener(id));
+    }
+
+    /** El mapa de asientos de un vuelo y clase, con los que ya estan vendidos. */
+    @GetMapping("/api/disponibilidades/{id}/asientos")
+    public ResponseEntity<MapaAsientosResponse> asientos(@PathVariable Long id) {
+        return ResponseEntity.ok(asientoService.mapa(id));
     }
 
     @PostMapping("/api/disponibilidades")

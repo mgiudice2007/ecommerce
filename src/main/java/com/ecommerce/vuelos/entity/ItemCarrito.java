@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "items_carrito")
 @Getter
@@ -30,6 +33,13 @@ public class ItemCarrito {
 
     @Column(nullable = false)
     private Integer cantidad;
+
+    /** Asientos elegidos para estos pasajeros ("12A", "12B"...). Se venden recien al confirmar la compra. */
+    @ElementCollection
+    @CollectionTable(name = "items_carrito_asientos", joinColumns = @JoinColumn(name = "item_carrito_id"))
+    @Column(name = "codigo", length = 5)
+    @Builder.Default
+    private List<String> asientos = new ArrayList<>();
 
     /** Adulto, niño o bebé. Los items viejos (antes de existir el campo) cuentan como adulto. */
     @Enumerated(EnumType.STRING)
