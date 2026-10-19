@@ -209,8 +209,8 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   ```json
   { "disponibilidadId": 1, "cantidad": 2, "tipoPasajero": "NINO" }
   ```
-  `tipoPasajero` es opcional (`ADULTO` por defecto): `NINO` paga el 75% y `BEBE` el 10% del
-  precio de un adulto (también del descuento). Adultos y niños ocupan un asiento del mismo cupo,
+  `tipoPasajero` es opcional (`ADULTO` por defecto): `NINO` paga lo mismo que un adulto y `BEBE`
+  viaja gratis. Adultos y niños ocupan un asiento del mismo cupo,
   así que el stock se controla sumando los de ese vuelo y clase que ya hay en el carrito. Los bebés
   viajan a upa: no ocupan asiento ni descuentan del cupo. Los items del carrito y de la orden
   devuelven `tipoPasajero` y `asientos`.
