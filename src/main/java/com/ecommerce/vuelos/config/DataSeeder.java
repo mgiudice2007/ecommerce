@@ -32,6 +32,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -121,6 +122,7 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         cargarVuelosDeDemostracion();
+        cargarVuelosDiarios();
     }
 
     private static final int MILLAS_DEMO = 150_000;
@@ -219,6 +221,13 @@ public class DataSeeder implements CommandLineRunner {
     /** Dias que el pasajero se queda en el destino antes de volver. */
     private static final int DIAS_DE_ESTADIA = 6;
 
+    /** Cuantos dias hacia adelante se generan vuelos todos los dias. */
+    private static final int DIAS_CON_VUELOS = 120;
+    /** Solo 1 de cada N dias lleva foto (las fotos pesan en la base). Con 1, todos tienen foto. */
+    private static final int FOTO_CADA_N_DIAS = 7;
+    /** Minutos que se corre el horario base de la ruta segun el dia, para que no salgan todos a la misma hora. */
+    private static final int[] VARIACION_HORARIO = {0, 150, -120, 300, 60, -60, 210, -180, 120};
+
     /**
      * Por cada ruta arma 3 vuelos de ida y 3 de vuelta. Los numeros siguen la
      * costumbre de las aerolineas: par para la ida (BC1402, BC1404, BC1406) e
@@ -243,27 +252,73 @@ public class DataSeeder implements CommandLineRunner {
                 LocalTime horaIda = ruta.hora().plusMinutes(i * 335L);
                 crearVuelo(admin, "BC" + (ruta.numeroBase() + 2 * i), ruta.origen(), ruta.destino(),
                         ruta, LocalDate.now().plusDays(dias).atTime(horaIda), ajuste,
-                        ruta.porcentajeDescuento(), ruta.foto(), ruta.descripcion());
+                        ruta.porcentajeDescuento(), ruta.foto(), ruta.descripcion(), true);
 
                 // Vuelta: del destino a Buenos Aires, unos dias despues
                 LocalTime horaVuelta = ruta.hora().plusMinutes(540 + i * 255L);
                 crearVuelo(admin, "BC" + (ruta.numeroBase() + 2 * i + 1), ruta.destino(), ruta.origen(),
                         ruta, LocalDate.now().plusDays(dias + DIAS_DE_ESTADIA).atTime(horaVuelta), ajuste,
-                        0, "buenosaires.jpg", "Regreso directo desde " + ruta.ciudad() + " a Buenos Aires.");
+                        0, "buenosaires.jpg", "Regreso directo desde " + ruta.ciudad() + " a Buenos Aires.",
+                        true);
+            }
+        }
+    }
+
+    /**
+     * Crea un vuelo de ida y uno de vuelta por dia y por ruta, asi cualquier fecha
+     * que se busque tiene al menos un vuelo. El numero lleva la fecha (ddMM) para
+     * ser unico y para no volver a crear lo que ya existe.
+     */
+    private void cargarVuelosDiarios() {
+        Usuario admin = usuarioRepository.findByUsername("admin").orElse(null);
+        if (admin == null) {
+            return;
+        }
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("ddMM");
+        LocalDateTime ahora = LocalDateTime.now();
+
+        for (int r = 0; r < RUTAS_DEMO.size(); r++) {
+            RutaDemo ruta = RUTAS_DEMO.get(r);
+            for (int dia = 0; dia < DIAS_CON_VUELOS; dia++) {
+                LocalDate fecha = LocalDate.now().plusDays(dia);
+                String sufijo = fecha.format(formato);
+                boolean conFoto = dia % FOTO_CADA_N_DIAS == 0;
+                // El horario cambia de un dia a otro (y distinto para ida y vuelta)
+                int variacionIda = VARIACION_HORARIO[(dia + r) % VARIACION_HORARIO.length];
+                int variacionVuelta = VARIACION_HORARIO[(dia + r + 4) % VARIACION_HORARIO.length];
+
+                LocalDateTime salidaIda = fecha.atTime(ruta.hora().plusMinutes(90L + variacionIda));
+                if (salidaIda.isAfter(ahora)) {
+                    crearVuelo(admin, "BC" + ruta.numeroBase() + sufijo, ruta.origen(), ruta.destino(),
+                            ruta, salidaIda, 100, 0, conFoto ? ruta.foto() : null,
+                            ruta.descripcion(), false);
+                }
+
+                LocalDateTime salidaVuelta = fecha.atTime(ruta.hora().plusMinutes(630L + variacionVuelta));
+                if (salidaVuelta.isAfter(ahora)) {
+                    crearVuelo(admin, "BC" + (ruta.numeroBase() + 1) + sufijo, ruta.destino(), ruta.origen(),
+                            ruta, salidaVuelta, 100, 0, conFoto ? "buenosaires.jpg" : null,
+                            "Regreso directo desde " + ruta.ciudad() + " a Buenos Aires.", false);
+                }
             }
         }
     }
 
     private void crearVuelo(Usuario admin, String numero, String origen, String destino, RutaDemo ruta,
                             LocalDateTime salida, int ajustePrecio, int porcentajeDescuento,
-                            String foto, String descripcion) {
+                            String foto, String descripcion, boolean renovar) {
         Vuelo existente = vueloRepository.findFirstByNumeroVuelo(numero).orElse(null);
         if (existente != null) {
-            // El vuelo ya estaba: se le suma Primera si la ruta ahora la tiene, y si ya
-            // salio se le renuevan las fechas para que la demo siempre tenga vuelos futuros
-            agregarPrimeraSiFalta(existente, ruta, ajustePrecio);
-            renovarSiYaSalio(existente, salida, ruta);
-            renovarPromocionVencida(existente);
+            if (renovar) {
+                // El vuelo ya estaba: se le suma Primera si la ruta ahora la tiene, y si ya
+                // salio se le renuevan las fechas para que la demo siempre tenga vuelos futuros
+                agregarPrimeraSiFalta(existente, ruta, ajustePrecio);
+                renovarSiYaSalio(existente, salida, ruta);
+                renovarPromocionVencida(existente);
+            } else {
+                // Vuelo diario ya creado: solo se le actualiza el horario si cambio
+                ajustarHorario(existente, salida, ruta);
+            }
             return;
         }
 
@@ -299,7 +354,9 @@ public class DataSeeder implements CommandLineRunner {
                     .build());
         }
 
-        cargarFoto(vuelo, foto);
+        if (foto != null) {
+            cargarFoto(vuelo, foto);
+        }
     }
 
     /**
@@ -329,6 +386,18 @@ public class DataSeeder implements CommandLineRunner {
         }
         vuelo.setFechaSalida(nuevaSalida);
         vuelo.setFechaLlegada(nuevaSalida.plusMinutes(ruta.duracionMinutos()));
+        vueloRepository.save(vuelo);
+    }
+
+    /** Reprograma el horario de un vuelo diario que todavia no salio. Los eliminados no se tocan. */
+    private void ajustarHorario(Vuelo vuelo, LocalDateTime salida, RutaDemo ruta) {
+        if (vuelo.getEstado() == EstadoVuelo.ELIMINADO
+                || vuelo.getFechaSalida().isBefore(LocalDateTime.now())
+                || salida.equals(vuelo.getFechaSalida())) {
+            return;
+        }
+        vuelo.setFechaSalida(salida);
+        vuelo.setFechaLlegada(salida.plusMinutes(ruta.duracionMinutos()));
         vueloRepository.save(vuelo);
     }
 
