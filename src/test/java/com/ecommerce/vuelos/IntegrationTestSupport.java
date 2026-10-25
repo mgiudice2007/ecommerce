@@ -45,6 +45,14 @@ public abstract class IntegrationTestSupport {
         vueloRepository.saveAndFlush(vuelo);
     }
 
+    /** Mueve la salida del vuelo a dentro de unas horas (la API exige fechas futuras, no cercanas). */
+    protected void hacerQueSalgaEn(Long vueloId, int horas) {
+        Vuelo vuelo = vueloRepository.findById(vueloId).orElseThrow();
+        vuelo.setFechaSalida(LocalDateTime.now().plusHours(horas));
+        vuelo.setFechaLlegada(LocalDateTime.now().plusHours(horas + 3));
+        vueloRepository.saveAndFlush(vuelo);
+    }
+
     protected String loginAdmin() throws Exception {
         return login("admin", "admin123");
     }

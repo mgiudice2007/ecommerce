@@ -12,9 +12,11 @@ import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.OrdenRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,16 +29,20 @@ public class OrdenServiceImpl implements OrdenService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    // Hasta cuantas horas antes del vuelo se puede cancelar (application.properties)
+    @Value("${ordenes.horas-para-cancelar}")
+    private int horasParaCancelar;
+
     @Override
     public List<OrdenResponse> historial(Long usuarioId) {
         return ordenRepository.findByUsuarioIdOrderByFechaDesc(usuarioId).stream()
-                .map(OrdenResponse::desde)
+                .map((orden) -> OrdenResponse.desde(orden, horasParaCancelar))
                 .toList();
     }
 
     @Override
     public OrdenResponse obtener(Long usuarioId, Long ordenId) {
-        return OrdenResponse.desde(buscarOrdenDelUsuario(usuarioId, ordenId));
+        return OrdenResponse.desde(buscarOrdenDelUsuario(usuarioId, ordenId), horasParaCancelar);
     }
 
     @Override
@@ -46,6 +52,16 @@ public class OrdenServiceImpl implements OrdenService {
 
         if (orden.getEstado() == EstadoOrden.CANCELADA) {
             throw new BadRequestException("La orden ya se encuentra cancelada");
+        }
+
+        // Como en las aerolineas: solo hasta 24 horas antes de que salga el primer vuelo
+        LocalDateTime primeraSalida = orden.primeraSalida();
+        if (primeraSalida.isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("No se puede cancelar la compra: el vuelo ya salió");
+        }
+        if (LocalDateTime.now().isAfter(primeraSalida.minusHours(horasParaCancelar))) {
+            throw new BadRequestException("No se puede cancelar la compra: faltan menos de "
+                    + horasParaCancelar + " horas para la salida del vuelo");
         }
 
         // Cancelar devuelve los asientos al cupo del que salieron (los bebés no ocupaban)
@@ -67,7 +83,7 @@ public class OrdenServiceImpl implements OrdenService {
         usuarioRepository.save(usuario);
 
         orden.setEstado(EstadoOrden.CANCELADA);
-        return OrdenResponse.desde(ordenRepository.save(orden));
+        return OrdenResponse.desde(ordenRepository.save(orden), horasParaCancelar);
     }
 
     private Orden buscarOrdenDelUsuario(Long usuarioId, Long ordenId) {

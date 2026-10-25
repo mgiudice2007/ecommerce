@@ -55,6 +55,8 @@ public class CarritoServiceImpl implements CarritoService {
     private BigDecimal pesosPorMilla;
     @Value("${millas.valor-en-pesos}")
     private BigDecimal valorMilla;
+    @Value("${ordenes.horas-para-cancelar}")
+    private int horasParaCancelar;
 
     @Override
     @Transactional
@@ -348,7 +350,7 @@ public class CarritoServiceImpl implements CarritoService {
         carrito.getItems().clear();
         carritoRepository.save(carrito);
 
-        return OrdenResponse.desde(guardada);
+        return OrdenResponse.desde(guardada, horasParaCancelar);
     }
 
     private void validarPublicado(Vuelo vuelo) {

@@ -72,4 +72,16 @@ public class Orden {
     public BigDecimal getDescuentoMillas() {
         return descuentoMillas == null ? BigDecimal.ZERO : descuentoMillas;
     }
+
+    /** La salida del primer vuelo de la compra (una compra de ida y vuelta tiene dos vuelos). */
+    public LocalDateTime primeraSalida() {
+        LocalDateTime primera = null;
+        for (ItemOrden item : items) {
+            LocalDateTime salida = item.getDisponibilidad().getVuelo().getFechaSalida();
+            if (primera == null || salida.isBefore(primera)) {
+                primera = salida;
+            }
+        }
+        return primera;
+    }
 }

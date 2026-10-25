@@ -84,4 +84,59 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/api/ordenes/" + ordenId).header("Authorization", "Bearer " + otro))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void cancelarOrden_conMasDe24Horas_sePuedeCancelar() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajerocon24");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        // El vuelo sale en 10 dias: la compra dice que se puede cancelar
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sePuedeCancelar").value(true))
+                .andExpect(jsonPath("$.cancelableHasta").exists());
+    }
+
+    @Test
+    void cancelarOrden_faltanMenosDe24Horas_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 100.0);
+        String pasajero = registrarYLoguearComprador("pasajeromenos24");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
+
+        hacerQueSalgaEn(vueloId, 10); // ahora sale dentro de 10 horas
+
+        mockMvc.perform(get("/api/ordenes/" + ordenId).header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sePuedeCancelar").value(false));
+        mockMvc.perform(post("/api/ordenes/" + ordenId + "/cancelar").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cancelarOrden_vueloQueYaSalio_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 100.0);
+        String pasajero = registrarYLoguearComprador("pasajeroyasalio");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
+
+        hacerQueYaSalio(vueloId);
+
+        mockMvc.perform(post("/api/ordenes/" + ordenId + "/cancelar").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isBadRequest());
+    }
 }
