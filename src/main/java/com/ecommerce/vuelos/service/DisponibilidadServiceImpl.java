@@ -74,6 +74,7 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         Disponibilidad guardada = disponibilidadRepository.save(disponibilidad);
 
         vuelo.getDisponibilidades().add(guardada);
+        actualizarPrecioDelVuelo(vuelo);
 
         return DisponibilidadResponse.desde(guardada);
     }
@@ -98,7 +99,9 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         disponibilidad.setAsientosDisponibles(request.getAsientosTotales() - vendidos);
         disponibilidad.setPrecio(request.getPrecio());
 
-        return DisponibilidadResponse.desde(disponibilidadRepository.save(disponibilidad));
+        Disponibilidad guardada = disponibilidadRepository.save(disponibilidad);
+        actualizarPrecioDelVuelo(disponibilidad.getVuelo());
+        return DisponibilidadResponse.desde(guardada);
     }
 
     /**
@@ -125,6 +128,24 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
 
         vuelo.getDisponibilidades().remove(disponibilidad);
         disponibilidadRepository.delete(disponibilidad);
+        actualizarPrecioDelVuelo(vuelo);
+    }
+
+    /**
+     * El precio del vuelo (el "desde" que se ve en la busqueda y en los filtros) es el
+     * de su clase mas barata, asi el admin carga el precio una sola vez: en cada clase.
+     */
+    private void actualizarPrecioDelVuelo(Vuelo vuelo) {
+        BigDecimal masBarato = null;
+        for (Disponibilidad d : vuelo.getDisponibilidades()) {
+            if (masBarato == null || d.getPrecio().compareTo(masBarato) < 0) {
+                masBarato = d.getPrecio();
+            }
+        }
+        if (masBarato != null) {
+            vuelo.setPrecio(masBarato);
+            vueloRepository.save(vuelo);
+        }
     }
 
     /** Cada clase tiene un minimo y un maximo de asientos por vuelo, guardados en la tabla clases. */

@@ -328,6 +328,52 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void vueloQueDuraMasDe20Horas_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vlargo");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("numeroVuelo", "LARGO1");
+        body.put("descripcion", "Vuelo imposible");
+        body.put("categoriaId", categoriaPorDefecto());
+        body.put("origenIata", "AEP");
+        body.put("destinoIata", "COR");
+        body.put("fechaSalida", LocalDateTime.now().plusDays(5).withNano(0).toString());
+        body.put("fechaLlegada", LocalDateTime.now().plusDays(12).withNano(0).toString()); // 7 dias
+
+        mockMvc.perform(post("/api/vuelos")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void elPrecioDelVuelo_esElDeSuClaseMasBarata() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vpreciosolo");
+        // Se publica sin precio: lo ponen las clases
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("numeroVuelo", "SINPRECIO1");
+        body.put("descripcion", "Vuelo de prueba");
+        body.put("categoriaId", categoriaPorDefecto());
+        body.put("origenIata", "EZE");
+        body.put("destinoIata", "MAD");
+        body.put("fechaSalida", LocalDateTime.now().plusDays(10).withNano(0).toString());
+        body.put("fechaLlegada", LocalDateTime.now().plusDays(10).plusHours(12).withNano(0).toString());
+        Long vueloId = idDe(mockMvc.perform(post("/api/vuelos")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andReturn());
+
+        crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 30, 900.0);
+        crearDisponibilidad(vendedor, vueloId, otraClase(), 10, 2500.0);
+
+        mockMvc.perform(get("/api/vuelos/" + vueloId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.precio").value(900.0));
+    }
+
+    @Test
     void cargarCeroAsientos_devuelve400() throws Exception {
         String vendedor = registrarYLoguearAdmin("vcero");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 800.0);

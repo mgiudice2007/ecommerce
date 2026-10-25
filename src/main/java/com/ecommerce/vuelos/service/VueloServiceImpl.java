@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Service
@@ -88,7 +89,8 @@ public class VueloServiceImpl implements VueloService {
                 .descripcion(request.getDescripcion())
                 .fechaSalida(request.getFechaSalida())
                 .fechaLlegada(request.getFechaLlegada())
-                .precio(request.getPrecio())
+                // Sin clases todavia no tiene precio: se completa al cargar la primera clase
+                .precio(request.getPrecio() != null ? request.getPrecio() : BigDecimal.ZERO)
                 .estado(EstadoVuelo.ACTIVO)
                 .fechaAlta(LocalDateTime.now())
                 .build();
@@ -110,7 +112,10 @@ public class VueloServiceImpl implements VueloService {
         vuelo.setDescripcion(request.getDescripcion());
         vuelo.setFechaSalida(request.getFechaSalida());
         vuelo.setFechaLlegada(request.getFechaLlegada());
-        vuelo.setPrecio(request.getPrecio());
+        // El precio lo manejan las clases; solo se toma si viene y el vuelo todavia no tiene clases
+        if (request.getPrecio() != null && vuelo.getDisponibilidades().isEmpty()) {
+            vuelo.setPrecio(request.getPrecio());
+        }
 
         validarFechas(vuelo);
         return VueloResponse.desde(vueloRepository.save(vuelo));
@@ -160,9 +165,25 @@ public class VueloServiceImpl implements VueloService {
         }
     }
 
+    /** Un vuelo directo dura entre 30 minutos y 20 horas (el mas largo del mundo dura unas 19). */
+    private static final int DURACION_MINIMA_MINUTOS = 30;
+    private static final int DURACION_MAXIMA_HORAS = 20;
+
+    /** Que los datos del vuelo tengan logica: ruta real y horarios posibles. */
     private void validarFechas(Vuelo vuelo) {
+        if (vuelo.getOrigen().getCodigoIata().equals(vuelo.getDestino().getCodigoIata())) {
+            throw new BadRequestException("El origen y el destino tienen que ser distintos");
+        }
         if (!vuelo.getFechaLlegada().isAfter(vuelo.getFechaSalida())) {
             throw new BadRequestException("La fecha de llegada debe ser posterior a la de salida");
+        }
+        long minutos = Duration.between(vuelo.getFechaSalida(), vuelo.getFechaLlegada()).toMinutes();
+        if (minutos < DURACION_MINIMA_MINUTOS) {
+            throw new BadRequestException("El vuelo tiene que durar al menos " + DURACION_MINIMA_MINUTOS + " minutos");
+        }
+        if (minutos > DURACION_MAXIMA_HORAS * 60L) {
+            throw new BadRequestException("Un vuelo directo no puede durar mas de " + DURACION_MAXIMA_HORAS
+                    + " horas: revisa la fecha de llegada");
         }
     }
 
