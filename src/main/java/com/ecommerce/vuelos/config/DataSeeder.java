@@ -362,7 +362,7 @@ public class DataSeeder implements CommandLineRunner {
                     .tipoDescuento(TipoDescuento.PORCENTAJE)
                     .valor(BigDecimal.valueOf(porcentajeDescuento))
                     .fechaDesde(LocalDate.now().minusDays(1))
-                    .fechaHasta(LocalDate.now().plusMonths(2))
+                    .fechaHasta(finDePromocion(salida))
                     .activo(true)
                     .build());
         }
@@ -414,15 +414,28 @@ public class DataSeeder implements CommandLineRunner {
         vueloRepository.save(vuelo);
     }
 
-    /** Si la promocion de la demo vencio y sigue activa, se la extiende dos meses mas desde hoy. */
+    /**
+     * Si la promocion de la demo vencio y sigue activa, se la renueva desde hoy.
+     * Tambien se corrigen las que seguian despues de la salida del vuelo.
+     */
     private void renovarPromocionVencida(Vuelo vuelo) {
+        LocalDate fin = finDePromocion(vuelo.getFechaSalida());
         for (Descuento descuento : descuentoRepository.findByVueloIdAndActivoTrue(vuelo.getId())) {
             if (descuento.getFechaHasta().isBefore(LocalDate.now())) {
                 descuento.setFechaDesde(LocalDate.now().minusDays(1));
-                descuento.setFechaHasta(LocalDate.now().plusMonths(2));
+                descuento.setFechaHasta(fin);
+                descuentoRepository.save(descuento);
+            } else if (descuento.getFechaHasta().isAfter(fin)) {
+                descuento.setFechaHasta(fin);
                 descuentoRepository.save(descuento);
             }
         }
+    }
+
+    /** Una promo dura dos meses, pero como tarde hasta el dia que sale el vuelo. */
+    private LocalDate finDePromocion(LocalDateTime salida) {
+        LocalDate dosMeses = LocalDate.now().plusMonths(2);
+        return salida.toLocalDate().isBefore(dosMeses) ? salida.toLocalDate() : dosMeses;
     }
 
     /** Aplica el porcentaje y redondea a centenas, como un precio de verdad. */

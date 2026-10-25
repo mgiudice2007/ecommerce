@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -47,6 +49,7 @@ public class DescuentoServiceImpl implements DescuentoService {
                         "Vuelo no encontrado: " + request.getVueloId()));
         validarPropiedad(vuelo, principal);
         validarRequest(request, vuelo);
+        validarFechas(request, vuelo, null);
         validarSinSolapamiento(request, vuelo, null);
 
         Descuento descuento = Descuento.builder()
@@ -72,6 +75,7 @@ public class DescuentoServiceImpl implements DescuentoService {
         Vuelo vuelo = descuento.getVuelo();
         validarPropiedad(vuelo, principal);
         validarRequest(request, vuelo);
+        validarFechas(request, vuelo, descuento);
         validarSinSolapamiento(request, vuelo, id);
 
         descuento.setTipoDescuento(request.getTipoDescuento());
@@ -108,6 +112,26 @@ public class DescuentoServiceImpl implements DescuentoService {
                 && request.getValor().compareTo(vuelo.getPrecio()) > 0) {
             throw new BadRequestException("El monto fijo (" + request.getValor()
                     + ") no puede superar el precio del vuelo (" + vuelo.getPrecio() + ")");
+        }
+    }
+
+    /**
+     * El descuento tiene que caer entre hoy y el dia que sale el vuelo: no puede empezar
+     * en una fecha pasada ni seguir despues de que el vuelo salio.
+     * Al editar solo se controla la fecha que cambio, asi se puede pausar o activar un
+     * descuento que empezo hace unos dias.
+     */
+    private void validarFechas(DescuentoRequest request, Vuelo vuelo, Descuento actual) {
+        boolean cambioDesde = actual == null || !request.getFechaDesde().equals(actual.getFechaDesde());
+        boolean cambioHasta = actual == null || !request.getFechaHasta().equals(actual.getFechaHasta());
+        LocalDate salida = vuelo.getFechaSalida().toLocalDate();
+
+        if (cambioDesde && request.getFechaDesde().isBefore(LocalDate.now())) {
+            throw new BadRequestException("La fecha de inicio del descuento no puede ser anterior a hoy");
+        }
+        if (cambioHasta && request.getFechaHasta().isAfter(salida)) {
+            throw new BadRequestException("El descuento tiene que terminar como tarde el dia que sale el vuelo ("
+                    + salida.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ")");
         }
     }
 

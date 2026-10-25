@@ -29,8 +29,9 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         return body;
     }
 
+    // Los vuelos de prueba salen en 10 dias: el descuento va de hoy hasta antes de la salida
     private Map<String, Object> vigenteHoy(Long vueloId, String tipo, Object valor) {
-        return body(vueloId, tipo, valor, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
+        return body(vueloId, tipo, valor, LocalDate.now(), LocalDate.now().plusDays(5));
     }
 
     private MvcResult crear(String token, Map<String, Object> body, int estadoEsperado) throws Exception {
@@ -75,8 +76,9 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         String vendedor = registrarYLoguearAdmin("vdtoviejo");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
+        // Empieza dentro de unos dias: hoy todavia no aplica
         crear(vendedor, body(vueloId, "PORCENTAJE", 50,
-                LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(1)), 201);
+                LocalDate.now().plusDays(3), LocalDate.now().plusDays(6)), 201);
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))
                 .andExpect(status().isOk())
@@ -96,15 +98,31 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
 
         crear(vendedor, body(vueloId, "PORCENTAJE", 10,
-                LocalDate.now(), LocalDate.now().plusDays(30)), 201);
+                LocalDate.now(), LocalDate.now().plusDays(4)), 201);
 
 
         crear(vendedor, body(vueloId, "PORCENTAJE", 20,
-                LocalDate.now().plusDays(15), LocalDate.now().plusDays(45)), 400);
+                LocalDate.now().plusDays(2), LocalDate.now().plusDays(6)), 400);
 
 
         crear(vendedor, body(vueloId, "PORCENTAJE", 20,
-                LocalDate.now().plusDays(31), LocalDate.now().plusDays(45)), 201);
+                LocalDate.now().plusDays(5), LocalDate.now().plusDays(8)), 201);
+    }
+
+    @Test
+    void descuentoQueEmpiezaEnElPasado_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vdtopasado");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        crear(vendedor, body(vueloId, "PORCENTAJE", 10,
+                LocalDate.now().minusDays(3), LocalDate.now().plusDays(5)), 400);
+    }
+
+    @Test
+    void descuentoQueTerminaDespuesDeLaSalida_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vdtodespues");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        crear(vendedor, body(vueloId, "PORCENTAJE", 10,
+                LocalDate.now(), LocalDate.now().plusDays(30)), 400);
     }
 
     @Test
@@ -126,7 +144,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         String vendedor = registrarYLoguearAdmin("vdtofechas");
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
         crear(vendedor, body(vueloId, "PORCENTAJE", 10,
-                LocalDate.now().plusDays(30), LocalDate.now()), 400);
+                LocalDate.now().plusDays(5), LocalDate.now()), 400);
     }
 
     @Test
