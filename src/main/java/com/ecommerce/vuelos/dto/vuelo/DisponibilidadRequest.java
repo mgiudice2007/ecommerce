@@ -22,8 +22,9 @@ public class DisponibilidadRequest {
     @NotNull
     private Long claseId;
 
+    // Al menos 1 asiento; el maximo depende de la clase (se controla en el service)
     @NotNull
-    @Min(0)
+    @Min(1)
     private Integer asientosTotales;
 
     @NotNull

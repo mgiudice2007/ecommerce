@@ -42,4 +42,8 @@ public class Clase {
     /** Asientos por fila en el mapa del avion (Economica 6, Ejecutiva 4, Primera 2). */
     @Column
     private Integer asientosPorFila;
+
+    /** Cuantos asientos puede tener esta clase en un vuelo, como en un avion real (Economica 250, Ejecutiva 40, Primera 16). */
+    @Column
+    private Integer maximoAsientos;
 }

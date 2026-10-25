@@ -106,6 +106,10 @@ public class DataSeeder implements CommandLineRunner {
         cargarAsientosPorFila("Economica", 6);
         cargarAsientosPorFila("Ejecutiva", 4);
         cargarAsientosPorFila("Primera", 2);
+        // Cuantos asientos puede tener cada clase en un vuelo (parecido a un Airbus A330)
+        cargarMaximoAsientos("Economica", 250);
+        cargarMaximoAsientos("Ejecutiva", 40);
+        cargarMaximoAsientos("Primera", 16);
 
         if (usuarioRepository.count() == 0) {
             // La aerolinea tiene un unico vendedor: el administrador publica y gestiona los vuelos.
@@ -126,6 +130,15 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private static final int MILLAS_DEMO = 150_000;
+
+    private void cargarMaximoAsientos(String nombreClase, int maximoAsientos) {
+        claseRepository.findByNombre(nombreClase).ifPresent(clase -> {
+            if (clase.getMaximoAsientos() == null) {
+                clase.setMaximoAsientos(maximoAsientos);
+                claseRepository.save(clase);
+            }
+        });
+    }
 
     private void cargarAsientosPorFila(String nombreClase, int asientosPorFila) {
         claseRepository.findByNombre(nombreClase).ifPresent(clase -> {

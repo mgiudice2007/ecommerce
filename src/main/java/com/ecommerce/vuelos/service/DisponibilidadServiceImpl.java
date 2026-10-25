@@ -52,6 +52,7 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
 
         Clase clase = claseRepository.findById(request.getClaseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada: " + request.getClaseId()));
+        validarMaximoAsientos(clase, request.getAsientosTotales());
 
         Disponibilidad disponibilidad = Disponibilidad.builder()
                 .vuelo(vuelo)
@@ -74,6 +75,7 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     public DisponibilidadResponse actualizar(Long id, DisponibilidadRequest request, UsuarioPrincipal principal) {
         Disponibilidad disponibilidad = buscarPorId(id);
         validarPropiedad(disponibilidad.getVuelo(), principal);
+        validarMaximoAsientos(disponibilidad.getClase(), request.getAsientosTotales());
 
         int vendidos = disponibilidad.getAsientosTotales() - disponibilidad.getAsientosDisponibles();
         if (request.getAsientosTotales() < vendidos) {
@@ -87,6 +89,14 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         disponibilidad.setPrecio(request.getPrecio());
 
         return DisponibilidadResponse.desde(disponibilidadRepository.save(disponibilidad));
+    }
+
+    /** Cada clase tiene un maximo de asientos por vuelo, guardado en la tabla clases. */
+    private void validarMaximoAsientos(Clase clase, int asientos) {
+        if (clase.getMaximoAsientos() != null && asientos > clase.getMaximoAsientos()) {
+            throw new BadRequestException("La clase " + clase.getNombre() + " admite hasta "
+                    + clase.getMaximoAsientos() + " asientos por vuelo");
+        }
     }
 
     private Disponibilidad buscarPorId(Long id) {

@@ -232,6 +232,42 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void cargarMasAsientosQueElMaximoDeLaClase_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vmaximo");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 800.0);
+
+        Map<String, Object> demasiados = Map.of(
+                "vueloId", vueloId,
+                "claseId", clasePorDefecto(),
+                "asientosTotales", 8988986,
+                "precio", 800.0);
+
+        mockMvc.perform(post("/api/disponibilidades")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(demasiados)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cargarCeroAsientos_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vcero");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 800.0);
+
+        Map<String, Object> cero = Map.of(
+                "vueloId", vueloId,
+                "claseId", clasePorDefecto(),
+                "asientosTotales", 0,
+                "precio", 800.0);
+
+        mockMvc.perform(post("/api/disponibilidades")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cero)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void modificarVuelo_comoPasajero_devuelve403() throws Exception {
         // Hay un unico vendedor (el admin): un pasajero no puede tocar vuelos
         String admin = registrarYLoguearAdmin("vpropietario");

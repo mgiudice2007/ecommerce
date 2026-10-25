@@ -16,6 +16,7 @@ public class ClaseResponse {
     private Boolean equipajeBodega;
     private Integer multiplicadorMillas;
     private Integer asientosPorFila;
+    private Integer maximoAsientos;
 
     public static ClaseResponse desde(Clase clase) {
         return ClaseResponse.builder()
@@ -25,6 +26,7 @@ public class ClaseResponse {
                 .equipajeBodega(clase.getEquipajeBodega())
                 .multiplicadorMillas(clase.getMultiplicadorMillas())
                 .asientosPorFila(clase.getAsientosPorFila())
+                .maximoAsientos(clase.getMaximoAsientos())
                 .build();
     }
 }
