@@ -59,6 +59,9 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Antes que nada: las cuentas viejas con rol VENDEDOR pasan a ser compradores
+        usuarioRepository.pasarVendedoresAComprador();
+
         // Los aeropuertos se guardan siempre: el codigo IATA es la clave, asi que los
         // que faltan se agregan y los que ya estaban se actualizan (nombres con tilde, etc.).
         List.of(

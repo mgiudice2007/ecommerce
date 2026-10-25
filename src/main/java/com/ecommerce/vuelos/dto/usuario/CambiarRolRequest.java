@@ -13,6 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CambiarRolRequest {
 
-    @NotNull(message = "El rol es obligatorio: COMPRADOR, VENDEDOR o ADMIN")
+    @NotNull(message = "El rol es obligatorio: COMPRADOR o ADMIN")
     private Rol rol;
 }

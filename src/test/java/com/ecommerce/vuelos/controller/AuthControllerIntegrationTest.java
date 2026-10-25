@@ -127,7 +127,8 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void registrarseComoVendedor_devuelve400() throws Exception {
-        // La aerolinea tiene un unico vendedor (el admin): el registro publico es solo para pasajeros
+        // La aerolinea tiene un unico vendedor (el admin): el rol VENDEDOR no existe y el
+        // registro publico es solo para pasajeros
         Map<String, String> body = Map.of(
                 "username", "quierovender",
                 "mail", "quierovender@test.com",

@@ -26,8 +26,8 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Registro publico: solo para pasajeros (COMPRADOR). La aerolinea tiene un
-     * unico vendedor, que se crea con el seeder; un ADMIN puede asignar roles
-     * desde la administracion de usuarios.
+     * unico vendedor, el ADMIN, que se crea con el seeder; un ADMIN puede asignar
+     * roles desde la administracion de usuarios.
      */
     @Override
     @Transactional
