@@ -113,6 +113,14 @@ public class DataSeeder implements CommandLineRunner {
         cargarMaximoAsientos("Economica", 250);
         cargarMaximoAsientos("Ejecutiva", 40);
         cargarMaximoAsientos("Primera", 16);
+        // Y cuantos tiene que tener como minimo
+        cargarMinimoAsientos("Economica", 50);
+        cargarMinimoAsientos("Ejecutiva", 8);
+        cargarMinimoAsientos("Primera", 4);
+        // De la mas basica a la mejor, para controlar que los precios esten ordenados
+        cargarNivel("Economica", 1);
+        cargarNivel("Ejecutiva", 2);
+        cargarNivel("Primera", 3);
 
         if (usuarioRepository.count() == 0) {
             // La aerolinea tiene un unico vendedor: el administrador publica y gestiona los vuelos.
@@ -133,6 +141,24 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private static final int MILLAS_DEMO = 150_000;
+
+    private void cargarMinimoAsientos(String nombreClase, int minimoAsientos) {
+        claseRepository.findByNombre(nombreClase).ifPresent(clase -> {
+            if (clase.getMinimoAsientos() == null) {
+                clase.setMinimoAsientos(minimoAsientos);
+                claseRepository.save(clase);
+            }
+        });
+    }
+
+    private void cargarNivel(String nombreClase, int nivel) {
+        claseRepository.findByNombre(nombreClase).ifPresent(clase -> {
+            if (clase.getNivel() == null) {
+                clase.setNivel(nivel);
+                claseRepository.save(clase);
+            }
+        });
+    }
 
     private void cargarMaximoAsientos(String nombreClase, int maximoAsientos) {
         claseRepository.findByNombre(nombreClase).ifPresent(clase -> {

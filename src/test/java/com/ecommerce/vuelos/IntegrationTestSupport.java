@@ -1,9 +1,12 @@
 package com.ecommerce.vuelos;
 
+import com.ecommerce.vuelos.entity.Clase;
 import com.ecommerce.vuelos.entity.Vuelo;
+import com.ecommerce.vuelos.repository.ClaseRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -33,6 +36,22 @@ public abstract class IntegrationTestSupport {
 
     @Autowired
     private VueloRepository vueloRepository;
+
+    @Autowired
+    protected ClaseRepository claseRepository;
+
+    /**
+     * Los tests prueban el stock con cupos chicos (1 o 10 asientos), asi que durante
+     * cada test el minimo de asientos de las clases baja a 1. Como el test es
+     * @Transactional, al terminar vuelve al valor real. El minimo se prueba aparte.
+     */
+    @BeforeEach
+    void sinMinimoDeAsientos() {
+        for (Clase clase : claseRepository.findAll()) {
+            clase.setMinimoAsientos(1);
+            claseRepository.save(clase);
+        }
+    }
 
     /**
      * La API no deja crear vuelos con fecha pasada (@Future), asi que para

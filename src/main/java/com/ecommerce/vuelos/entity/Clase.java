@@ -46,4 +46,15 @@ public class Clase {
     /** Cuantos asientos puede tener esta clase en un vuelo, como en un avion real (Economica 250, Ejecutiva 40, Primera 16). */
     @Column
     private Integer maximoAsientos;
+
+    /** Cuantos asientos tiene que tener como minimo (Economica 50, Ejecutiva 8, Primera 4). */
+    @Column
+    private Integer minimoAsientos;
+
+    /**
+     * De la mas basica a la mejor (Economica 1, Ejecutiva 2, Primera 3). Sirve para que
+     * en un vuelo una clase mejor no cueste menos que una mas basica.
+     */
+    @Column
+    private Integer nivel;
 }

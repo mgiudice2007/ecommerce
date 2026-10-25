@@ -1,6 +1,7 @@
 package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
+import com.ecommerce.vuelos.entity.Clase;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -246,6 +247,83 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", "Bearer " + vendedor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(demasiados)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void cargarMenosAsientosQueElMinimoDeLaClase_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vminimo");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 800.0);
+        Clase economica = claseRepository.findById(clasePorDefecto()).orElseThrow();
+        economica.setMinimoAsientos(50); // el valor real (en los tests baja a 1)
+
+        Map<String, Object> pocos = Map.of(
+                "vueloId", vueloId,
+                "claseId", economica.getId(),
+                "asientosTotales", 1,
+                "precio", 800.0);
+
+        mockMvc.perform(post("/api/disponibilidades")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pocos)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void claseMejorMasBarataQueUnaBasica_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vprecios");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 30, 1000.0);
+
+        // Ejecutiva a 500 cuando Economica cuesta 1000
+        Map<String, Object> ejecutivaBarata = Map.of(
+                "vueloId", vueloId,
+                "claseId", otraClase(),
+                "asientosTotales", 10,
+                "precio", 500.0);
+
+        mockMvc.perform(post("/api/disponibilidades")
+                        .header("Authorization", "Bearer " + vendedor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(ejecutivaBarata)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void eliminarClaseSinCompras_laSaca() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vborrar");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 1000.0);
+
+        // Estaba en el carrito de alguien: se saca de ese carrito
+        String comprador = registrarYLoguearComprador("cborrar");
+        agregarAlCarrito(comprador, cupoId, 1);
+
+        mockMvc.perform(delete("/api/disponibilidades/" + cupoId)
+                        .header("Authorization", "Bearer " + vendedor))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/disponibilidades/" + cupoId))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
+
+    @Test
+    void eliminarClaseConCompras_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vnoborrar");
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 1000.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 1000.0);
+
+        String comprador = registrarYLoguearComprador("cnoborrar");
+        agregarAlCarrito(comprador, cupoId, 1);
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(delete("/api/disponibilidades/" + cupoId)
+                        .header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isBadRequest());
     }
 

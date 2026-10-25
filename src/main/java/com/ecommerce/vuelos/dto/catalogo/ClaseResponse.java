@@ -17,6 +17,8 @@ public class ClaseResponse {
     private Integer multiplicadorMillas;
     private Integer asientosPorFila;
     private Integer maximoAsientos;
+    private Integer minimoAsientos;
+    private Integer nivel;
 
     public static ClaseResponse desde(Clase clase) {
         return ClaseResponse.builder()
@@ -27,6 +29,8 @@ public class ClaseResponse {
                 .multiplicadorMillas(clase.getMultiplicadorMillas())
                 .asientosPorFila(clase.getAsientosPorFila())
                 .maximoAsientos(clase.getMaximoAsientos())
+                .minimoAsientos(clase.getMinimoAsientos())
+                .nivel(clase.getNivel())
                 .build();
     }
 }

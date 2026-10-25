@@ -4,17 +4,21 @@ import com.ecommerce.vuelos.dto.vuelo.DisponibilidadRequest;
 import com.ecommerce.vuelos.dto.vuelo.DisponibilidadResponse;
 import com.ecommerce.vuelos.entity.Clase;
 import com.ecommerce.vuelos.entity.Disponibilidad;
+import com.ecommerce.vuelos.entity.ItemCarrito;
 import com.ecommerce.vuelos.entity.Vuelo;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.ClaseRepository;
 import com.ecommerce.vuelos.repository.DisponibilidadRepository;
+import com.ecommerce.vuelos.repository.ItemCarritoRepository;
+import com.ecommerce.vuelos.repository.ItemOrdenRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -26,6 +30,10 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     private VueloRepository vueloRepository;
     @Autowired
     private ClaseRepository claseRepository;
+    @Autowired
+    private ItemOrdenRepository itemOrdenRepository;
+    @Autowired
+    private ItemCarritoRepository itemCarritoRepository;
 
     @Override
     public List<DisponibilidadResponse> listarPorVuelo(Long vueloId) {
@@ -52,7 +60,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
 
         Clase clase = claseRepository.findById(request.getClaseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Clase no encontrada: " + request.getClaseId()));
-        validarMaximoAsientos(clase, request.getAsientosTotales());
+        validarCantidadAsientos(clase, request.getAsientosTotales());
+        validarPrecioEntreClases(vuelo, clase, request.getPrecio(), null);
 
         Disponibilidad disponibilidad = Disponibilidad.builder()
                 .vuelo(vuelo)
@@ -75,7 +84,8 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     public DisponibilidadResponse actualizar(Long id, DisponibilidadRequest request, UsuarioPrincipal principal) {
         Disponibilidad disponibilidad = buscarPorId(id);
         validarPropiedad(disponibilidad.getVuelo(), principal);
-        validarMaximoAsientos(disponibilidad.getClase(), request.getAsientosTotales());
+        validarCantidadAsientos(disponibilidad.getClase(), request.getAsientosTotales());
+        validarPrecioEntreClases(disponibilidad.getVuelo(), disponibilidad.getClase(), request.getPrecio(), id);
 
         int vendidos = disponibilidad.getAsientosTotales() - disponibilidad.getAsientosDisponibles();
         if (request.getAsientosTotales() < vendidos) {
@@ -91,11 +101,63 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
         return DisponibilidadResponse.desde(disponibilidadRepository.save(disponibilidad));
     }
 
-    /** Cada clase tiene un maximo de asientos por vuelo, guardado en la tabla clases. */
-    private void validarMaximoAsientos(Clase clase, int asientos) {
-        if (clase.getMaximoAsientos() != null && asientos > clase.getMaximoAsientos()) {
-            throw new BadRequestException("La clase " + clase.getNombre() + " admite hasta "
-                    + clase.getMaximoAsientos() + " asientos por vuelo");
+    /**
+     * Saca una clase del vuelo. Solo se puede si nunca se vendio: las compras (aunque
+     * esten canceladas) quedan en el historial y apuntan a esta clase. Si estaba en
+     * algun carrito, se saca de esos carritos.
+     */
+    @Override
+    @Transactional
+    public void eliminar(Long id, UsuarioPrincipal principal) {
+        Disponibilidad disponibilidad = buscarPorId(id);
+        Vuelo vuelo = disponibilidad.getVuelo();
+        validarPropiedad(vuelo, principal);
+
+        if (itemOrdenRepository.existsByDisponibilidadId(id)) {
+            throw new BadRequestException("La clase " + disponibilidad.getClase().getNombre()
+                    + " ya tiene compras (aunque esten canceladas) y no se puede eliminar");
+        }
+
+        for (ItemCarrito item : itemCarritoRepository.findByDisponibilidadId(id)) {
+            item.getCarrito().getItems().remove(item);
+            itemCarritoRepository.delete(item);
+        }
+
+        vuelo.getDisponibilidades().remove(disponibilidad);
+        disponibilidadRepository.delete(disponibilidad);
+    }
+
+    /** Cada clase tiene un minimo y un maximo de asientos por vuelo, guardados en la tabla clases. */
+    private void validarCantidadAsientos(Clase clase, int asientos) {
+        boolean pocos = clase.getMinimoAsientos() != null && asientos < clase.getMinimoAsientos();
+        boolean muchos = clase.getMaximoAsientos() != null && asientos > clase.getMaximoAsientos();
+        if (pocos || muchos) {
+            throw new BadRequestException("La clase " + clase.getNombre() + " tiene que tener entre "
+                    + clase.getMinimoAsientos() + " y " + clase.getMaximoAsientos() + " asientos");
+        }
+    }
+
+    /**
+     * En un mismo vuelo una clase mejor no puede costar menos que una mas basica:
+     * Economica <= Ejecutiva <= Primera (segun el nivel de cada clase).
+     */
+    private void validarPrecioEntreClases(Vuelo vuelo, Clase clase, BigDecimal precio, Long idQueSeEdita) {
+        if (clase.getNivel() == null) {
+            return;
+        }
+        for (Disponibilidad otra : vuelo.getDisponibilidades()) {
+            Integer otroNivel = otra.getClase().getNivel();
+            if (otra.getId().equals(idQueSeEdita) || otroNivel == null) {
+                continue;
+            }
+            if (otroNivel < clase.getNivel() && precio.compareTo(otra.getPrecio()) < 0) {
+                throw new BadRequestException("La clase " + clase.getNombre() + " no puede costar menos que "
+                        + otra.getClase().getNombre() + " ($" + otra.getPrecio().toBigInteger() + ")");
+            }
+            if (otroNivel > clase.getNivel() && precio.compareTo(otra.getPrecio()) > 0) {
+                throw new BadRequestException("La clase " + clase.getNombre() + " no puede costar mas que "
+                        + otra.getClase().getNombre() + " ($" + otra.getPrecio().toBigInteger() + ")");
+            }
         }
     }
 

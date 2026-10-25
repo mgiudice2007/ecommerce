@@ -16,4 +16,6 @@ public interface DisponibilidadService {
     DisponibilidadResponse crear(DisponibilidadRequest request, UsuarioPrincipal principal);
 
     DisponibilidadResponse actualizar(Long id, DisponibilidadRequest request, UsuarioPrincipal principal);
+
+    void eliminar(Long id, UsuarioPrincipal principal);
 }
