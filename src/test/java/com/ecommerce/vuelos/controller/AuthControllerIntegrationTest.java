@@ -159,14 +159,54 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.rol").value("COMPRADOR"));
     }
 
+    // Arma un registro con los datos que se quieren probar
+    private Map<String, String> registro(String username, String nombre, String apellido) {
+        return Map.of(
+                "username", username,
+                "mail", username.replace(" ", "") + "@test.com",
+                "password", "123456",
+                "nombre", nombre,
+                "apellido", apellido
+        );
+    }
+
+    private void registrarEsperando(Map<String, String> body, int estado) throws Exception {
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().is(estado));
+    }
+
+    @Test
+    void registrar_conNombreDeUnaLetra_devuelve400() throws Exception {
+        registrarEsperando(registro("cortito", "a", "Perez"), 400);
+    }
+
+    @Test
+    void registrar_conNumerosEnElApellido_devuelve400() throws Exception {
+        registrarEsperando(registro("connumero", "Juan", "P3rez"), 400);
+    }
+
+    @Test
+    void registrar_conUsuarioInvalido_devuelve400() throws Exception {
+        registrarEsperando(registro("abc", "Juan", "Perez"), 400);        // muy corto
+        registrarEsperando(registro("1juan", "Juan", "Perez"), 400);      // empieza con numero
+        registrarEsperando(registro("juan perez", "Juan", "Perez"), 400); // tiene espacio
+    }
+
+    @Test
+    void registrar_conNombresConTildesYApostrofo_devuelveCreated() throws Exception {
+        registrarEsperando(registro("maria.jose_22", "María José", "D'Angelo-Núñez"), 201);
+    }
+
     @Test
     void registrarComprador_conUsernameDuplicado_devuelve400() throws Exception {
         Map<String, String> body = Map.of(
                 "username", "duplicado",
                 "mail", "duplicado1@test.com",
                 "password", "123456",
-                "nombre", "A",
-                "apellido", "B",
+                "nombre", "Ana",
+                "apellido", "Bianchi",
                 "rol", "COMPRADOR"
         );
         mockMvc.perform(post("/api/auth/registro")
@@ -178,8 +218,8 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "username", "duplicado",
                 "mail", "duplicado2@test.com",
                 "password", "123456",
-                "nombre", "A",
-                "apellido", "B",
+                "nombre", "Ana",
+                "apellido", "Bianchi",
                 "rol", "COMPRADOR"
         );
         mockMvc.perform(post("/api/auth/registro")
@@ -221,8 +261,8 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "username", "nuevoadmin",
                 "mail", "nuevoadmin@test.com",
                 "password", "123456",
-                "nombre", "A",
-                "apellido", "B",
+                "nombre", "Ana",
+                "apellido", "Bianchi",
                 "rol", "ADMIN"
         );
         mockMvc.perform(post("/api/auth/registro/administrador")
@@ -239,8 +279,8 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 "username", "nuevoadmin2",
                 "mail", "nuevoadmin2@test.com",
                 "password", "123456",
-                "nombre", "A",
-                "apellido", "B",
+                "nombre", "Ana",
+                "apellido", "Bianchi",
                 "rol", "ADMIN"
         );
         mockMvc.perform(post("/api/auth/registro/administrador")

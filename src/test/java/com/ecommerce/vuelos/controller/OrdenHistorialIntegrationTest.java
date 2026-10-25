@@ -10,7 +10,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void historial_devuelveSoloLasOrdenesDelPasajeroLogueado() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
 
         String pasajero1 = registrarYLoguearComprador("pasajerohist1");
@@ -30,7 +30,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_devuelveElStockAlVuelo() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajerocancela");
         agregarAlCarrito(pasajero, cupoId, 4);
@@ -51,7 +51,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_yaCancelada_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajerodoblecancel");
         agregarAlCarrito(pasajero, cupoId, 1);
@@ -68,7 +68,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_deOtroPasajero_devuelve404() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
 
         String dueno = registrarYLoguearComprador("pasajerodueno");
@@ -87,7 +87,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_conMasDe24Horas_sePuedeCancelar() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
         String pasajero = registrarYLoguearComprador("pasajerocon24");
         agregarAlCarrito(pasajero, cupoId, 1);
@@ -101,7 +101,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_faltanMenosDe24Horas_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0);
         Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 100.0);
         String pasajero = registrarYLoguearComprador("pasajeromenos24");
@@ -123,7 +123,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
     @Test
     void cancelarOrden_vueloQueYaSalio_devuelve400() throws Exception {
-        String vendedor = registrarYLoguearAdmin("v" + System.nanoTime() % 100000);
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 100.0);
         Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 100.0);
         String pasajero = registrarYLoguearComprador("pasajeroyasalio");

@@ -58,8 +58,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Ese DNI ya esta registrado en otra cuenta");
         }
 
-        usuario.setNombre(request.getNombre());
-        usuario.setApellido(request.getApellido());
+        usuario.setNombre(request.getNombre().trim());
+        usuario.setApellido(request.getApellido().trim());
         usuario.setDni(dni);
         usuario.setFechaNacimiento(request.getFechaNacimiento());
         usuario.setTelefono(normalizar(request.getTelefono()));
@@ -79,8 +79,8 @@ public class AuthServiceImpl implements AuthService {
                 .username(request.getUsername())
                 .mail(request.getMail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .nombre(request.getNombre())
-                .apellido(request.getApellido())
+                .nombre(request.getNombre().trim())
+                .apellido(request.getApellido().trim())
                 .rol(rol)
                 .fechaRegistro(LocalDateTime.now())
                 .build();
