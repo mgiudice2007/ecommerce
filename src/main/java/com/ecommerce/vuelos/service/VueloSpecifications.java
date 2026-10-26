@@ -47,6 +47,22 @@ public final class VueloSpecifications {
         };
     }
 
+    /** Busqueda del panel del admin: ciudad, codigo de aeropuerto o numero de vuelo. */
+    public static Specification<Vuelo> textoContiene(String texto) {
+        return (root, query, cb) -> {
+            if (texto == null || texto.isBlank()) {
+                return null;
+            }
+            String patron = "%" + texto.trim().toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(root.get("numeroVuelo")), patron),
+                    cb.like(cb.lower(root.get("origen").get("ciudad")), patron),
+                    cb.like(cb.lower(root.get("origen").get("codigoIata")), patron),
+                    cb.like(cb.lower(root.get("destino").get("ciudad")), patron),
+                    cb.like(cb.lower(root.get("destino").get("codigoIata")), patron));
+        };
+    }
+
     public static Specification<Vuelo> deCategoria(Long categoriaId) {
         return (root, query, cb) -> categoriaId == null ? null
                 : cb.equal(root.get("categoria").get("id"), categoriaId);

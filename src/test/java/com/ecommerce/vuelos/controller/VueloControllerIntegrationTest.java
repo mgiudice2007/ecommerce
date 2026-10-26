@@ -355,6 +355,36 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void buscarPorTexto_encuentraPorCiudadONumeroDeVuelo() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vtexto");
+        crearVuelo(vendedor, "TST", "AEP", 300.0);
+
+        mockMvc.perform(get("/api/vuelos").param("texto", "ciudad de prueba").param("page", "0").param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mockMvc.perform(get("/api/vuelos").param("texto", "no existe esta ciudad"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    @Test
+    void resumenDelPanel_cuentaLosVuelosYLosAsientos() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vresumen");
+        String antes = mockMvc.perform(get("/api/vuelos/resumen"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long vuelosAntes = objectMapper.readTree(antes).get("vuelos").asLong();
+        long asientosAntes = objectMapper.readTree(antes).get("asientosTotales").asLong();
+
+        crearVueloConCupo(vendedor, "TST", "AEP", 300.0, 10);
+
+        mockMvc.perform(get("/api/vuelos/resumen"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.vuelos").value(vuelosAntes + 1))
+                .andExpect(jsonPath("$.asientosTotales").value(asientosAntes + 10));
+    }
+
+    @Test
     void vueloQueDuraMasDe20Horas_devuelve400() throws Exception {
         String vendedor = registrarYLoguearAdmin("vlargo");
         Map<String, Object> body = new LinkedHashMap<>();

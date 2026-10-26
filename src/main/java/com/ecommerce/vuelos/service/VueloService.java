@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.dto.PaginaResponse;
 import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
+import com.ecommerce.vuelos.dto.vuelo.ResumenPanelResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -17,7 +18,10 @@ public interface VueloService {
     PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
                                BigDecimal precioMin, BigDecimal precioMax,
                                          LocalDate fechaDesde, LocalDate fechaHasta, Long vendedorId,
-                               PageRequest pageRequest);
+                               String texto, PageRequest pageRequest);
+
+    /** Totales del panel del admin: vuelos publicados, asientos vendidos y asientos cargados. */
+    ResumenPanelResponse resumen();
 
     VueloResponse obtener(Long id);
 

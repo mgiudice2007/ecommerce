@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.dto.PaginaResponse;
 import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
+import com.ecommerce.vuelos.dto.vuelo.ResumenPanelResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
 import com.ecommerce.vuelos.entity.Aeropuerto;
@@ -13,6 +14,7 @@ import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.AeropuertoRepository;
 import com.ecommerce.vuelos.repository.CategoriaRepository;
+import com.ecommerce.vuelos.repository.DisponibilidadRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -39,12 +41,14 @@ public class VueloServiceImpl implements VueloService {
     private AeropuertoRepository aeropuertoRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private DisponibilidadRepository disponibilidadRepository;
 
     @Override
     public PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
                                                 BigDecimal precioMin, BigDecimal precioMax,
                                                 LocalDate fechaDesde, LocalDate fechaHasta, Long vendedorId,
-                                                PageRequest pageRequest) {
+                                                String texto, PageRequest pageRequest) {
         // Cada Specification devuelve null si su filtro vino vacio, asi que las
         // combinamos todas y quedan solo las que el cliente realmente mando.
         Specification<Vuelo> spec = Specification.allOf(
@@ -58,16 +62,27 @@ public class VueloServiceImpl implements VueloService {
                 VueloSpecifications.precioMaximo(precioMax),
                 VueloSpecifications.saleDesde(fechaDesde),
                 VueloSpecifications.saleHasta(fechaHasta),
-                VueloSpecifications.delVendedor(vendedorId));
+                VueloSpecifications.delVendedor(vendedorId),
+                VueloSpecifications.textoContiene(texto));
 
         boolean hayFiltros = origen != null || destino != null || categoriaId != null || claseId != null
                 || precioMin != null || precioMax != null || fechaDesde != null || fechaHasta != null
-                || vendedorId != null;
+                || vendedorId != null || (texto != null && !texto.isBlank());
         String mensajeSiVacia = hayFiltros
                 ? "No hay vuelos que coincidan con los filtros indicados"
                 : "No hay vuelos disponibles por el momento";
 
         return PaginaResponse.desde(vueloRepository.findAll(spec, pageRequest).map(VueloResponse::desde), mensajeSiVacia);
+    }
+
+    @Override
+    public ResumenPanelResponse resumen() {
+        LocalDateTime ahora = LocalDateTime.now();
+        long vuelos = vueloRepository.count(Specification.allOf(
+                VueloSpecifications.soloPublicados(), VueloSpecifications.todaviaNoSalio()));
+        return new ResumenPanelResponse(vuelos,
+                disponibilidadRepository.sumarAsientosVendidos(ahora),
+                disponibilidadRepository.sumarAsientosTotales(ahora));
     }
 
     @Override

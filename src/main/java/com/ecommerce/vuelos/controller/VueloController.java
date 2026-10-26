@@ -3,6 +3,7 @@ package com.ecommerce.vuelos.controller;
 import com.ecommerce.vuelos.dto.PaginaResponse;
 import com.ecommerce.vuelos.dto.vuelo.CambiarEstadoRequest;
 import com.ecommerce.vuelos.dto.vuelo.EstadoVueloResponse;
+import com.ecommerce.vuelos.dto.vuelo.ResumenPanelResponse;
 import com.ecommerce.vuelos.dto.vuelo.VueloRequest;
 import com.ecommerce.vuelos.dto.vuelo.VueloResponse;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
@@ -45,6 +46,7 @@ public class VueloController {
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long vendedorId,
+            @RequestParam(required = false) String texto,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
 
@@ -53,7 +55,14 @@ public class VueloController {
                 : PageRequest.of(page, size);
 
         return ResponseEntity.ok(vueloService.buscar(
-                origen, destino, categoriaId, claseId, precioMin, precioMax, fechaDesde, fechaHasta, vendedorId, pageRequest));
+                origen, destino, categoriaId, claseId, precioMin, precioMax, fechaDesde, fechaHasta, vendedorId,
+                texto, pageRequest));
+    }
+
+    /** Los totales de arriba del panel del admin. */
+    @GetMapping("/resumen")
+    public ResponseEntity<ResumenPanelResponse> resumen() {
+        return ResponseEntity.ok(vueloService.resumen());
     }
 
     @GetMapping("/{id}")
