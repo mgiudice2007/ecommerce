@@ -27,7 +27,6 @@ public class SecurityConfig {
     @Autowired
     private RestSecurityHandlers restSecurityHandlers;
 
-    /** Origenes del frontend que pueden llamar a la API (separados por coma). */
     @Value("${cors.allowed-origins}")
     private List<String> allowedOrigins;
 
@@ -55,20 +54,18 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
-                        // Todas las reglas de acceso viven aca, de arriba hacia abajo: gana la primera que coincide.
-                        // Publico: alta, login y la consulta del catalogo.
+                      
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vuelos/**", "/api/categorias/**", "/api/aeropuertos/**",
                                 "/api/clases", "/api/disponibilidades/**", "/api/fotos/**", "/api/descuentos/**").permitAll()
-                        // Solo ADMIN: dar de alta administradores y gestionar usuarios y roles.
+                        
                         .requestMatchers("/api/auth/registro/administrador", "/api/usuarios/**").hasRole("ADMIN")
-                        // Solo COMPRADOR: su carrito y sus ordenes (el dueno sale siempre del token).
+                        
                         .requestMatchers("/api/carrito/**", "/api/ordenes/**").hasRole("COMPRADOR")
-                        // Solo ADMIN: la aerolinea tiene un unico vendedor, que es el administrador.
-                        // Publicar y gestionar vuelos, cupos, descuentos y fotos.
+                        
                         .requestMatchers("/api/vuelos/**", "/api/disponibilidades/**", "/api/descuentos/**",
                                 "/api/fotos/**").hasRole("ADMIN")
-                        // Cualquier otra ruta (por ejemplo /api/auth/me y /logout) pide estar logueado.
+                        
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

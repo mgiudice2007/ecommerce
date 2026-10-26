@@ -16,21 +16,16 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Las reglas de acceso viven en SecurityConfig, que corre antes de que la peticion
- * llegue a un controller. Por eso el GlobalExceptionHandler no alcanza a ver estos
- * rechazos y los responde esta clase, con el mismo formato JSON que el resto de la API.
- */
 @Component
 public class RestSecurityHandlers implements AuthenticationEntryPoint, AccessDeniedHandler {
 
-    /** Lo setea JwtAuthenticationFilter cuando el token vino pero no sirve. */
+
     public static final String JWT_ERROR_ATTRIBUTE = "jwt.error";
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    /** Sin token, o con un token vencido o invalido: 401. */
+ 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
@@ -39,7 +34,7 @@ public class RestSecurityHandlers implements AuthenticationEntryPoint, AccessDen
                 errorDeToken != null ? errorDeToken.toString() : "No autenticado");
     }
 
-    /** Token valido pero con un rol que no alcanza para esa ruta: 403. */
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {

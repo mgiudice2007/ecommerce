@@ -57,7 +57,7 @@ public class Usuario {
     @Column(nullable = false)
     private Rol rol;
 
-    /** Saldo de millas del pasajero: se suman al comprar y se pueden usar para pagar. */
+
     @Column
     private Integer millas;
 

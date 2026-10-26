@@ -21,6 +21,5 @@ public class ItemCarritoRequest {
     @Min(1)
     private Integer cantidad;
 
-    /** ADULTO, NINO o BEBE. Si no viene, es ADULTO. */
     private TipoPasajero tipoPasajero;
 }

@@ -33,6 +33,5 @@ public class DescuentoRequest {
     @NotNull(message = "La fecha de fin es obligatoria")
     private LocalDate fechaHasta;
 
-    /** Si no viene, el descuento nace prendido. */
     private Boolean activo;
 }

@@ -6,11 +6,7 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-/**
- * Misma forma que el Page de Spring (content, number, size, numberOfElements,
- * totalElements, totalPages, first, last, empty) mas un mensaje que solo aparece cuando la pagina viene vacia,
- * para que el front tenga algo que mostrar en vez de una lista muda.
- */
+
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaginaResponse<T> {
@@ -39,7 +35,6 @@ public class PaginaResponse<T> {
         this.mensaje = mensaje;
     }
 
-    /** El mensaje solo se incluye si la pagina esta vacia; si hay resultados queda en null y no se serializa. */
     public static <T> PaginaResponse<T> desde(Page<T> page, String mensajeSiVacia) {
         return new PaginaResponse<>(page, page.isEmpty() ? mensajeSiVacia : null);
     }

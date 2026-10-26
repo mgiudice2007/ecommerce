@@ -29,20 +29,16 @@ public class Orden {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    /** Lo que se cobro, ya con los descuentos restados. */
     @Column(nullable = false)
     private BigDecimal total;
 
-    /** Cuanto se ahorro el comprador en esta orden. Queda congelado como el total. */
     @Column(nullable = false)
     @Builder.Default
     private BigDecimal descuentoTotal = BigDecimal.ZERO;
 
-    /** Millas que sumo el comprador con esta orden. */
     @Column
     private Integer millasGanadas;
 
-    /** Millas que uso para pagar y cuantos pesos le descontaron por ellas. */
     @Column
     private Integer millasUsadas;
 
@@ -73,7 +69,6 @@ public class Orden {
         return descuentoMillas == null ? BigDecimal.ZERO : descuentoMillas;
     }
 
-    /** La salida del primer vuelo de la compra (una compra de ida y vuelta tiene dos vuelos). */
     public LocalDateTime primeraSalida() {
         LocalDateTime primera = null;
         for (ItemOrden item : items) {

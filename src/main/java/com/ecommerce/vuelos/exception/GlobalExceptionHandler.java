@@ -62,22 +62,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-    /** JSON mal formado o con un valor que no existe (por ejemplo un estado de vuelo inventado): es culpa del cliente. */
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleJsonInvalido(HttpMessageNotReadableException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, "El cuerpo de la peticion es invalido o tiene un valor que no existe");
     }
 
-    /** Una ruta que existe pero no con ese metodo HTTP (por ejemplo el viejo DELETE de vuelos). */
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, Object>> handleMetodoNoPermitido(HttpRequestMethodNotSupportedException ex) {
         return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "Metodo " + ex.getMethod() + " no permitido para esta ruta");
     }
 
-    /**
-     * Sin esto, pasarse del limite de multipart devuelve un 500 con un stack
-     * trace de Tomcat en vez de un mensaje que se entienda.
-     */
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleArchivoGrande(MaxUploadSizeExceededException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, "El archivo supera el maximo permitido (5MB)");

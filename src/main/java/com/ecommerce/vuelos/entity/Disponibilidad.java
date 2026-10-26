@@ -52,20 +52,17 @@ public class Disponibilidad {
     @Column(nullable = false)
     private BigDecimal precio; 
 
-    /** "si el vuelo tiene un descuento vigente se lo aplica al precio. */
     @Transient
     public BigDecimal getPrecioConDescuento() {
         Descuento vigente = vuelo != null ? vuelo.getDescuentoVigente() : null;
         return vigente == null ? precio : vigente.aplicarA(precio);
     }
 
-    /** precio original menos precio con descuento = cuánto te ahorrás por asiento. */
     @Transient
     public BigDecimal getDescuentoUnitario() {
         return precio.subtract(getPrecioConDescuento());
     }
 
-   /** ¿queda algo para vender? */
     @Transient
     public boolean hayStock() {
         return asientosDisponibles != null && asientosDisponibles > 0;

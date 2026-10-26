@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Body opcional del checkout: cuantas millas quiere usar el comprador para pagar. */
+
 @Getter
 @Setter
 @NoArgsConstructor

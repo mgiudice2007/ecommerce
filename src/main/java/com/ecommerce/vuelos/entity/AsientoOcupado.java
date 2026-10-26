@@ -7,11 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Un asiento vendido (por ejemplo "12A") de un vuelo y clase. La restriccion unica
- * asegura que el mismo asiento no se pueda vender dos veces. Al cancelar la compra
- * se borra y el asiento vuelve a quedar libre.
- */
+
 @Entity
 @Table(name = "asientos_ocupados",
         uniqueConstraints = @UniqueConstraint(

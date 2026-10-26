@@ -4,7 +4,7 @@ import com.ecommerce.vuelos.entity.EstadoVuelo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/** El backend no se queda en silencio: devuelve el estado resultante y un mensaje para mostrar. */
+
 @Getter
 @AllArgsConstructor
 public class EstadoVueloResponse {

@@ -17,7 +17,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class ActualizarPerfilRequest {
 
-    // Las mismas reglas que en el registro
+ 
     @NotBlank(message = "El nombre es obligatorio")
     @Size(min = 2, max = 40, message = "El nombre tiene que tener entre 2 y 40 letras")
     @Pattern(regexp = "\\p{L}[\\p{L}' -]*",
@@ -30,7 +30,7 @@ public class ActualizarPerfilRequest {
             message = "El apellido solo puede tener letras, espacios, apóstrofo o guion")
     private String apellido;
 
-    /** Los tres siguientes son los datos del pasajero, y pueden venir vacios. */
+    
     @Pattern(regexp = "\\d{7,9}|", message = "El DNI tiene que ser de 7 a 9 digitos")
     private String dni;
 

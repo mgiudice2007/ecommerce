@@ -7,11 +7,7 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-/**
- * Lo que ve el ADMIN en el listado de usuarios. A diferencia de UsuarioResponse
- * incluye el id (lo necesita para cambiar el rol) y no trae los datos
- * personales de pasajero (DNI, fecha de nacimiento, telefono).
- */
+
 @Getter
 @Builder
 @AllArgsConstructor

@@ -16,9 +16,9 @@ public class CarritoResponse {
     private List<ItemCarritoResponse> items;
     private BigDecimal total;
 
-    /** Millas que suma esta compra si se paga toda con plata. */
+ 
     private Integer millasAGanar;
-    /** Saldo de millas del comprador y cuantos pesos vale cada una al usarlas. */
+    
     private Integer millasDisponibles;
     private BigDecimal valorMilla;
 

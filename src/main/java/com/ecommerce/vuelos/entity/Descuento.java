@@ -40,9 +40,9 @@ public class Descuento {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoDescuento tipoDescuento; // PORCENTAJE o MONTO_FIJO
+    private TipoDescuento tipoDescuento; 
 
-    /** Si es PORCENTAJE va de 0 a 100. Si es MONTO_FIJO es plata. */
+
     @Column(nullable = false)
     private BigDecimal valor;
 
@@ -56,19 +56,14 @@ public class Descuento {
     @Builder.Default
     private Boolean activo = true;
 
-    /** Vigente = prendido y dentro de la ventana de fechas. */
     @Transient
     public boolean estaVigente(LocalDate fecha) {
         return Boolean.TRUE.equals(activo)
                 && fechaDesde != null && fechaHasta != null
-                && !fecha.isBefore(fechaDesde) // pregunta 1: ¿ya empezó?
-                && !fecha.isAfter(fechaHasta); // pregunta 2: ¿todavía no terminó?
+                && !fecha.isBefore(fechaDesde) 
+                && !fecha.isAfter(fechaHasta); 
     }
 
-    /**
-     * Aplica el descuento a un precio. Nunca devuelve negativo: un monto fijo
-     * mas grande que el precio deja el precio en cero, no en deuda.
-     */
     @Transient
     public BigDecimal aplicarA(BigDecimal precio) {
         if (precio == null || valor == null || tipoDescuento == null) {
@@ -82,7 +77,6 @@ public class Descuento {
         return resultado.max(BigDecimal.ZERO);
     }
 
-    /** que no se pisen en el rango de fechas. */
     @Transient
     public boolean seSolapaCon(LocalDate desde, LocalDate hasta) { 
         return !fechaDesde.isAfter(hasta) && !fechaHasta.isBefore(desde);

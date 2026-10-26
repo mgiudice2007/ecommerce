@@ -35,26 +35,18 @@ public class Clase {
     @Builder.Default
     private Boolean equipajeBodega = false;
 
-    /** Cuantas veces se multiplican las millas al comprar en esta clase (Economica 1, Ejecutiva 2...). */
     @Column
     private Integer multiplicadorMillas;
 
-    /** Asientos por fila en el mapa del avion (Economica 6, Ejecutiva 4, Primera 2). */
     @Column
     private Integer asientosPorFila;
 
-    /** Cuantos asientos puede tener esta clase en un vuelo, como en un avion real (Economica 250, Ejecutiva 40, Primera 16). */
     @Column
     private Integer maximoAsientos;
 
-    /** Cuantos asientos tiene que tener como minimo (Economica 50, Ejecutiva 8, Primera 4). */
     @Column
     private Integer minimoAsientos;
 
-    /**
-     * De la mas basica a la mejor (Economica 1, Ejecutiva 2, Primera 3). Sirve para que
-     * en un vuelo una clase mejor no cueste menos que una mas basica.
-     */
     @Column
     private Integer nivel;
 }

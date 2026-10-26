@@ -37,10 +37,6 @@ public class VueloRequest {
     @Future(message = "La fecha de llegada debe ser futura")
     private LocalDateTime fechaLlegada;
 
-    /**
-     * Opcional: el precio del vuelo ("desde") es el de su clase mas barata y se
-     * actualiza solo cada vez que se carga o cambia una clase.
-     */
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal precio;
 }

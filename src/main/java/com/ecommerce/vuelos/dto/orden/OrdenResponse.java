@@ -26,12 +26,12 @@ public class OrdenResponse {
     private EstadoOrden estado;
     private List<ItemOrdenResponse> items;
 
-    /** Hasta cuando se puede cancelar (horas antes de que salga el primer vuelo). */
+    
     private LocalDateTime cancelableHasta;
-    /** true si la compra no esta cancelada y todavia no paso cancelableHasta. */
+   
     private boolean sePuedeCancelar;
 
-    /** horasParaCancelar: viene de application.properties (ordenes.horas-para-cancelar). */
+    
     public static OrdenResponse desde(Orden orden, int horasParaCancelar) {
         LocalDateTime cancelableHasta = orden.primeraSalida() == null
                 ? null

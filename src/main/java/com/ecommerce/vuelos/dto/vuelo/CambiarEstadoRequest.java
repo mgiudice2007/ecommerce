@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Cuerpo del PATCH de estado: solo el estado nuevo, nada de la descripcion ni del resto del vuelo. */
+
 @Getter
 @Setter
 @NoArgsConstructor

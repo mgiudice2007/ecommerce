@@ -22,7 +22,7 @@ public class DisponibilidadRequest {
     @NotNull
     private Long claseId;
 
-    // El minimo y el maximo dependen de la clase (se controlan en el service)
+    
     @NotNull(message = "La cantidad de asientos es obligatoria")
     @Min(value = 1, message = "La clase tiene que tener al menos 1 asiento")
     private Integer asientosTotales;

@@ -8,7 +8,7 @@ import lombok.Setter;
 
 import java.util.List;
 
-/** Los asientos que eligio el comprador para los pasajeros de un vuelo y clase del carrito. */
+
 @Getter
 @Setter
 @NoArgsConstructor
