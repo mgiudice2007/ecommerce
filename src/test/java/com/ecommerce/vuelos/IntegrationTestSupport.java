@@ -1,7 +1,9 @@
 package com.ecommerce.vuelos;
 
+import com.ecommerce.vuelos.entity.Aeropuerto;
 import com.ecommerce.vuelos.entity.Clase;
 import com.ecommerce.vuelos.entity.Vuelo;
+import com.ecommerce.vuelos.repository.AeropuertoRepository;
 import com.ecommerce.vuelos.repository.ClaseRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,6 +53,25 @@ public abstract class IntegrationTestSupport {
             clase.setMinimoAsientos(1);
             claseRepository.save(clase);
         }
+    }
+
+    @Autowired
+    private AeropuertoRepository aeropuertoRepository;
+
+    /**
+     * Todas las rutas validas (ida desde Buenos Aires o vuelta a Buenos Aires) ya tienen
+     * vuelos de ejemplo del seeder. Para que las busquedas de los tests encuentren solo
+     * sus propios vuelos, se usan dos aeropuertos de prueba: TST (Argentina, vuelve a
+     * Aeroparque) y TSX (exterior, vuelve a Ezeiza). Los crean solo los tests que los
+     * usan; como el test es @Transactional, al terminar se borran.
+     */
+    protected void crearAeropuertosDePrueba() {
+        aeropuertoRepository.save(Aeropuerto.builder().codigoIata("TST").nombre("Aeropuerto de prueba")
+                .ciudad("Ciudad de prueba").provincia("Prueba").pais("Argentina")
+                .zonaHoraria("America/Argentina/Buenos_Aires").build());
+        aeropuertoRepository.save(Aeropuerto.builder().codigoIata("TSX").nombre("Aeropuerto de prueba exterior")
+                .ciudad("Ciudad exterior").provincia("Prueba").pais("Chile")
+                .zonaHoraria("America/Santiago").build());
     }
 
     /**

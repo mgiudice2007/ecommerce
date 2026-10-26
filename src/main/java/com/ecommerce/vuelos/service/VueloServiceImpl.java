@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class VueloServiceImpl implements VueloService {
@@ -174,6 +175,7 @@ public class VueloServiceImpl implements VueloService {
         if (vuelo.getOrigen().getCodigoIata().equals(vuelo.getDestino().getCodigoIata())) {
             throw new BadRequestException("El origen y el destino tienen que ser distintos");
         }
+        validarRuta(vuelo);
         if (!vuelo.getFechaLlegada().isAfter(vuelo.getFechaSalida())) {
             throw new BadRequestException("La fecha de llegada debe ser posterior a la de salida");
         }
@@ -186,6 +188,32 @@ public class VueloServiceImpl implements VueloService {
                     + " horas: revisa la fecha de llegada");
         }
     }
+
+    /**
+     * Igual que en el buscador del pasajero: todos los vuelos salen de Buenos Aires (ida)
+     * o vuelven a Buenos Aires (vuelta). Los de cabotaje usan Aeroparque y los
+     * internacionales Ezeiza.
+     */
+    private void validarRuta(Vuelo vuelo) {
+        boolean saleDeBuenosAires = AEROPUERTOS_BUENOS_AIRES.contains(vuelo.getOrigen().getCodigoIata());
+        boolean llegaABuenosAires = AEROPUERTOS_BUENOS_AIRES.contains(vuelo.getDestino().getCodigoIata());
+        if (saleDeBuenosAires == llegaABuenosAires) {
+            throw new BadRequestException(
+                    "El vuelo tiene que salir de Buenos Aires o volver a Buenos Aires (Aeroparque o Ezeiza)");
+        }
+
+        String buenosAires = saleDeBuenosAires ? vuelo.getOrigen().getCodigoIata() : vuelo.getDestino().getCodigoIata();
+        String paisDelOtro = saleDeBuenosAires ? vuelo.getDestino().getPais() : vuelo.getOrigen().getPais();
+        boolean cabotaje = "Argentina".equals(paisDelOtro);
+        if (cabotaje && !buenosAires.equals("AEP")) {
+            throw new BadRequestException("Los vuelos dentro de Argentina salen y llegan a Aeroparque (AEP)");
+        }
+        if (!cabotaje && !buenosAires.equals("EZE")) {
+            throw new BadRequestException("Los vuelos internacionales salen y llegan a Ezeiza (EZE)");
+        }
+    }
+
+    private static final List<String> AEROPUERTOS_BUENOS_AIRES = List.of("AEP", "EZE");
 
     private Vuelo buscarPorId(Long id) {
         return vueloRepository.findById(id)

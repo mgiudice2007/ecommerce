@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import com.ecommerce.vuelos.entity.Clase;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -19,6 +20,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class VueloControllerIntegrationTest extends IntegrationTestSupport {
+
+    @BeforeEach
+    void rutasDePrueba() {
+        crearAeropuertosDePrueba();
+    }
 
     private Map<String, Object> bodyVuelo(Long categoriaId, String origen, String destino, double precio)
             throws Exception {
@@ -46,10 +52,10 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void buscar_noListaLosVuelosQueYaSalieron_peroSiguenRespondiendoPorId() throws Exception {
         String vendedor = registrarYLoguearAdmin("vsalio");
-        Long vueloId = crearVuelo(vendedor, "COR", "MIA", 500.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 500.0);
         hacerQueYaSalio(vueloId);
 
-        mockMvc.perform(get("/api/vuelos").param("origen", "COR").param("destino", "MIA"))
+        mockMvc.perform(get("/api/vuelos").param("origen", "TST").param("destino", "AEP"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[?(@.id == " + vueloId + ")]").isEmpty());
 
@@ -61,19 +67,19 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void buscar_filtrandoPorFecha_soloDevuelveLosQueSalenEsosDias() throws Exception {
         String vendedor = registrarYLoguearAdmin("vfecha");
-        Long vueloId = crearVuelo(vendedor, "COR", "USH", 300.0); // sale dentro de 10 dias
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 300.0); // sale dentro de 10 dias
         String diaDelVuelo = LocalDate.now().plusDays(10).toString();
         String diaSiguiente = LocalDate.now().plusDays(11).toString();
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("origen", "COR")
+                        .param("origen", "TST")
                         .param("fechaDesde", diaDelVuelo)
                         .param("fechaHasta", diaDelVuelo))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[?(@.id == " + vueloId + ")]").isNotEmpty());
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("origen", "COR")
+                        .param("origen", "TST")
                         .param("fechaDesde", diaSiguiente))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[?(@.id == " + vueloId + ")]").isEmpty());
@@ -82,11 +88,11 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void buscar_filtrandoPorPrecioMaximo_excluyeLosCaros() throws Exception {
         String vendedor = registrarYLoguearAdmin("vfiltro");
-        crearVuelo(vendedor, "COR", "MDZ", 100.0);
-        crearVuelo(vendedor, "COR", "MDZ", 900.0);
+        crearVuelo(vendedor, "TST", "AEP", 100.0);
+        crearVuelo(vendedor, "TST", "AEP", 900.0);
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("origen", "COR")
+                        .param("origen", "TST")
                         .param("precioMax", "500"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
@@ -96,13 +102,13 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void buscar_conPageYSize_devuelveSoloEsaPagina() throws Exception {
         String vendedor = registrarYLoguearAdmin("vpagina");
-        crearVuelo(vendedor, "MIA", "COR", 100.0);
-        crearVuelo(vendedor, "MIA", "COR", 200.0);
-        crearVuelo(vendedor, "MIA", "COR", 300.0);
+        crearVuelo(vendedor, "TSX", "EZE", 100.0);
+        crearVuelo(vendedor, "TSX", "EZE", 200.0);
+        crearVuelo(vendedor, "TSX", "EZE", 300.0);
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("origen", "MIA")
-                        .param("destino", "COR")
+                        .param("origen", "TSX")
+                        .param("destino", "EZE")
                         .param("page", "0")
                         .param("size", "2"))
                 .andExpect(status().isOk())
@@ -113,8 +119,8 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("origen", "MIA")
-                        .param("destino", "COR")
+                        .param("origen", "TSX")
+                        .param("destino", "EZE")
                         .param("page", "1")
                         .param("size", "2"))
                 .andExpect(status().isOk())
@@ -123,7 +129,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.last").value(true));
 
 
-        mockMvc.perform(get("/api/vuelos").param("origen", "MIA").param("destino", "COR"))
+        mockMvc.perform(get("/api/vuelos").param("origen", "TSX").param("destino", "EZE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(3))
                 .andExpect(jsonPath("$.totalPages").value(1));
@@ -132,13 +138,13 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void buscar_filtrandoPorClase_soloDevuelveVuelosConEseCupo() throws Exception {
         String vendedor = registrarYLoguearAdmin("vclase");
-        Long conCupo = crearVuelo(vendedor, "MDZ", "MIA", 400.0);
+        Long conCupo = crearVuelo(vendedor, "TST", "AEP", 400.0);
         crearDisponibilidad(vendedor, conCupo, clasePorDefecto(), 10, 400.0);
-        crearVuelo(vendedor, "MDZ", "MIA", 400.0); // sin cupos cargados
+        crearVuelo(vendedor, "TST", "AEP", 400.0); // sin cupos cargados
 
         mockMvc.perform(get("/api/vuelos")
-                        .param("origen", "MDZ")
-                        .param("destino", "MIA")
+                        .param("origen", "TST")
+                        .param("destino", "AEP")
                         .param("claseId", clasePorDefecto().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
@@ -328,6 +334,27 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void vueloQueNoPasaPorBuenosAires_oPorElAeropuertoEquivocado_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vrutas");
+        for (String[] ruta : new String[][]{{"COR", "MDZ"}, {"AEP", "MAD"}, {"EZE", "COR"}, {"AEP", "EZE"}}) {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("numeroVuelo", "RUTA" + ruta[0] + ruta[1]);
+            body.put("descripcion", "Ruta invalida");
+            body.put("categoriaId", categoriaPorDefecto());
+            body.put("origenIata", ruta[0]);
+            body.put("destinoIata", ruta[1]);
+            body.put("fechaSalida", LocalDateTime.now().plusDays(5).withNano(0).toString());
+            body.put("fechaLlegada", LocalDateTime.now().plusDays(5).plusHours(2).withNano(0).toString());
+
+            mockMvc.perform(post("/api/vuelos")
+                            .header("Authorization", "Bearer " + vendedor)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(body)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
     void vueloQueDuraMasDe20Horas_devuelve400() throws Exception {
         String vendedor = registrarYLoguearAdmin("vlargo");
         Map<String, Object> body = new LinkedHashMap<>();
@@ -417,7 +444,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void eliminarVuelo_esBajaLogicaPorPatchYDejaDeListarse() throws Exception {
         String vendedor = registrarYLoguearAdmin("vbaja");
-        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 250.0);
 
         mockMvc.perform(patch("/api/vuelos/" + vueloId + "/estado")
                         .header("Authorization", "Bearer " + vendedor)
@@ -431,7 +458,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("ELIMINADO"));
 
-        mockMvc.perform(get("/api/vuelos").param("origen", "MDZ").param("destino", "COR"))
+        mockMvc.perform(get("/api/vuelos").param("origen", "TST").param("destino", "AEP"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(0));
     }
@@ -439,7 +466,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void eliminarVuelo_yaNoExisteElDelete() throws Exception {
         String vendedor = registrarYLoguearAdmin("vsindelete");
-        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 250.0);
 
         mockMvc.perform(delete("/api/vuelos/" + vueloId)
                         .header("Authorization", "Bearer " + vendedor))
@@ -449,7 +476,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void marcarVueloDemorado_loDejaListadoYNoTocaLaDescripcion() throws Exception {
         String vendedor = registrarYLoguearAdmin("vdemora");
-        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 250.0);
 
         mockMvc.perform(patch("/api/vuelos/" + vueloId + "/estado")
                         .header("Authorization", "Bearer " + vendedor)
@@ -464,14 +491,14 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.estado").value("DEMORADO"))
                 .andExpect(jsonPath("$.descripcion").value("Vuelo de prueba"));
 
-        mockMvc.perform(get("/api/vuelos").param("origen", "MDZ").param("destino", "COR"))
+        mockMvc.perform(get("/api/vuelos").param("origen", "TST").param("destino", "AEP"))
                 .andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test
     void vueloDemorado_sePuedeComprar_peroPausadoNo() throws Exception {
         String vendedor = registrarYLoguearAdmin("vcompra");
-        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 250.0);
         Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 250.0);
         String comprador = registrarYLoguearComprador("compradorestado");
 
@@ -489,7 +516,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void cambiarEstado_comoPasajero_devuelve403() throws Exception {
         String admin = registrarYLoguearAdmin("vduenoestado");
-        Long vueloId = crearVuelo(admin, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(admin, "TST", "AEP", 250.0);
         String intruso = registrarYLoguearComprador("vintrusoestado");
 
         cambiarEstado(intruso, vueloId, "CANCELADO", 403);
@@ -498,7 +525,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void cambiarEstado_aUnoInvalidoORepetido_devuelve400() throws Exception {
         String vendedor = registrarYLoguearAdmin("vestadoinv");
-        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 250.0);
 
         cambiarEstado(vendedor, vueloId, "VOLANDO", 400);
         cambiarEstado(vendedor, vueloId, "ACTIVO", 400);
@@ -512,7 +539,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void vueloEliminado_noSePuedeVolverAModificar() throws Exception {
         String vendedor = registrarYLoguearAdmin("vreviv");
-        Long vueloId = crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 250.0);
 
         cambiarEstado(vendedor, vueloId, "ELIMINADO", 200);
         cambiarEstado(vendedor, vueloId, "ACTIVO", 400);
@@ -537,9 +564,9 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void busquedaConResultados_noTraeMensaje() throws Exception {
         String vendedor = registrarYLoguearAdmin("vconmensaje");
-        crearVuelo(vendedor, "MDZ", "COR", 250.0);
+        crearVuelo(vendedor, "TST", "AEP", 250.0);
 
-        mockMvc.perform(get("/api/vuelos").param("origen", "MDZ").param("destino", "COR"))
+        mockMvc.perform(get("/api/vuelos").param("origen", "TST").param("destino", "AEP"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.mensaje").doesNotExist());
