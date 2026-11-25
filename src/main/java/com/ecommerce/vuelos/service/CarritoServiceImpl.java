@@ -17,6 +17,7 @@ import com.ecommerce.vuelos.entity.Orden;
 import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.entity.Vuelo;
+import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.CarritoRepository;
@@ -25,6 +26,7 @@ import com.ecommerce.vuelos.repository.OrdenRepository;
 import com.ecommerce.vuelos.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,8 @@ public class CarritoServiceImpl implements CarritoService {
     private DisponibilidadRepository disponibilidadRepository;
     @Autowired
     private OrdenRepository ordenRepository;
+    @Autowired
+    private ApplicationEventPublisher eventos;
     @Autowired
     private UsuarioRepository usuarioRepository;
     @Autowired
@@ -364,7 +368,10 @@ public class CarritoServiceImpl implements CarritoService {
         carrito.getItems().clear();
         carritoRepository.save(carrito);
 
-        return OrdenResponse.desde(guardada, horasParaCancelar);
+        OrdenResponse respuesta = OrdenResponse.desde(guardada, horasParaCancelar);
+        // El mail sale recien cuando la transaccion se confirma: si el checkout falla no se manda nada
+        eventos.publishEvent(new OrdenConfirmadaEvent(usuario.getMail(), usuario.getNombre(), respuesta));
+        return respuesta;
     }
 
     private void validarPublicado(Vuelo vuelo) {

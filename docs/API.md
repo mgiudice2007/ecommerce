@@ -268,6 +268,28 @@ Cada `Orden` trae `descuentoTotal` y cada ítem trae `descuentoAplicado` — el 
 descontado en ese momento, congelado para siempre en la orden aunque el `Descuento` original
 cambie o se borre después.
 
+## Mail de confirmación de compra
+
+Al terminar `POST /api/carrito/checkout` el back manda un mail HTML al `mail` del comprador con el
+detalle (número de compra, vuelos con fecha de salida, asientos, medio de pago, millas y total).
+Se manda **después del commit** y en otro hilo (`@Async` + `@TransactionalEventListener`): si el
+checkout falla no sale nada, y si el mail falla (SMTP caído, credenciales mal) la compra queda
+confirmada igual y solo se loguea un aviso. Un checkout con el SMTP apagado no demora la respuesta.
+
+Se configura por variables de entorno, así las credenciales no entran al repo:
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `MAIL_HOST` / `MAIL_PORT` | `localhost` / `1025` | Servidor SMTP (el default es MailHog o smtp4dev local) |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | vacío | Credenciales del SMTP |
+| `MAIL_AUTH` / `MAIL_STARTTLS` | `false` / `false` | Poner en `true` con Mailtrap o Gmail |
+| `MAIL_REMITENTE` | `no-reply@bcaairlines.com` | Dirección de origen |
+| `MAIL_HABILITADO` | `true` | `false` apaga el envío (los tests igual no mandan: corren en transacciones que se revierten) |
+
+Para la demo sin depender de un mail real: Mailtrap (`MAIL_HOST=sandbox.smtp.mailtrap.io`,
+`MAIL_PORT=2525`, `MAIL_AUTH=true`, `MAIL_STARTTLS=true`, y usuario/clave de la bandeja) o MailHog
+(`docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog`, bandeja en http://localhost:8025).
+
 ## Flujo típico de prueba
 
 1. `GET /api/categorias`, `/api/aeropuertos`, `/api/clases` para tener los ids del catálogo.

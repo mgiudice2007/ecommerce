@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -23,6 +24,7 @@ public class ItemOrdenResponse {
     private String numeroVuelo;
     private String origen;
     private String destino;
+    private LocalDateTime fechaSalida;
     private String claseNombre;
     private TipoPasajero tipoPasajero;
     private Integer cantidad;
@@ -43,6 +45,7 @@ public class ItemOrdenResponse {
                 .numeroVuelo(vuelo.getNumeroVuelo())
                 .origen(vuelo.getOrigen().getCiudad())
                 .destino(vuelo.getDestino().getCiudad())
+                .fechaSalida(vuelo.getFechaSalida())
                 .claseNombre(disponibilidad.getClase().getNombre())
                 .tipoPasajero(item.getTipoPasajero())
                 .cantidad(item.getCantidad())

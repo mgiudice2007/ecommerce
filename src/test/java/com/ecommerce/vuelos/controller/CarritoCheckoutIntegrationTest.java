@@ -2,14 +2,22 @@ package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
+import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@RecordApplicationEvents
 class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
+
+    @Autowired
+    private ApplicationEvents eventos;
 
     // Las reglas de las millas se leen de application.properties, igual que en el service
     @Value("${millas.pesos-por-milla}")
@@ -355,6 +363,33 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get("/api/ordenes/" + ordenId).header("Authorization", "Bearer " + pasajero))
                 .andExpect(jsonPath("$.medioPago").value("TARJETA_CREDITO"))
                 .andExpect(jsonPath("$.ultimosDigitos").value("4242"));
+    }
+
+    @Test
+    void checkout_publicaElEventoQueDisparaElMailDeConfirmacion() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        String pasajero = registrarYLoguearComprador("recibemail");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isCreated());
+
+        // El mail sale despues del commit, asi que aca se verifica el evento: a quien va y con que orden
+        var publicados = eventos.stream(OrdenConfirmadaEvent.class).toList();
+        org.junit.jupiter.api.Assertions.assertEquals(1, publicados.size());
+        org.junit.jupiter.api.Assertions.assertEquals("recibemail@test.com", publicados.get(0).destinatario());
+        org.junit.jupiter.api.Assertions.assertEquals(1, publicados.get(0).orden().getItems().size());
+    }
+
+    @Test
+    void checkout_fallido_noPublicaElEventoDelMail() throws Exception {
+        String pasajero = registrarYLoguearComprador("sinmail");
+
+        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+                .andExpect(status().isBadRequest());
+
+        org.junit.jupiter.api.Assertions.assertEquals(0, eventos.stream(OrdenConfirmadaEvent.class).count());
     }
 
     @Test
