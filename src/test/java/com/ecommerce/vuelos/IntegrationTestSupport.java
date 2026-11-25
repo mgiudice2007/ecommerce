@@ -17,8 +17,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -226,6 +229,44 @@ public abstract class IntegrationTestSupport {
                 .andReturn();
         JsonNode items = objectMapper.readTree(result.getResponse().getContentAsString()).get("items");
         return items.get(items.size() - 1).get("id").asLong();
+    }
+
+    private int documentoSiguiente = 20000000;
+
+    /**
+     * El checkout pide los datos de cada pasajero antes de pagar. Para los tests que no prueban eso,
+     * se arma un pasajero por cada lugar del carrito, con una edad que corresponde a su tipo.
+     */
+    protected MockHttpServletRequestBuilder checkout(String token) throws Exception {
+        return checkout(token, Map.of());
+    }
+
+    protected MockHttpServletRequestBuilder checkout(String token, Map<String, Object> extras) throws Exception {
+        JsonNode carrito = objectMapper.readTree(mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + token))
+                .andReturn().getResponse().getContentAsString());
+        List<Map<String, Object>> pasajeros = new ArrayList<>();
+        JsonNode items = carrito.path("items");
+        for (JsonNode item : items) {
+            String tipo = item.path("tipoPasajero").asText("ADULTO");
+            LocalDate nacimiento = switch (tipo) {
+                case "NINO" -> LocalDate.now().minusYears(6);
+                case "BEBE" -> LocalDate.now().minusMonths(6);
+                default -> LocalDate.now().minusYears(30);
+            };
+            for (int i = 0; i < item.path("cantidad").asInt(); i++) {
+                Map<String, Object> pasajero = new LinkedHashMap<>();
+                pasajero.put("itemId", item.path("id").asLong());
+                pasajero.put("nombre", "Pasajero");
+                pasajero.put("apellido", "Prueba");
+                pasajero.put("tipoDocumento", "DNI");
+                pasajero.put("documento", String.valueOf(documentoSiguiente++));
+                pasajero.put("fechaNacimiento", nacimiento.toString());
+                pasajeros.add(pasajero);
+            }
+        }
+        Map<String, Object> cuerpo = new LinkedHashMap<>(extras);
+        cuerpo.put("pasajeros", pasajeros);
+        return json(post("/api/carrito/checkout").header("Authorization", "Bearer " + token), cuerpo);
     }
 
     protected MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder builder, Object body) throws Exception {

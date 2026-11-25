@@ -29,6 +29,7 @@ public class ItemOrdenResponse {
     private TipoPasajero tipoPasajero;
     private Integer cantidad;
     private List<String> asientos;
+    private List<PasajeResponse> pasajes;
     private BigDecimal precioUnitario;
 
     private BigDecimal descuentoAplicado;
@@ -50,6 +51,7 @@ public class ItemOrdenResponse {
                 .tipoPasajero(item.getTipoPasajero())
                 .cantidad(item.getCantidad())
                 .asientos(item.getAsientos().stream().map(AsientoOcupado::getCodigo).toList())
+                .pasajes(item.getPasajes().stream().map(PasajeResponse::desde).toList())
                 .precioUnitario(item.getPrecioUnitario())
                 .descuentoAplicado(item.getDescuentoAplicado())
                 .subtotal(item.getPrecioUnitario().multiply(BigDecimal.valueOf(item.getCantidad())))

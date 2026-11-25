@@ -39,6 +39,10 @@ public class ItemOrden {
     @Builder.Default
     private List<AsientoOcupado> asientos = new ArrayList<>();
 
+    @OneToMany(mappedBy = "itemOrden", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Pasaje> pasajes = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private TipoPasajero tipoPasajero;

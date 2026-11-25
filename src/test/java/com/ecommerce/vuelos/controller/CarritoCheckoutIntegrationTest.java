@@ -48,7 +48,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.items.length()").value(3))
                 .andExpect(jsonPath("$.total").value(3000.0));
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador))
+        mockMvc.perform(checkout(comprador))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.total").value(3000.0))
                 .andExpect(jsonPath("$.items[?(@.tipoPasajero == 'NINO')].precioUnitario").value(1000.0))
@@ -88,7 +88,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
         // Un niño suelto en el carrito (por ejemplo, despues de borrar al adulto)
         agregarPasajeros(comprador, disponibilidadId, 1, "NINO", 201);
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador))
+        mockMvc.perform(checkout(comprador))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("al menos un adulto")));
     }
@@ -127,8 +127,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     private Long comprar(String token, Integer millas) throws Exception {
-        var pedido = post("/api/carrito/checkout").header("Authorization", "Bearer " + token);
-        String respuesta = mockMvc.perform(millas == null ? pedido : json(pedido, Map.of("millas", millas)))
+        String respuesta = mockMvc.perform(millas == null ? checkout(token) : checkout(token, Map.of("millas", millas)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(respuesta).get("id").asLong();
@@ -186,7 +185,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String comprador = registrarYLoguearComprador("sinmillas");
 
         agregarAlCarrito(comprador, disponibilidadId, 1);
-        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador),
+        mockMvc.perform(checkout(comprador,
                         Map.of("millas", 100)))
                 .andExpect(status().isBadRequest());
     }
@@ -249,7 +248,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         agregarAlCarrito(uno, disponibilidadId, 2);
 
         // dos tiene el carrito vacio: su checkout falla y no se lleva el carrito de uno
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + dos))
+        mockMvc.perform(checkout(dos))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(get("/api/carrito").header("Authorization", "Bearer " + uno))
                 .andExpect(jsonPath("$.items.length()").value(1));
@@ -329,7 +328,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
 
         hacerQueYaSalio(vueloId);
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isBadRequest());
         // No se descontaron asientos
         mockMvc.perform(get("/api/disponibilidades/" + cupoId))
@@ -340,7 +339,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     void checkout_conCarritoVacio_devuelve400() throws Exception {
         String pasajero = registrarYLoguearComprador("pasajerocarritovacio");
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isBadRequest());
     }
 
@@ -351,7 +350,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajeropago");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        String respuesta = mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+        String respuesta = mockMvc.perform(checkout(pasajero,
                         Map.of("medioPago", "TARJETA_CREDITO", "ultimosDigitos", "4242")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.medioPago").value("TARJETA_CREDITO"))
@@ -372,7 +371,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("recibemail");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isCreated());
 
         // El mail sale despues del commit, asi que aca se verifica el evento: a quien va y con que orden
@@ -386,7 +385,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     void checkout_fallido_noPublicaElEventoDelMail() throws Exception {
         String pasajero = registrarYLoguearComprador("sinmail");
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isBadRequest());
 
         org.junit.jupiter.api.Assertions.assertEquals(0, eventos.stream(OrdenConfirmadaEvent.class).count());
@@ -399,7 +398,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajerotransf");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+        mockMvc.perform(checkout(pasajero,
                         Map.of("medioPago", "TRANSFERENCIA", "ultimosDigitos", "4242")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.medioPago").value("TRANSFERENCIA"))
@@ -413,7 +412,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajeromillas");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+        mockMvc.perform(checkout(pasajero,
                         Map.of("medioPago", "MILLAS")))
                 .andExpect(status().isBadRequest());
     }
@@ -425,7 +424,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajerodigitos");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+        mockMvc.perform(checkout(pasajero,
                         Map.of("medioPago", "TARJETA_DEBITO", "ultimosDigitos", "4242 4242 4242 4242")))
                 .andExpect(status().isBadRequest());
     }
@@ -437,7 +436,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajerocheckout");
         agregarAlCarrito(pasajero, cupoId, 4);
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.estado").value("CONFIRMADA"))
                 .andExpect(jsonPath("$.total").value(800.0));
@@ -472,7 +471,7 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", "Bearer " + vendedor), bajaDeStock))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isBadRequest());
 
         // cupoOk no debe haber sido descontado a pesar de tener stock suficiente

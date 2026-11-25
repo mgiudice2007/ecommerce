@@ -225,8 +225,9 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   clase o si ya está vendido. Elegir es opcional y gratis.
 - `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
-- `POST /api/carrito/checkout` — body opcional `{ "millas": 5000, "medioPago": "TARJETA_CREDITO",
-  "ultimosDigitos": "4242" }`. Las millas pagan una parte de la compra. El **pago es simulado**: no
+- `POST /api/carrito/checkout` — body `{ "pasajeros": [...], "millas": 5000, "medioPago":
+  "TARJETA_CREDITO", "ultimosDigitos": "4242" }`. **`pasajeros` es obligatorio** (ver más abajo);
+  el resto es opcional. Las millas pagan una parte de la compra. El **pago es simulado**: no
   hay ninguna pasarela ni cobro, y el back solo guarda con qué medio se pagó
   (`TARJETA_CREDITO`, `TARJETA_DEBITO`, `TRANSFERENCIA`, `BILLETERA_VIRTUAL` o `MILLAS`) y, si es
   tarjeta, los últimos 4 dígitos. **Nunca** recibe ni guarda el número completo, el vencimiento ni
@@ -239,6 +240,25 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   suma o resta las millas del usuario y vacía el carrito. Si un asiento elegido se vendió mientras
   tanto, da `400` para elegir otro. Si algo falla, se revierte entero. Usar más
   millas de las que se tienen, o que valgan más que el total, da `400`.
+
+### Datos de los pasajeros (se piden antes de pagar)
+
+Como en una aerolínea, el checkout no emite pasajes sin los datos de cada persona que viaja.
+`pasajeros` lleva **una entrada por cada lugar del carrito** (bebés incluidos):
+`{ "itemId": 12, "nombre": "Ana", "apellido": "Gómez", "tipoDocumento": "DNI" | "PASAPORTE",
+"documento": "30111222", "fechaNacimiento": "1990-05-20" }`, donde `itemId` es el id del ítem en
+`GET /api/carrito`. Da `400` si:
+
+- falta alguna persona o sobra una que no corresponde a un ítem del carrito;
+- la edad en la fecha del vuelo no corresponde al tipo: bebé hasta 1 año, niño de 2 a 11, adulto desde
+  los 12;
+- el DNI no tiene 7 u 8 números (el pasaporte, entre 6 y 12 letras o números);
+- el mismo documento aparece dos veces en un mismo vuelo.
+
+Cada persona sale con su **pasaje** (`items[].pasajes[]` en la orden): nombre, documento, `asiento`
+(`null` para el bebé, que viaja en brazos) y un **`codigoEmbarque`** único (`BCA-` + 8 caracteres)
+que lleva el QR del pase. El asiento se guarda como texto: el pasaje lo conserva aunque la compra se
+cancele.
 
 ## Millas
 

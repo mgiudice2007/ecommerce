@@ -51,7 +51,7 @@ class AsientosIntegrationTest extends IntegrationTestSupport {
     }
 
     private Long comprar(String token) throws Exception {
-        String json = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + token))
+        String json = mockMvc.perform(checkout(token))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(json).get("id").asLong();

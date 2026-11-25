@@ -4,6 +4,7 @@ import com.ecommerce.vuelos.dto.carrito.AsientosRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
 import com.ecommerce.vuelos.dto.carrito.CheckoutRequest;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
+import com.ecommerce.vuelos.dto.carrito.PasajeroRequest;
 import com.ecommerce.vuelos.dto.carrito.PasajesRequest;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.entity.AsientoOcupado;
@@ -55,6 +56,8 @@ public class CarritoServiceImpl implements CarritoService {
     private UsuarioRepository usuarioRepository;
     @Autowired
     private AsientoService asientoService;
+    @Autowired
+    private PasajeService pasajeService;
 
     // Reglas de las millas, configurables en application.properties (no estan fijas en el codigo)
     @Value("${millas.pesos-por-milla}")
@@ -274,6 +277,9 @@ public class CarritoServiceImpl implements CarritoService {
             }
         }
 
+        // Antes de sacar los pasajes se piden los datos de cada persona que viaja, como en una aerolinea
+        Map<Long, List<PasajeroRequest>> pasajerosPorItem = pasajeService.validar(carrito, request.getPasajeros());
+
         List<ItemOrden> itemsOrden = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal descuentoTotal = BigDecimal.ZERO;
@@ -308,6 +314,8 @@ public class CarritoServiceImpl implements CarritoService {
                         .codigo(codigo)
                         .build());
             }
+            itemOrden.getPasajes().addAll(
+                    pasajeService.crearPasajes(itemOrden, item, pasajerosPorItem.get(item.getId())));
             itemsOrden.add(itemOrden);
 
             total = total.add(precioUnitario.multiply(cantidad));

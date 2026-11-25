@@ -15,7 +15,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
         String pasajero1 = registrarYLoguearComprador("pasajerohist1");
         agregarAlCarrito(pasajero1, cupoId, 1);
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero1)).andExpect(status().isCreated());
+        mockMvc.perform(checkout(pasajero1)).andExpect(status().isCreated());
 
         String pasajero2 = registrarYLoguearComprador("pasajerohist2");
 
@@ -35,7 +35,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajerocancela");
         agregarAlCarrito(pasajero, cupoId, 4);
 
-        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        String ordenJson = mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
@@ -56,7 +56,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajerodoblecancel");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        String ordenJson = mockMvc.perform(checkout(pasajero))
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
 
@@ -73,7 +73,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
 
         String dueno = registrarYLoguearComprador("pasajerodueno");
         agregarAlCarrito(dueno, cupoId, 1);
-        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + dueno))
+        String ordenJson = mockMvc.perform(checkout(dueno))
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
 
@@ -93,7 +93,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         agregarAlCarrito(pasajero, cupoId, 1);
 
         // El vuelo sale en 10 dias: la compra dice que se puede cancelar
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.sePuedeCancelar").value(true))
                 .andExpect(jsonPath("$.cancelableHasta").exists());
@@ -107,7 +107,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajeromenos24");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        String ordenJson = mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
@@ -129,7 +129,7 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
         String pasajero = registrarYLoguearComprador("pasajeroyasalio");
         agregarAlCarrito(pasajero, cupoId, 1);
 
-        String ordenJson = mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero))
+        String ordenJson = mockMvc.perform(checkout(pasajero))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();

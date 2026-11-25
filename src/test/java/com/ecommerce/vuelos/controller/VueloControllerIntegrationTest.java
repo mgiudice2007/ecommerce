@@ -325,7 +325,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
         String comprador = registrarYLoguearComprador("cnoborrar");
         agregarAlCarrito(comprador, cupoId, 1);
-        mockMvc.perform(post("/api/carrito/checkout").header("Authorization", "Bearer " + comprador))
+        mockMvc.perform(checkout(comprador))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(delete("/api/disponibilidades/" + cupoId)

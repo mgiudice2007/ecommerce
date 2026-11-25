@@ -253,8 +253,7 @@ class DescuentoControllerIntegrationTest extends IntegrationTestSupport {
         String comprador = registrarYLoguearComprador("cdtocheckout");
         agregarAlCarrito(comprador, cupoId, 2);
 
-        MvcResult checkout = mockMvc.perform(post("/api/carrito/checkout")
-                        .header("Authorization", "Bearer " + comprador))
+        MvcResult checkout = mockMvc.perform(checkout(comprador))
                 .andExpect(status().isCreated())
                 // 2 x 700 pagados, 2 x 300 ahorrados
                 .andExpect(jsonPath("$.total").value(1400.0))
