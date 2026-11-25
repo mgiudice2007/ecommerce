@@ -260,6 +260,14 @@ Cada persona sale con su **pasaje** (`items[].pasajes[]` en la orden): nombre, d
 que lleva el QR del pase. El asiento se guarda como texto: el pasaje lo conserva aunque la compra se
 cancele.
 
+## Embarque — `/api/embarque` (solo ADMIN)
+
+- `GET /api/embarque/{codigo}` — datos del pase y su `estado`: `VALIDO`, `EMBARCADO` (con `motivo`:
+  "ya embarcó el …") o `ANULADO` (la compra o el vuelo fueron cancelados). `404` si el código no
+  existe. Acepta el código en minúsculas.
+- `POST /api/embarque/{codigo}/embarcar` — marca al pasajero como embarcado (`embarcadoEn`).
+  `400` si ya embarcó o si el pase está anulado.
+
 ## Millas
 
 Se calculan en el backend con el precio real de cada compra; nada está fijo por vuelo.

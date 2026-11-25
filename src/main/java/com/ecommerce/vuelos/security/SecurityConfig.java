@@ -62,6 +62,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/registro/administrador", "/api/usuarios/**").hasRole("ADMIN")
                         
                         .requestMatchers("/api/carrito/**", "/api/ordenes/**").hasRole("COMPRADOR")
+
+                        // Validar el pase de embarque lo hace el vendedor de la aerolinea
+                        .requestMatchers("/api/embarque/**").hasRole("ADMIN")
                         
                         .requestMatchers("/api/vuelos/**", "/api/disponibilidades/**", "/api/descuentos/**",
                                 "/api/fotos/**").hasRole("ADMIN")
