@@ -225,8 +225,15 @@ Tamaño máximo por archivo: 5MB. Máximo 5 fotos por vuelo (la 6ta da `400`).
   clase o si ya está vendido. Elegir es opcional y gratis.
 - `PUT /api/carrito/items/{itemId}` — `{ "cantidad": 3 }`
 - `DELETE /api/carrito/items/{itemId}`
-- `POST /api/carrito/checkout` — body opcional `{ "millas": 5000 }` para pagar una parte con
-  millas. Operación transaccional: valida el stock de todos los ítems, descuenta asientos de cada
+- `POST /api/carrito/checkout` — body opcional `{ "millas": 5000, "medioPago": "TARJETA_CREDITO",
+  "ultimosDigitos": "4242" }`. Las millas pagan una parte de la compra. El **pago es simulado**: no
+  hay ninguna pasarela ni cobro, y el back solo guarda con qué medio se pagó
+  (`TARJETA_CREDITO`, `TARJETA_DEBITO`, `TRANSFERENCIA`, `BILLETERA_VIRTUAL` o `MILLAS`) y, si es
+  tarjeta, los últimos 4 dígitos. **Nunca** recibe ni guarda el número completo, el vencimiento ni
+  el código. Si las millas cubren todo el total, el medio queda en `MILLAS`; pedir `MILLAS` sin
+  cubrir el total, o mandar `ultimosDigitos` que no sean 4 números, da `400`. La orden y su
+  respuesta traen `medioPago` y `ultimosDigitos` (null en las compras anteriores).
+  Operación transaccional: valida el stock de todos los ítems, descuenta asientos de cada
   `Disponibilidad`, vende los asientos elegidos (a los pasajeros sin asiento les asigna asientos
   libres, como en el check-in), crea la `Orden` con el precio **congelado** al momento de la compra,
   suma o resta las millas del usuario y vacía el carrito. Si un asiento elegido se vendió mientras

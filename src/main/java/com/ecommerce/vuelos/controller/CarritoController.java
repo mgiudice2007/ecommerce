@@ -65,7 +65,7 @@ public class CarritoController {
     public ResponseEntity<OrdenResponse> checkout(@AuthenticationPrincipal UsuarioPrincipal principal,
                                                   @Valid @RequestBody(required = false) CheckoutRequest request) {
         // El body es opcional: sin body (o sin millas) se paga todo con plata
-        Integer millas = request == null ? null : request.getMillas();
-        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(principal.getId(), millas));
+        CheckoutRequest pedido = request == null ? new CheckoutRequest() : request;
+        return ResponseEntity.status(HttpStatus.CREATED).body(carritoService.checkout(principal.getId(), pedido));
     }
 }

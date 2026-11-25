@@ -2,6 +2,7 @@ package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.dto.carrito.AsientosRequest;
 import com.ecommerce.vuelos.dto.carrito.CarritoResponse;
+import com.ecommerce.vuelos.dto.carrito.CheckoutRequest;
 import com.ecommerce.vuelos.dto.carrito.ItemCarritoRequest;
 import com.ecommerce.vuelos.dto.carrito.PasajesRequest;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
@@ -11,6 +12,7 @@ import com.ecommerce.vuelos.entity.Disponibilidad;
 import com.ecommerce.vuelos.entity.EstadoOrden;
 import com.ecommerce.vuelos.entity.ItemCarrito;
 import com.ecommerce.vuelos.entity.ItemOrden;
+import com.ecommerce.vuelos.entity.MedioPago;
 import com.ecommerce.vuelos.entity.Orden;
 import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.entity.Usuario;
@@ -224,7 +226,8 @@ public class CarritoServiceImpl implements CarritoService {
 
     @Override
     @Transactional
-    public OrdenResponse checkout(Long usuarioId, Integer millasAUsar) {
+    public OrdenResponse checkout(Long usuarioId, CheckoutRequest request) {
+        Integer millasAUsar = request.getMillas();
         Carrito carrito = buscarCarrito(usuarioId);
 
         if (carrito.getItems().isEmpty()) {
@@ -325,6 +328,15 @@ public class CarritoServiceImpl implements CarritoService {
                 .divide(total.multiply(pesosPorMilla), 0, RoundingMode.DOWN)
                 .intValue();
 
+        // El pago es simulado: del medio solo se guarda cual fue y, si es tarjeta, los ultimos 4 digitos
+        MedioPago medioPago = request.getMedioPago();
+        if (millasUsadas > 0 && aPagar.signum() == 0) {
+            medioPago = MedioPago.MILLAS;
+        } else if (medioPago == MedioPago.MILLAS) {
+            throw new BadRequestException("Las millas no alcanzan para pagar todo: elegí otro medio para el resto");
+        }
+        String ultimosDigitos = medioPago != null && medioPago.esTarjeta() ? request.getUltimosDigitos() : null;
+
         usuario.setMillas(usuario.getMillas() - millasUsadas + millasGanadas);
         usuarioRepository.save(usuario);
 
@@ -337,6 +349,8 @@ public class CarritoServiceImpl implements CarritoService {
                 .descuentoMillas(descuentoMillas)
                 .fecha(LocalDateTime.now())
                 .estado(EstadoOrden.CONFIRMADA)
+                .medioPago(medioPago)
+                .ultimosDigitos(ultimosDigitos)
                 .items(new ArrayList<>())
                 .build();
 

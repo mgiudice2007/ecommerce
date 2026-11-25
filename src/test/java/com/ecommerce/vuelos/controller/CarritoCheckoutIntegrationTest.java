@@ -337,6 +337,65 @@ class CarritoCheckoutIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void checkout_guardaElMedioDePagoYSoloLosUltimosCuatroDigitos() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajeropago");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        String respuesta = mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+                        Map.of("medioPago", "TARJETA_CREDITO", "ultimosDigitos", "4242")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.medioPago").value("TARJETA_CREDITO"))
+                .andExpect(jsonPath("$.ultimosDigitos").value("4242"))
+                .andReturn().getResponse().getContentAsString();
+
+        // El historial devuelve lo mismo que se guardo
+        Long ordenId = objectMapper.readTree(respuesta).get("id").asLong();
+        mockMvc.perform(get("/api/ordenes/" + ordenId).header("Authorization", "Bearer " + pasajero))
+                .andExpect(jsonPath("$.medioPago").value("TARJETA_CREDITO"))
+                .andExpect(jsonPath("$.ultimosDigitos").value("4242"));
+    }
+
+    @Test
+    void checkout_conTransferencia_noGuardaDigitos() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajerotransf");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+                        Map.of("medioPago", "TRANSFERENCIA", "ultimosDigitos", "4242")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.medioPago").value("TRANSFERENCIA"))
+                .andExpect(jsonPath("$.ultimosDigitos").doesNotExist());
+    }
+
+    @Test
+    void checkout_conMillasComoMedioSinCubrirElTotal_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajeromillas");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+                        Map.of("medioPago", "MILLAS")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void checkout_conDigitosInvalidos_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        String pasajero = registrarYLoguearComprador("pasajerodigitos");
+        agregarAlCarrito(pasajero, cupoId, 1);
+
+        mockMvc.perform(json(post("/api/carrito/checkout").header("Authorization", "Bearer " + pasajero),
+                        Map.of("medioPago", "TARJETA_DEBITO", "ultimosDigitos", "4242 4242 4242 4242")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void checkout_generaOrdenYDescuentaStock() throws Exception {
         String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);

@@ -1,6 +1,7 @@
 package com.ecommerce.vuelos.dto.orden;
 
 import com.ecommerce.vuelos.entity.EstadoOrden;
+import com.ecommerce.vuelos.entity.MedioPago;
 import com.ecommerce.vuelos.entity.Orden;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,8 @@ public class OrdenResponse {
     private BigDecimal descuentoMillas;
     private LocalDateTime fecha;
     private EstadoOrden estado;
+    private MedioPago medioPago;
+    private String ultimosDigitos;
     private List<ItemOrdenResponse> items;
 
     
@@ -49,6 +52,8 @@ public class OrdenResponse {
                 .descuentoMillas(orden.getDescuentoMillas())
                 .fecha(orden.getFecha())
                 .estado(orden.getEstado())
+                .medioPago(orden.getMedioPago())
+                .ultimosDigitos(orden.getUltimosDigitos())
                 .items(orden.getItems().stream()
                         .map(ItemOrdenResponse::desde)
                         .toList())

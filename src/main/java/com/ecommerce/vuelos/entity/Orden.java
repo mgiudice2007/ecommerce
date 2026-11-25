@@ -52,6 +52,13 @@ public class Orden {
     @Column(nullable = false)
     private EstadoOrden estado;
 
+    @Enumerated(EnumType.STRING)
+    @Column
+    private MedioPago medioPago;
+
+    @Column(length = 4)
+    private String ultimosDigitos;
+
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ItemOrden> items = new ArrayList<>();
