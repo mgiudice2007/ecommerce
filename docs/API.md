@@ -258,7 +258,7 @@ Como en una aerolínea, el checkout no emite pasajes sin los datos de cada perso
 Cada persona sale con su **pasaje** (`items[].pasajes[]` en la orden): nombre, documento, `asiento`
 (`null` para el bebé, que viaja en brazos) y un **`codigoEmbarque`** único (`BCA-` + 8 caracteres)
 que lleva el QR del pase. El asiento se guarda como texto: el pasaje lo conserva aunque la compra se
-cancele.
+cancele. El mail de confirmación trae un pase con su QR por cada pasajero.
 
 ## Embarque — `/api/embarque` (solo ADMIN)
 
