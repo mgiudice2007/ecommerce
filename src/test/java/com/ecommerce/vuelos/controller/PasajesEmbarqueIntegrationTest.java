@@ -1,8 +1,12 @@
 package com.ecommerce.vuelos.controller;
 
 import com.ecommerce.vuelos.IntegrationTestSupport;
+import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -10,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,7 +22,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@RecordApplicationEvents
 class PasajesEmbarqueIntegrationTest extends IntegrationTestSupport {
+
+    // Guarda los eventos que se publican en cada test, para ver si se aviso al comprador
+    @Autowired
+    private ApplicationEvents eventos;
 
     private Map<String, Object> pasajero(Long itemId, String nombre, String documento, LocalDate nacimiento) {
         Map<String, Object> datos = new LinkedHashMap<>();
@@ -155,6 +165,12 @@ class PasajesEmbarqueIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(post("/api/embarque/" + codigo + "/embarcar").header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("EMBARCADO"));
+
+        // al embarcar se avisa al comprador (el mail sale recien despues del commit)
+        List<PasajeroEmbarcadoEvent> avisos = eventos.stream(PasajeroEmbarcadoEvent.class).toList();
+        assertEquals(1, avisos.size());
+        assertEquals("aembarcar@test.com", avisos.get(0).destinatario());
+        assertEquals(codigo, avisos.get(0).embarque().getCodigoEmbarque());
 
         mockMvc.perform(get("/api/embarque/" + codigo).header("Authorization", "Bearer " + vendedor))
                 .andExpect(jsonPath("$.estado").value("EMBARCADO"))

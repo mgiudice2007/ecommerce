@@ -1,13 +1,16 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.embarque.EmbarqueResponse;
 import com.ecommerce.vuelos.dto.orden.ItemOrdenResponse;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.dto.orden.PasajeResponse;
+import com.ecommerce.vuelos.entity.EstadoEmbarque;
 import com.ecommerce.vuelos.entity.EstadoOrden;
 import com.ecommerce.vuelos.entity.MedioPago;
 import com.ecommerce.vuelos.entity.TipoDocumento;
 import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
+import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
@@ -188,6 +191,60 @@ class MailServiceImplTest {
         mailService.enviarConfirmacionCompra(evento());
 
         verify(mailSender, never()).send(any(MimeMessage.class));
+        verify(mailSender, never()).createMimeMessage();
+    }
+
+    private PasajeroEmbarcadoEvent embarco() {
+        EmbarqueResponse embarque = EmbarqueResponse.builder()
+                .codigoEmbarque("BCA-AAAA2222").estado(EstadoEmbarque.EMBARCADO).nombre("Luis").apellido("Gomez <i>")
+                .documento("30111222").ordenId(77L).numeroVuelo("BCA-101").origen("Buenos Aires").destino("Miami")
+                .fechaSalida(LocalDateTime.of(2027, 1, 10, 8, 30)).claseNombre("Económica").asiento("12B")
+                .embarcadoEn(LocalDateTime.of(2027, 1, 10, 8, 5))
+                .build();
+        return new PasajeroEmbarcadoEvent("ana@test.com", "Ana", embarque);
+    }
+
+    @Test
+    void alEmbarcar_leMandaAlCompradorElMailDeBuenViaje() throws Exception {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+
+        mailService.enviarBuenViaje(embarco());
+
+        MimeMessage mail = enviar();
+        assertEquals("ana@test.com", mail.getRecipients(Message.RecipientType.TO)[0].toString());
+        assertTrue(mail.getSubject().contains("Buen viaje, Luis"));
+        assertTrue(mail.getSubject().contains("BCA-101"));
+
+        StringBuilder html = new StringBuilder();
+        List<String> imagenes = new ArrayList<>();
+        recorrer(mail, html, imagenes, new ArrayList<>());
+        String cuerpo = html.toString();
+        assertTrue(cuerpo.contains("Hola Ana"));
+        assertTrue(cuerpo.contains("se validó el pase de embarque"));
+        // el apellido se escapa: no puede meter HTML en el mail
+        assertTrue(cuerpo.contains("Luis Gomez &lt;i&gt;"));
+        assertTrue(cuerpo.contains("Asiento <strong>12B</strong>"));
+        assertTrue(cuerpo.contains("10/01/2027 08:05"));
+        assertTrue(cuerpo.contains("excelente viaje a <strong>Miami</strong>"));
+        // logo + banner de buen viaje, sin QR ni adjuntos
+        assertEquals(2, imagenes.size());
+        verify(qrService, never()).png(anyString(), anyInt());
+    }
+
+    @Test
+    void siElSmtpFallaAlEmbarcar_noPropagaLaExcepcion() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        doThrow(new MailSendException("SMTP caido")).when(mailSender).send(any(MimeMessage.class));
+
+        assertDoesNotThrow(() -> mailService.enviarBuenViaje(embarco()));
+    }
+
+    @Test
+    void conElMailDeshabilitado_noMandaElDeBuenViaje() {
+        ReflectionTestUtils.setField(mailService, "habilitado", false);
+
+        mailService.enviarBuenViaje(embarco());
+
         verify(mailSender, never()).createMimeMessage();
     }
 }

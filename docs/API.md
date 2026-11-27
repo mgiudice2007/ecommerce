@@ -266,7 +266,8 @@ cancele. El mail de confirmación trae un pase con su QR por cada pasajero.
   "ya embarcó el …") o `ANULADO` (la compra o el vuelo fueron cancelados). `404` si el código no
   existe. Acepta el código en minúsculas.
 - `POST /api/embarque/{codigo}/embarcar` — marca al pasajero como embarcado (`embarcadoEn`).
-  `400` si ya embarcó o si el pase está anulado.
+  `400` si ya embarcó o si el pase está anulado. Al comprador de la orden le llega un mail de
+  «¡Buen viaje!» avisando que se validó ese pase (ver «Mail de confirmación de compra» más abajo).
 
 ## Millas
 
@@ -312,6 +313,12 @@ que van dentro del mail como imágenes `cid:` porque Gmail no muestra SVG). Los 
 dibujaron están en `docs/imagenes-mail/`. Además lleva adjunta la **orden de compra en PDF**
 (`orden-de-compra-<id>.pdf`, armada con OpenPDF en `OrdenPdfServiceImpl`): cliente, vuelos, totales y
 pasajeros con su código de embarque. Si el PDF falla, el mail sale igual sin el adjunto.
+
+**Mail de buen viaje:** cuando el administrador embarca a un pasajero (`POST /api/embarque/{codigo}/embarcar`),
+el comprador de la orden recibe un mail avisando que se validó ese pase, con el vuelo, el asiento, la
+hora de validación y un «¡Buen viaje!» (banner `banner-buen-viaje.jpg`). Sale uno por pasajero
+embarcado y funciona igual que el de la compra: después del commit, en otro hilo, y si falla el
+embarque queda hecho igual (evento `PasajeroEmbarcadoEvent`).
 
 Se configura por variables de entorno, así las credenciales no entran al repo:
 

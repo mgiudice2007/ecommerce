@@ -1,9 +1,11 @@
 package com.ecommerce.vuelos.service;
 
+import com.ecommerce.vuelos.dto.embarque.EmbarqueResponse;
 import com.ecommerce.vuelos.dto.orden.ItemOrdenResponse;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.dto.orden.PasajeResponse;
 import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
+import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ public class MailServiceImpl implements MailService {
     private static final String CELESTE = "#e8f1f9";
     private static final String GRIS = "#5b6b7b";
     private static final String BORDE = "#dde3ea";
+    private static final String VERDE = "#1f8a4c";
     private static final String FUENTE = "font-family:Arial,Helvetica,sans-serif;";
 
     @Autowired
@@ -99,22 +102,8 @@ public class MailServiceImpl implements MailService {
     private String armarCuerpo(OrdenConfirmadaEvent evento, Map<String, byte[]> codigosQr, boolean conPdf) {
         OrdenResponse orden = evento.orden();
         StringBuilder html = new StringBuilder();
-        html.append("<div style=\"margin:0;padding:24px 12px;background:#eef2f6;").append(FUENTE).append("color:#1c2b3a\">");
-        // Texto que algunos clientes muestran como vista previa al lado del asunto
-        html.append("<div style=\"display:none;max-height:0;overflow:hidden;opacity:0\">Tu compra #")
-                .append(orden.getId()).append(" está confirmada. Acá tenés tus pases de embarque.</div>");
-        html.append("<table role=\"presentation\" align=\"center\" width=\"100%\" ")
-                .append("style=\"max-width:600px;margin:0 auto;border-collapse:collapse\">");
-
-        // Cabecera blanca con el logo y, abajo, el banner del atardecer (las dos imagenes estan en resources/mail)
-        html.append("<tr><td bgcolor=\"#ffffff\" style=\"background:#ffffff;padding:18px 28px;border-radius:10px 10px 0 0\">")
-                .append("<img src=\"cid:logo\" width=\"220\" height=\"44\" alt=\"BCA Airlines\" ")
-                .append("style=\"display:block;border:0\"></td></tr>");
-        html.append("<tr><td style=\"padding:0;line-height:0;font-size:0\">")
-                .append("<img src=\"cid:banner\" width=\"600\" alt=\"Compra confirmada. ¡Tu viaje está en marcha!\" ")
-                .append("style=\"display:block;width:100%;max-width:600px;height:auto;border:0\"></td></tr>");
-
-        html.append("<tr><td bgcolor=\"#ffffff\" style=\"background:#ffffff;padding:28px;border-radius:0 0 10px 10px\">");
+        abrirMail(html, "Tu compra #" + orden.getId() + " está confirmada. Acá tenés tus pases de embarque.",
+                "Compra confirmada. ¡Tu viaje está en marcha!");
         html.append("<p style=\"font-size:19px;margin:0 0 18px\"><strong>Hola ").append(escapar(evento.nombre()))
                 .append(", ¡tu compra está confirmada!</strong></p>");
         agregarResumen(html, orden);
@@ -172,12 +161,113 @@ public class MailServiceImpl implements MailService {
                     .append(TextoOrden.FECHA.format(cancelableHasta)).append(" hs desde la sección «Mis compras».</p>");
         }
         html.append("<p style=\"font-size:15px;margin:16px 0 0\"><strong>¡Gracias por volar con nosotros!</strong></p>");
-        html.append("</td></tr>");
+        cerrarMail(html);
+        return html.toString();
+    }
 
+    @Override
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void enviarBuenViaje(PasajeroEmbarcadoEvent evento) {
+        if (!habilitado) {
+            return;
+        }
+        EmbarqueResponse embarque = evento.embarque();
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+            helper.setFrom(remitente, "BCA Airlines");
+            helper.setTo(evento.destinatario());
+            helper.setSubject("BCA Airlines · ¡Buen viaje, " + embarque.getNombre() + "! Embarque validado en el vuelo "
+                    + embarque.getNumeroVuelo());
+            helper.setText(armarBuenViaje(evento), true);
+            helper.addInline("logo", new ClassPathResource("mail/logo.png"), "image/png");
+            helper.addInline("banner", new ClassPathResource("mail/banner-buen-viaje.jpg"), "image/jpeg");
+            mailSender.send(mensaje);
+            log.info("Mail de buen viaje del pase {} enviado", embarque.getCodigoEmbarque());
+        } catch (Exception e) {
+            // El pasajero ya embarco: que falle el mail no puede deshacer el embarque
+            log.warn("No se pudo enviar el mail de buen viaje del pase {}: {}", embarque.getCodigoEmbarque(), e.getMessage());
+        }
+    }
+
+    private String armarBuenViaje(PasajeroEmbarcadoEvent evento) {
+        EmbarqueResponse embarque = evento.embarque();
+        String pasajero = embarque.getNombre() + " " + embarque.getApellido();
+        StringBuilder html = new StringBuilder();
+        abrirMail(html, pasajero + " ya embarcó en el vuelo " + embarque.getNumeroVuelo() + ". ¡Buen viaje!",
+                "Embarque confirmado. ¡Buen viaje!");
+
+        html.append("<p style=\"font-size:19px;margin:0 0 10px\"><strong>Hola ").append(escapar(evento.nombreComprador()))
+                .append(",</strong></p>");
+        html.append("<p style=\"font-size:15px;line-height:22px;margin:0 0 20px\">Te avisamos que se validó el pase de embarque de <strong>")
+                .append(escapar(pasajero)).append("</strong>: ya está a bordo del vuelo ")
+                .append(escapar(embarque.getNumeroVuelo())).append(".</p>");
+
+        // El pase ya validado, con el mismo diseño que los pases del mail de compra pero en verde
+        html.append("<table role=\"presentation\" width=\"100%\" style=\"border:1px solid #b9cbe0;")
+                .append("border-radius:10px;border-collapse:separate;border-spacing:0\">");
+        html.append("<tr><td bgcolor=\"").append(VERDE).append("\" style=\"background:").append(VERDE)
+                .append(";color:#ffffff;padding:9px 16px;font-size:12px;font-weight:bold;letter-spacing:2px;")
+                .append("border-radius:9px 0 0 0\">&#10003; EMBARQUE VALIDADO</td>");
+        html.append("<td bgcolor=\"").append(VERDE).append("\" style=\"background:").append(VERDE)
+                .append(";color:#d7f5e3;padding:9px 16px;font-size:12px;text-align:right;")
+                .append("border-radius:0 9px 0 0\">Vuelo ").append(escapar(embarque.getNumeroVuelo()))
+                .append("</td></tr>");
+        html.append("<tr><td colspan=\"2\" style=\"padding:14px 16px\">");
+        html.append(etiqueta("Pasajero")).append("<br>");
+        html.append("<strong style=\"font-size:18px\">").append(escapar(pasajero)).append("</strong><br>");
+        html.append("<strong style=\"font-size:15px;color:").append(AZUL).append(";line-height:28px\">")
+                .append(escapar(embarque.getOrigen())).append(" → ").append(escapar(embarque.getDestino()))
+                .append("</strong><br>");
+        html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">");
+        if (embarque.getFechaSalida() != null) {
+            html.append("Sale el ").append(TextoOrden.FECHA.format(embarque.getFechaSalida())).append(" hs<br>");
+        }
+        html.append("Clase ").append(escapar(embarque.getClaseNombre())).append(" · ")
+                .append(embarque.getAsiento() == null ? "viaja en brazos (sin asiento)" : "Asiento <strong>" + escapar(embarque.getAsiento()) + "</strong>");
+        html.append("</span></td></tr>");
+        html.append("<tr><td colspan=\"2\" bgcolor=\"#f4f7fa\" style=\"background:#f4f7fa;padding:10px 16px;")
+                .append("border-top:2px dashed #b9cbe0;border-radius:0 0 9px 9px\">")
+                .append(etiqueta("Validado el")).append("<br><strong style=\"font-size:15px\">");
+        if (embarque.getEmbarcadoEn() != null) {
+            html.append(TextoOrden.FECHA.format(embarque.getEmbarcadoEn())).append(" hs · ");
+        }
+        html.append("<span style=\"font-family:'Courier New',Courier,monospace;letter-spacing:2px;color:").append(AZUL)
+                .append("\">").append(escapar(embarque.getCodigoEmbarque())).append("</span></strong></td></tr></table>");
+
+        html.append("<p style=\"font-size:15px;line-height:22px;margin:24px 0 0\">Te deseamos un excelente viaje a <strong>")
+                .append(escapar(embarque.getDestino())).append("</strong>. ¡Gracias por volar con nosotros!</p>");
+        cerrarMail(html);
+        return html.toString();
+    }
+
+    /**
+     * Comienzo comun de los mails: fondo gris, texto de vista previa, cabecera blanca con el logo, el
+     * banner (cid:logo y cid:banner, que cada mail adjunta desde resources/mail) y la tarjeta del cuerpo.
+     */
+    private void abrirMail(StringBuilder html, String vistaPrevia, String textoBanner) {
+        html.append("<div style=\"margin:0;padding:24px 12px;background:#eef2f6;").append(FUENTE).append("color:#1c2b3a\">");
+        // Texto que algunos clientes muestran como vista previa al lado del asunto
+        html.append("<div style=\"display:none;max-height:0;overflow:hidden;opacity:0\">")
+                .append(escapar(vistaPrevia)).append("</div>");
+        html.append("<table role=\"presentation\" align=\"center\" width=\"100%\" ")
+                .append("style=\"max-width:600px;margin:0 auto;border-collapse:collapse\">");
+        html.append("<tr><td bgcolor=\"#ffffff\" style=\"background:#ffffff;padding:18px 28px;border-radius:10px 10px 0 0\">")
+                .append("<img src=\"cid:logo\" width=\"220\" height=\"44\" alt=\"BCA Airlines\" ")
+                .append("style=\"display:block;border:0\"></td></tr>");
+        html.append("<tr><td style=\"padding:0;line-height:0;font-size:0\">")
+                .append("<img src=\"cid:banner\" width=\"600\" alt=\"").append(escapar(textoBanner)).append("\" ")
+                .append("style=\"display:block;width:100%;max-width:600px;height:auto;border:0\"></td></tr>");
+        html.append("<tr><td bgcolor=\"#ffffff\" style=\"background:#ffffff;padding:28px;border-radius:0 0 10px 10px\">");
+    }
+
+    /** Cierra la tarjeta del cuerpo y agrega el pie comun. */
+    private void cerrarMail(StringBuilder html) {
+        html.append("</td></tr>");
         html.append("<tr><td style=\"padding:16px 8px;text-align:center;font-size:12px;color:").append(GRIS)
                 .append("\">Este mail se generó automáticamente, por favor no lo respondas.<br>BCA Airlines</td></tr>");
         html.append("</table></div>");
-        return html.toString();
     }
 
     /** Franja con los datos de la compra: numero, fecha y medio de pago. */

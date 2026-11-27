@@ -1,6 +1,7 @@
 package com.ecommerce.vuelos.service;
 
 import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
+import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
 
 public interface MailService {
 
@@ -9,4 +10,10 @@ public interface MailService {
      * hilo: si el mail falla (SMTP caido, credenciales mal), la compra queda confirmada igual.
      */
     void enviarConfirmacionCompra(OrdenConfirmadaEvent evento);
+
+    /**
+     * Le avisa al comprador que se valido el pase de embarque de un pasajero y le desea buen viaje.
+     * Igual que la confirmacion: despues del commit y en otro hilo; si falla, el embarque queda hecho.
+     */
+    void enviarBuenViaje(PasajeroEmbarcadoEvent evento);
 }

@@ -5,10 +5,13 @@ import com.ecommerce.vuelos.entity.EstadoEmbarque;
 import com.ecommerce.vuelos.entity.EstadoOrden;
 import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.Pasaje;
+import com.ecommerce.vuelos.entity.Usuario;
+import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.PasajeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +25,8 @@ public class EmbarqueServiceImpl implements EmbarqueService {
 
     @Autowired
     private PasajeRepository pasajeRepository;
+    @Autowired
+    private ApplicationEventPublisher eventos;
 
     @Override
     @Transactional(readOnly = true)
@@ -40,7 +45,12 @@ public class EmbarqueServiceImpl implements EmbarqueService {
         }
         pasaje.setEmbarcadoEn(LocalDateTime.now());
         pasajeRepository.save(pasaje);
-        return EmbarqueResponse.desde(pasaje, EstadoEmbarque.EMBARCADO, motivoDe(pasaje));
+        EmbarqueResponse respuesta = EmbarqueResponse.desde(pasaje, EstadoEmbarque.EMBARCADO, motivoDe(pasaje));
+
+        // Al comprador le llega un mail de buen viaje; sale recien despues del commit (MailServiceImpl)
+        Usuario comprador = pasaje.getItemOrden().getOrden().getUsuario();
+        eventos.publishEvent(new PasajeroEmbarcadoEvent(comprador.getMail(), comprador.getNombre(), respuesta));
+        return respuesta;
     }
 
     private Pasaje buscar(String codigoEmbarque) {
