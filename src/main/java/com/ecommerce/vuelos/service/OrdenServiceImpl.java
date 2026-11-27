@@ -64,14 +64,17 @@ public class OrdenServiceImpl implements OrdenService {
             throw new BadRequestException("La orden ya se encuentra cancelada");
         }
 
-        // Como en las aerolineas: solo hasta 24 horas antes de que salga el primer vuelo
+        // Como en las aerolineas: solo hasta 24 horas antes de que salga el primer vuelo, salvo que la
+        // aerolinea haya cancelado alguno de los vuelos (ahi se puede cancelar siempre)
         LocalDateTime primeraSalida = orden.primeraSalida();
-        if (primeraSalida.isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("No se puede cancelar la compra: el vuelo ya salió");
-        }
-        if (LocalDateTime.now().isAfter(primeraSalida.minusHours(horasParaCancelar))) {
-            throw new BadRequestException("No se puede cancelar la compra: faltan menos de "
-                    + horasParaCancelar + " horas para la salida del vuelo");
+        if (!orden.tieneVueloCancelado()) {
+            if (primeraSalida.isBefore(LocalDateTime.now())) {
+                throw new BadRequestException("No se puede cancelar la compra: el vuelo ya salió");
+            }
+            if (LocalDateTime.now().isAfter(primeraSalida.minusHours(horasParaCancelar))) {
+                throw new BadRequestException("No se puede cancelar la compra: faltan menos de "
+                        + horasParaCancelar + " horas para la salida del vuelo");
+            }
         }
 
         // Cancelar devuelve los asientos al cupo del que salieron (los bebés no ocupaban)

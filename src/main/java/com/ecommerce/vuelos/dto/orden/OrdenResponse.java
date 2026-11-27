@@ -34,14 +34,16 @@ public class OrdenResponse {
    
     private boolean sePuedeCancelar;
 
-    
+    // La aerolinea cancelo alguno de los vuelos: la compra se puede cancelar sin limite de horas
+    private boolean vueloCancelado;
+
     public static OrdenResponse desde(Orden orden, int horasParaCancelar) {
         LocalDateTime cancelableHasta = orden.primeraSalida() == null
                 ? null
                 : orden.primeraSalida().minusHours(horasParaCancelar);
+        boolean vueloCancelado = orden.tieneVueloCancelado();
         boolean sePuedeCancelar = orden.getEstado() != EstadoOrden.CANCELADA
-                && cancelableHasta != null
-                && LocalDateTime.now().isBefore(cancelableHasta);
+                && (vueloCancelado || (cancelableHasta != null && LocalDateTime.now().isBefore(cancelableHasta)));
 
         return OrdenResponse.builder()
                 .id(orden.getId())
@@ -59,6 +61,7 @@ public class OrdenResponse {
                         .toList())
                 .cancelableHasta(cancelableHasta)
                 .sePuedeCancelar(sePuedeCancelar)
+                .vueloCancelado(vueloCancelado)
                 .build();
     }
 }

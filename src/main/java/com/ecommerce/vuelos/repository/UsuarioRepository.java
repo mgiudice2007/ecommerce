@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,6 +22,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     boolean existsByMail(String mail);
 
     boolean existsByDni(String dni);
+
+    // Los que compraron pasajes en el vuelo y no cancelaron la compra, una vez cada uno aunque tengan varias
+    @Query("select distinct o.usuario from Orden o join o.items i "
+            + "where i.disponibilidad.vuelo.id = ?1 and o.estado = com.ecommerce.vuelos.entity.EstadoOrden.CONFIRMADA")
+    List<Usuario> compradoresDelVuelo(Long vueloId);
 
     /**
      * Las cuentas viejas que tenian el rol VENDEDOR (ya no existe) pasan a COMPRADOR.

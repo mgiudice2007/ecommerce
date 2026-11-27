@@ -11,6 +11,7 @@ import com.ecommerce.vuelos.entity.TipoDocumento;
 import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
 import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
+import com.ecommerce.vuelos.event.VueloModificadoEvent;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
 import jakarta.mail.Multipart;
@@ -43,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -65,6 +67,7 @@ class MailServiceImplTest {
     void configurar() {
         ReflectionTestUtils.setField(mailService, "habilitado", true);
         ReflectionTestUtils.setField(mailService, "remitente", "no-reply@bcaairlines.com");
+        ReflectionTestUtils.setField(mailService, "horasParaCancelar", 24);
     }
 
     private PasajeResponse pasaje(String nombre, String asiento, String codigo) {
@@ -244,6 +247,85 @@ class MailServiceImplTest {
         ReflectionTestUtils.setField(mailService, "habilitado", false);
 
         mailService.enviarBuenViaje(embarco());
+
+        verify(mailSender, never()).createMimeMessage();
+    }
+
+    private VueloModificadoEvent aviso(VueloModificadoEvent.Motivo motivo) {
+        LocalDateTime salida = LocalDateTime.of(2027, 1, 10, 13, 30);
+        boolean reprogramado = motivo == VueloModificadoEvent.Motivo.REPROGRAMADO;
+        return new VueloModificadoEvent(motivo, "BCA-101", "Buenos Aires", "Miami", salida, salida.plusHours(9),
+                reprogramado ? LocalDateTime.of(2027, 1, 10, 8, 30) : null,
+                reprogramado ? LocalDateTime.of(2027, 1, 10, 17, 30) : null,
+                List.of(new VueloModificadoEvent.Comprador("ana@test.com", "Ana <b>"),
+                        new VueloModificadoEvent.Comprador("luis@test.com", "Luis")));
+    }
+
+    private String cuerpoDe(MimeMessage mail, List<String> imagenes) throws Exception {
+        StringBuilder html = new StringBuilder();
+        recorrer(mail, html, imagenes, new ArrayList<>());
+        return html.toString();
+    }
+
+    @Test
+    void alReprogramar_leMandaUnMailACadaCompradorConElHorarioViejoYElNuevo() throws Exception {
+        when(mailSender.createMimeMessage()).thenAnswer((invocacion) -> new MimeMessage((Session) null));
+
+        mailService.enviarAvisoVuelo(aviso(VueloModificadoEvent.Motivo.REPROGRAMADO));
+
+        ArgumentCaptor<MimeMessage> enviados = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender, times(2)).send(enviados.capture());
+        MimeMessage mail = enviados.getAllValues().get(0);
+        mail.saveChanges();
+        assertEquals("ana@test.com", mail.getRecipients(Message.RecipientType.TO)[0].toString());
+        assertEquals("luis@test.com", enviados.getAllValues().get(1).getRecipients(Message.RecipientType.TO)[0].toString());
+        assertTrue(mail.getSubject().contains("Tu vuelo BCA-101 cambió de horario"));
+
+        List<String> imagenes = new ArrayList<>();
+        String cuerpo = cuerpoDe(mail, imagenes);
+        // el nombre se escapa: no puede meter HTML en el mail
+        assertTrue(cuerpo.contains("Hola Ana &lt;b&gt;"));
+        assertTrue(cuerpo.contains("NUEVO HORARIO"));
+        assertTrue(cuerpo.contains("10/01/2027 08:30"));
+        assertTrue(cuerpo.contains("10/01/2027 13:30"));
+        assertTrue(cuerpo.contains("line-through"));
+        assertTrue(cuerpo.contains("hasta 24 horas antes"));
+        // logo + banner del aviso
+        assertEquals(2, imagenes.size());
+    }
+
+    @Test
+    void alCancelarElVuelo_avisaQueSePuedeCancelarLaCompraSinLimite() throws Exception {
+        when(mailSender.createMimeMessage()).thenAnswer((invocacion) -> new MimeMessage((Session) null));
+
+        mailService.enviarAvisoVuelo(aviso(VueloModificadoEvent.Motivo.CANCELADO));
+
+        ArgumentCaptor<MimeMessage> enviados = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender, times(2)).send(enviados.capture());
+        MimeMessage mail = enviados.getAllValues().get(0);
+        mail.saveChanges();
+        assertTrue(mail.getSubject().contains("Tu vuelo BCA-101 fue cancelado"));
+        String cuerpo = cuerpoDe(mail, new ArrayList<>());
+        assertTrue(cuerpo.contains("VUELO CANCELADO"));
+        assertTrue(cuerpo.contains("cuando quieras, aunque falten menos de 24 horas"));
+        assertTrue(!cuerpo.contains("line-through"));
+    }
+
+    @Test
+    void siFallaElMailDeUnComprador_seSigueConLosDemas() {
+        when(mailSender.createMimeMessage()).thenAnswer((invocacion) -> new MimeMessage((Session) null));
+        doThrow(new MailSendException("SMTP caido")).doNothing().when(mailSender).send(any(MimeMessage.class));
+
+        assertDoesNotThrow(() -> mailService.enviarAvisoVuelo(aviso(VueloModificadoEvent.Motivo.DEMORADO)));
+
+        verify(mailSender, times(2)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void conElMailDeshabilitado_noMandaElAvisoDeVuelo() {
+        ReflectionTestUtils.setField(mailService, "habilitado", false);
+
+        mailService.enviarAvisoVuelo(aviso(VueloModificadoEvent.Motivo.DEMORADO));
 
         verify(mailSender, never()).createMimeMessage();
     }

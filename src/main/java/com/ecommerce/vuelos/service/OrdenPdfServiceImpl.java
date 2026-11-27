@@ -201,7 +201,10 @@ public class OrdenPdfServiceImpl implements OrdenPdfService {
     private void agregarPie(Document documento, OrdenResponse orden) {
         Paragraph pie = new Paragraph();
         pie.setSpacingBefore(22);
-        if (orden.getCancelableHasta() != null && orden.getEstado() != EstadoOrden.CANCELADA) {
+        if (orden.isVueloCancelado() && orden.getEstado() != EstadoOrden.CANCELADA) {
+            pie.add(new Phrase("Uno de los vuelos fue cancelado por la aerolínea: podés cancelar la compra cuando quieras "
+                    + "desde «Mis compras».\n", CHICO));
+        } else if (orden.getCancelableHasta() != null && orden.getEstado() != EstadoOrden.CANCELADA) {
             pie.add(new Phrase("Podés cancelar la compra hasta el " + TextoOrden.FECHA.format(orden.getCancelableHasta())
                     + " hs desde «Mis compras».\n", CHICO));
         }

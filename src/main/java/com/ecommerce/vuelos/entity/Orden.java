@@ -86,4 +86,18 @@ public class Orden {
         }
         return primera;
     }
+
+    /**
+     * Si la aerolinea cancelo (o dio de baja) alguno de los vuelos de la compra. En ese caso el comprador
+     * puede cancelarla en cualquier momento, sin el limite de horas antes de la salida.
+     */
+    public boolean tieneVueloCancelado() {
+        for (ItemOrden item : items) {
+            EstadoVuelo estado = item.getDisponibilidad().getVuelo().getEstado();
+            if (estado == EstadoVuelo.CANCELADO || estado == EstadoVuelo.ELIMINADO) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

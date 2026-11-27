@@ -6,6 +6,7 @@ import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.dto.orden.PasajeResponse;
 import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
 import com.ecommerce.vuelos.event.PasajeroEmbarcadoEvent;
+import com.ecommerce.vuelos.event.VueloModificadoEvent;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.util.HtmlUtils;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +41,8 @@ public class MailServiceImpl implements MailService {
     private static final String GRIS = "#5b6b7b";
     private static final String BORDE = "#dde3ea";
     private static final String VERDE = "#1f8a4c";
+    private static final String NARANJA = "#c2410c";
+    private static final String ROJO = "#b42318";
     private static final String FUENTE = "font-family:Arial,Helvetica,sans-serif;";
 
     @Autowired
@@ -53,6 +57,9 @@ public class MailServiceImpl implements MailService {
     private boolean habilitado;
     @Value("${mail.remitente}")
     private String remitente;
+    // Hasta cuantas horas antes del vuelo se puede cancelar, para el texto del aviso de vuelo
+    @Value("${ordenes.horas-para-cancelar}")
+    private int horasParaCancelar;
 
     @Override
     @Async
@@ -242,6 +249,126 @@ public class MailServiceImpl implements MailService {
                 .append(escapar(embarque.getDestino())).append("</strong>. ¡Gracias por volar con nosotros!</p>");
         cerrarMail(html);
         return html.toString();
+    }
+
+    @Override
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void enviarAvisoVuelo(VueloModificadoEvent evento) {
+        if (!habilitado) {
+            return;
+        }
+        // Un mail por comprador: si falla uno (direccion mala, SMTP caido un momento) se sigue con los demas
+        for (VueloModificadoEvent.Comprador comprador : evento.compradores()) {
+            try {
+                MimeMessage mensaje = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+                helper.setFrom(remitente, "BCA Airlines");
+                helper.setTo(comprador.mail());
+                helper.setSubject("BCA Airlines · " + asuntoDelAviso(evento));
+                helper.setText(armarAvisoVuelo(evento, comprador), true);
+                helper.addInline("logo", new ClassPathResource("mail/logo.png"), "image/png");
+                helper.addInline("banner", new ClassPathResource("mail/banner-aviso-vuelo.jpg"), "image/jpeg");
+                mailSender.send(mensaje);
+                log.info("Aviso del vuelo {} ({}) enviado a un comprador", evento.numeroVuelo(), evento.motivo());
+            } catch (Exception e) {
+                // El cambio del vuelo ya quedo guardado: que falle el mail no lo deshace
+                log.warn("No se pudo enviar el aviso del vuelo {}: {}", evento.numeroVuelo(), e.getMessage());
+            }
+        }
+    }
+
+    private String asuntoDelAviso(VueloModificadoEvent evento) {
+        String vuelo = "Tu vuelo " + evento.numeroVuelo();
+        return switch (evento.motivo()) {
+            case DEMORADO -> vuelo + " está demorado";
+            case NORMALIZADO -> vuelo + " vuelve a operar con normalidad";
+            case CANCELADO -> vuelo + " fue cancelado";
+            case REPROGRAMADO -> vuelo + " cambió de horario";
+        };
+    }
+
+    private String armarAvisoVuelo(VueloModificadoEvent evento, VueloModificadoEvent.Comprador comprador) {
+        String vuelo = "<strong>" + escapar(evento.numeroVuelo()) + "</strong> de " + escapar(evento.origen())
+                + " a " + escapar(evento.destino());
+        // Cada motivo tiene su color y su rotulo en la tarjeta, como en el tablero de partidas
+        String color;
+        String rotulo;
+        String introduccion;
+        String cierre;
+        switch (evento.motivo()) {
+            case DEMORADO -> {
+                color = NARANJA;
+                rotulo = "VUELO DEMORADO";
+                introduccion = "Te avisamos que tu vuelo " + vuelo + " está <strong>demorado</strong>.";
+                cierre = "Todavía no hay un nuevo horario confirmado: apenas lo tengamos te vamos a avisar por este medio. "
+                        + "Tus pases de embarque siguen valiendo y podés ver el estado del vuelo en «Mis compras».";
+            }
+            case NORMALIZADO -> {
+                color = VERDE;
+                rotulo = "VUELO EN HORARIO";
+                introduccion = "¡Buenas noticias! Tu vuelo " + vuelo + " vuelve a operar <strong>con normalidad</strong>.";
+                cierre = "Tus pases de embarque siguen valiendo: no tenés que hacer nada.";
+            }
+            case CANCELADO -> {
+                color = ROJO;
+                rotulo = "VUELO CANCELADO";
+                introduccion = "Lamentamos avisarte que tu vuelo " + vuelo + " fue <strong>cancelado</strong>.";
+                cierre = "Podés cancelar tu compra desde «Mis compras» cuando quieras, aunque falten menos de "
+                        + horasParaCancelar + " horas para la salida: se liberan los asientos y te devolvemos las millas "
+                        + "que hayas usado. Disculpá las molestias.";
+            }
+            default -> {
+                color = AZUL;
+                rotulo = "NUEVO HORARIO";
+                introduccion = "Te avisamos que tu vuelo " + vuelo + " <strong>cambió de horario</strong>.";
+                cierre = "Tus pases de embarque siguen valiendo con el nuevo horario. Si no te sirve, podés cancelar la "
+                        + "compra desde «Mis compras» hasta " + horasParaCancelar + " horas antes de la salida.";
+            }
+        }
+
+        StringBuilder html = new StringBuilder();
+        abrirMail(html, asuntoDelAviso(evento) + ".", "Aviso de vuelo: novedades de tu vuelo");
+        html.append("<p style=\"font-size:19px;margin:0 0 10px\"><strong>Hola ").append(escapar(comprador.nombre()))
+                .append(",</strong></p>");
+        html.append("<p style=\"font-size:15px;line-height:22px;margin:0 0 20px\">").append(introduccion).append("</p>");
+
+        html.append("<table role=\"presentation\" width=\"100%\" style=\"border:1px solid #b9cbe0;")
+                .append("border-radius:10px;border-collapse:separate;border-spacing:0\">");
+        html.append("<tr><td bgcolor=\"").append(color).append("\" style=\"background:").append(color)
+                .append(";color:#ffffff;padding:9px 16px;font-size:12px;font-weight:bold;letter-spacing:2px;")
+                .append("border-radius:9px 0 0 0\">").append(rotulo).append("</td>");
+        html.append("<td bgcolor=\"").append(color).append("\" style=\"background:").append(color)
+                .append(";color:#ffffff;padding:9px 16px;font-size:12px;text-align:right;")
+                .append("border-radius:0 9px 0 0\">Vuelo ").append(escapar(evento.numeroVuelo()))
+                .append("</td></tr>");
+        html.append("<tr><td colspan=\"2\" style=\"padding:14px 16px;border-radius:0 0 9px 9px\">");
+        html.append("<strong style=\"font-size:17px;color:").append(AZUL).append(";line-height:28px\">")
+                .append(escapar(evento.origen())).append(" → ").append(escapar(evento.destino()))
+                .append("</strong><br>");
+        if (evento.motivo() == VueloModificadoEvent.Motivo.REPROGRAMADO && evento.salidaAnterior() != null) {
+            html.append(etiqueta("Antes")).append("<br>");
+            html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px;text-decoration:line-through\">")
+                    .append(horarioDelAviso(evento.salidaAnterior(), evento.llegadaAnterior())).append("</span><br>");
+            html.append("<div style=\"height:8px;line-height:8px\">&nbsp;</div>");
+            html.append(etiqueta("Ahora")).append("<br>");
+            html.append("<strong style=\"font-size:14px;line-height:20px\">")
+                    .append(horarioDelAviso(evento.salida(), evento.llegada())).append("</strong>");
+        } else {
+            html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">")
+                    .append(horarioDelAviso(evento.salida(), evento.llegada())).append("</span>");
+        }
+        html.append("</td></tr></table>");
+
+        html.append("<p style=\"font-size:14px;line-height:21px;margin:22px 0 0\">").append(cierre).append("</p>");
+        html.append("<p style=\"font-size:15px;margin:16px 0 0\"><strong>Gracias por volar con nosotros.</strong></p>");
+        cerrarMail(html);
+        return html.toString();
+    }
+
+    private String horarioDelAviso(LocalDateTime salida, LocalDateTime llegada) {
+        Integer minutos = llegada == null ? null : (int) Duration.between(salida, llegada).toMinutes();
+        return TextoOrden.horario(salida, llegada, minutos);
     }
 
     /**

@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=block" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0}
+  body{width:1200px;height:440px;overflow:hidden;font-family:'Plus Jakarta Sans',Arial,sans-serif}
+  .cielo{position:relative;width:1200px;height:440px;
+    background:linear-gradient(135deg,#041e42 0%,#0b3a74 55%,#0057b8 100%);}
+  .nube{position:absolute;height:28px;border-radius:28px;background:rgba(255,255,255,.12)}
+  .texto{position:absolute;left:72px;top:140px;color:#fff}
+  .rotulo{display:inline-block;padding:8px 18px;border-radius:30px;background:rgba(255,255,255,.14);
+    font-size:20px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#ffcf7a}
+  h1{margin:22px 0 10px;font-size:62px;line-height:1.05;font-weight:800;letter-spacing:-1px}
+  p{margin:0;font-size:26px;font-weight:500;color:#cfe0f3}
+  /* Tablero de partidas del aeropuerto */
+  .tablero{position:absolute;right:80px;top:90px;width:380px;padding:22px 24px;border-radius:18px;
+    background:#0a1628;box-shadow:0 20px 50px rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.08)}
+  .tablero-titulo{font-size:16px;font-weight:800;letter-spacing:4px;color:#ffcf7a;margin-bottom:16px}
+  .fila{display:flex;justify-content:space-between;align-items:center;padding:12px 0;
+    border-top:1px solid rgba(255,255,255,.1);font-family:'Courier New',monospace;font-size:22px;font-weight:700;color:#e6eef8}
+  .estado{padding:4px 12px;border-radius:6px;font-family:'Plus Jakarta Sans',Arial,sans-serif;font-size:15px;letter-spacing:1px}
+  .demorado{background:#ffb020;color:#2b1a00}
+  .horario{background:#2bb673;color:#04210f}
+  .nuevo{background:#4c9bff;color:#03152e}
+</style></head>
+<body><div class="cielo">
+  <div class="nube" style="left:560px;top:330px;width:190px"></div>
+  <div class="nube" style="left:620px;top:350px;width:120px"></div>
+  <div class="nube" style="left:420px;top:60px;width:150px"></div>
+  <div class="tablero">
+    <div class="tablero-titulo">✈ PARTIDAS</div>
+    <div class="fila"><span>BCA 101</span><span class="estado horario">EN HORARIO</span></div>
+    <div class="fila"><span>BCA 204</span><span class="estado demorado">DEMORADO</span></div>
+    <div class="fila"><span>BCA 318</span><span class="estado nuevo">NUEVO HORARIO</span></div>
+  </div>
+  <div class="texto">
+    <span class="rotulo">Aviso de vuelo</span>
+    <h1>Novedades de<br>tu vuelo</h1>
+    <p>Te contamos qué cambió</p>
+  </div>
+</div></body></html>

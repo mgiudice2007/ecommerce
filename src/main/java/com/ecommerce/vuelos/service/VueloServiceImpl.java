@@ -10,6 +10,7 @@ import com.ecommerce.vuelos.entity.Categoria;
 import com.ecommerce.vuelos.entity.EstadoVuelo;
 import com.ecommerce.vuelos.entity.Usuario;
 import com.ecommerce.vuelos.entity.Vuelo;
+import com.ecommerce.vuelos.event.VueloModificadoEvent;
 import com.ecommerce.vuelos.exception.BadRequestException;
 import com.ecommerce.vuelos.exception.ResourceNotFoundException;
 import com.ecommerce.vuelos.repository.AeropuertoRepository;
@@ -19,6 +20,7 @@ import com.ecommerce.vuelos.repository.UsuarioRepository;
 import com.ecommerce.vuelos.repository.VueloRepository;
 import com.ecommerce.vuelos.security.UsuarioPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,8 @@ public class VueloServiceImpl implements VueloService {
     private UsuarioRepository usuarioRepository;
     @Autowired
     private DisponibilidadRepository disponibilidadRepository;
+    @Autowired
+    private ApplicationEventPublisher eventos;
 
     @Override
     public PaginaResponse<VueloResponse> buscar(String origen, String destino, Long categoriaId, Long claseId,
@@ -126,6 +130,9 @@ public class VueloServiceImpl implements VueloService {
         vuelo.setDestino(buscarAeropuerto(request.getDestinoIata()));
         vuelo.setNumeroVuelo(request.getNumeroVuelo());
         vuelo.setDescripcion(request.getDescripcion());
+        // Los horarios que conocian los que ya compraron, para avisarles si cambian
+        LocalDateTime salidaAnterior = vuelo.getFechaSalida();
+        LocalDateTime llegadaAnterior = vuelo.getFechaLlegada();
         vuelo.setFechaSalida(request.getFechaSalida());
         vuelo.setFechaLlegada(request.getFechaLlegada());
         // El precio lo manejan las clases; solo se toma si viene y el vuelo todavia no tiene clases
@@ -134,7 +141,15 @@ public class VueloServiceImpl implements VueloService {
         }
 
         validarFechas(vuelo);
-        return VueloResponse.desde(vueloRepository.save(vuelo));
+        Vuelo guardado = vueloRepository.save(vuelo);
+
+        boolean reprogramado = !salidaAnterior.equals(vuelo.getFechaSalida())
+                || !llegadaAnterior.equals(vuelo.getFechaLlegada());
+        // Un vuelo cancelado no se reprograma para nadie: a sus compradores ya se les aviso la cancelacion
+        if (reprogramado && vuelo.getEstado() != EstadoVuelo.CANCELADO) {
+            avisarCompradores(vuelo, VueloModificadoEvent.Motivo.REPROGRAMADO, salidaAnterior, llegadaAnterior);
+        }
+        return VueloResponse.desde(guardado);
     }
 
     @Override
@@ -150,6 +165,7 @@ public class VueloServiceImpl implements VueloService {
             throw new BadRequestException("El vuelo ya esta en estado " + nuevoEstado);
         }
 
+        EstadoVuelo anterior = vuelo.getEstado();
         vuelo.setEstado(nuevoEstado);
         // La baja logica deja la fecha: el vuelo sigue en la base para no romper las ordenes que lo referencian.
         if (nuevoEstado == EstadoVuelo.ELIMINADO) {
@@ -157,7 +173,55 @@ public class VueloServiceImpl implements VueloService {
         }
         vueloRepository.save(vuelo);
 
-        return new EstadoVueloResponse(vuelo.getId(), nuevoEstado, mensajeDeEstado(vuelo, nuevoEstado));
+        String mensaje = mensajeDeEstado(vuelo, nuevoEstado);
+        VueloModificadoEvent.Motivo motivo = motivoDelAviso(anterior, nuevoEstado);
+        if (motivo != null) {
+            int avisados = avisarCompradores(vuelo, motivo, null, null);
+            if (avisados > 0) {
+                mensaje += ". Se aviso por mail a " + avisados + (avisados == 1 ? " comprador" : " compradores");
+            }
+        }
+        return new EstadoVueloResponse(vuelo.getId(), nuevoEstado, mensaje);
+    }
+
+    /**
+     * Que cambios le importan al que ya compro. Pausar solo frena la venta (el que compro vuela igual), y
+     * eliminar un vuelo que ya estaba cancelado no es una novedad: en esos casos no hay aviso.
+     */
+    private VueloModificadoEvent.Motivo motivoDelAviso(EstadoVuelo anterior, EstadoVuelo nuevo) {
+        return switch (nuevo) {
+            case DEMORADO -> VueloModificadoEvent.Motivo.DEMORADO;
+            case CANCELADO -> VueloModificadoEvent.Motivo.CANCELADO;
+            case ELIMINADO -> anterior == EstadoVuelo.CANCELADO ? null : VueloModificadoEvent.Motivo.CANCELADO;
+            case ACTIVO -> anterior == EstadoVuelo.DEMORADO || anterior == EstadoVuelo.CANCELADO
+                    ? VueloModificadoEvent.Motivo.NORMALIZADO
+                    : null;
+            case PAUSADO -> null;
+        };
+    }
+
+    /**
+     * Publica el aviso para los que compraron pasajes del vuelo; el mail sale cuando se confirma la
+     * transaccion. Si el vuelo ya aterrizo (con el horario que conocian) no se avisa nada.
+     * Devuelve a cuantos compradores se les va a avisar.
+     */
+    private int avisarCompradores(Vuelo vuelo, VueloModificadoEvent.Motivo motivo,
+                                  LocalDateTime salidaAnterior, LocalDateTime llegadaAnterior) {
+        LocalDateTime llegadaConocida = llegadaAnterior != null ? llegadaAnterior : vuelo.getFechaLlegada();
+        if (llegadaConocida.isBefore(LocalDateTime.now())) {
+            return 0;
+        }
+        List<VueloModificadoEvent.Comprador> compradores = usuarioRepository.compradoresDelVuelo(vuelo.getId())
+                .stream()
+                .map((usuario) -> new VueloModificadoEvent.Comprador(usuario.getMail(), usuario.getNombre()))
+                .toList();
+        if (compradores.isEmpty()) {
+            return 0;
+        }
+        eventos.publishEvent(new VueloModificadoEvent(motivo, vuelo.getNumeroVuelo(),
+                vuelo.getOrigen().getCiudad(), vuelo.getDestino().getCiudad(),
+                vuelo.getFechaSalida(), vuelo.getFechaLlegada(), salidaAnterior, llegadaAnterior, compradores));
+        return compradores.size();
     }
 
     private String mensajeDeEstado(Vuelo vuelo, EstadoVuelo estado) {
