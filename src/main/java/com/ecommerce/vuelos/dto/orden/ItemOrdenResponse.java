@@ -24,6 +24,11 @@ public class ItemOrdenResponse {
     private String numeroVuelo;
     private String origen;
     private String destino;
+    // Codigo y nombre de los aeropuertos, para el itinerario del PDF
+    private String origenIata;
+    private String destinoIata;
+    private String origenAeropuerto;
+    private String destinoAeropuerto;
     private LocalDateTime fechaSalida;
     private LocalDateTime fechaLlegada;
     private Integer duracionMinutos;
@@ -48,6 +53,10 @@ public class ItemOrdenResponse {
                 .numeroVuelo(vuelo.getNumeroVuelo())
                 .origen(vuelo.getOrigen().getCiudad())
                 .destino(vuelo.getDestino().getCiudad())
+                .origenIata(vuelo.getOrigen().getCodigoIata())
+                .destinoIata(vuelo.getDestino().getCodigoIata())
+                .origenAeropuerto(vuelo.getOrigen().getNombre())
+                .destinoAeropuerto(vuelo.getDestino().getNombre())
                 .fechaSalida(vuelo.getFechaSalida())
                 .fechaLlegada(vuelo.getFechaLlegada())
                 .duracionMinutos(vuelo.getDuracionMinutos())
