@@ -70,6 +70,13 @@ public class PasajeServiceImpl implements PasajeService {
                     throw new BadRequestException("El documento " + pasajero.getDocumento()
                             + " está repetido en el vuelo " + numeroVuelo);
                 }
+                // Como en las aerolineas reales: una persona no puede tener dos pasajes en el mismo vuelo
+                if (pasajeRepository.existeEnVuelo(item.getDisponibilidad().getVuelo().getId(),
+                        pasajero.getTipoDocumento(), pasajero.getDocumento().toUpperCase())) {
+                    throw new BadRequestException(pasajero.getNombre().trim() + " " + pasajero.getApellido().trim()
+                            + " (" + pasajero.getTipoDocumento() + " " + pasajero.getDocumento()
+                            + ") ya tiene un pasaje en el vuelo " + numeroVuelo);
+                }
             }
         }
 
