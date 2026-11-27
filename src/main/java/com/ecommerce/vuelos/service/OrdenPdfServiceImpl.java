@@ -111,14 +111,13 @@ public class OrdenPdfServiceImpl implements OrdenPdfService {
         PdfPTable tabla = new PdfPTable(new float[]{0.9f, 2.1f, 1.2f, 1.25f, 1.1f, 1.25f, 1.25f});
         tabla.setWidthPercentage(100);
         tabla.setHeaderRows(1);
-        for (String titulo : new String[]{"Vuelo", "Tramo", "Salida", "Clase", "Pasajeros", "Precio unit.", "Subtotal"}) {
+        for (String titulo : new String[]{"Vuelo", "Tramo", "Horario", "Clase", "Pasajeros", "Precio unit.", "Subtotal"}) {
             tabla.addCell(cabecera(titulo));
         }
         for (ItemOrdenResponse item : orden.getItems()) {
             tabla.addCell(celda(item.getNumeroVuelo(), NEGRITA, Element.ALIGN_LEFT));
             tabla.addCell(celda(item.getOrigen() + " – " + item.getDestino(), TEXTO, Element.ALIGN_LEFT));
-            tabla.addCell(celda(item.getFechaSalida() == null ? "-" : TextoOrden.FECHA.format(item.getFechaSalida()),
-                    TEXTO, Element.ALIGN_LEFT));
+            tabla.addCell(celda(horarioCelda(item), TEXTO, Element.ALIGN_LEFT));
             tabla.addCell(celda(item.getClaseNombre(), TEXTO, Element.ALIGN_LEFT));
             tabla.addCell(celda(item.getCantidad() + " × " + TextoOrden.tipoPasajero(item.getTipoPasajero()),
                     TEXTO, Element.ALIGN_LEFT));
@@ -126,6 +125,19 @@ public class OrdenPdfServiceImpl implements OrdenPdfService {
             tabla.addCell(celda(TextoOrden.plata(item.getSubtotal()), NEGRITA, Element.ALIGN_RIGHT));
         }
         documento.add(tabla);
+    }
+
+    /** Salida, llegada y duracion en tres renglones, para que entren en la columna. */
+    private String horarioCelda(ItemOrdenResponse item) {
+        if (item.getFechaSalida() == null) {
+            return "-";
+        }
+        String texto = "Sale " + TextoOrden.FECHA.format(item.getFechaSalida());
+        if (item.getFechaLlegada() != null) {
+            texto += "\nLlega " + TextoOrden.FECHA.format(item.getFechaLlegada())
+                    + "\n" + TextoOrden.duracion(item.getDuracionMinutos()) + " de vuelo";
+        }
+        return texto;
     }
 
     private void agregarTotales(Document documento, OrdenResponse orden) {

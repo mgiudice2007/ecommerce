@@ -117,7 +117,8 @@ public class MailServiceImpl implements MailService {
             html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">Vuelo ")
                     .append(escapar(item.getNumeroVuelo()));
             if (item.getFechaSalida() != null) {
-                html.append(" · sale el ").append(TextoOrden.FECHA.format(item.getFechaSalida())).append(" hs");
+                html.append("<br>").append(TextoOrden.horario(item.getFechaSalida(), item.getFechaLlegada(),
+                        item.getDuracionMinutos()));
             }
             html.append("<br>Clase ").append(escapar(item.getClaseNombre())).append(" · ")
                     .append(item.getCantidad()).append(" × ").append(TextoOrden.tipoPasajero(item.getTipoPasajero()));
@@ -222,7 +223,8 @@ public class MailServiceImpl implements MailService {
                 .append("</strong><br>");
         html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">");
         if (embarque.getFechaSalida() != null) {
-            html.append("Sale el ").append(TextoOrden.FECHA.format(embarque.getFechaSalida())).append(" hs<br>");
+            html.append(TextoOrden.horario(embarque.getFechaSalida(), embarque.getFechaLlegada(),
+                    embarque.getDuracionMinutos())).append("<br>");
         }
         html.append("Clase ").append(escapar(embarque.getClaseNombre())).append(" · ")
                 .append(embarque.getAsiento() == null ? "viaja en brazos (sin asiento)" : "Asiento <strong>" + escapar(embarque.getAsiento()) + "</strong>");
@@ -324,7 +326,8 @@ public class MailServiceImpl implements MailService {
                         .append("</strong><br>");
                 html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">");
                 if (item.getFechaSalida() != null) {
-                    html.append("Sale el ").append(TextoOrden.FECHA.format(item.getFechaSalida())).append(" hs<br>");
+                    html.append(TextoOrden.horario(item.getFechaSalida(), item.getFechaLlegada(),
+                            item.getDuracionMinutos())).append("<br>");
                 }
                 html.append("Clase ").append(escapar(item.getClaseNombre())).append(" · ")
                         .append(pasaje.getAsiento() == null ? "viaja en brazos (sin asiento)" : "Asiento <strong>" + escapar(pasaje.getAsiento()) + "</strong>");

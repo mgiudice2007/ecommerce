@@ -27,6 +27,8 @@ public class EmbarqueResponse {
     private String origen;
     private String destino;
     private LocalDateTime fechaSalida;
+    private LocalDateTime fechaLlegada;
+    private Integer duracionMinutos;
     private String claseNombre;
     private String asiento;
     private LocalDateTime embarcadoEn;
@@ -46,6 +48,8 @@ public class EmbarqueResponse {
                 .origen(vuelo.getOrigen().getCiudad())
                 .destino(vuelo.getDestino().getCiudad())
                 .fechaSalida(vuelo.getFechaSalida())
+                .fechaLlegada(vuelo.getFechaLlegada())
+                .duracionMinutos(vuelo.getDuracionMinutos())
                 .claseNombre(item.getDisponibilidad().getClase().getNombre())
                 .asiento(pasaje.getAsiento())
                 .embarcadoEn(pasaje.getEmbarcadoEn())

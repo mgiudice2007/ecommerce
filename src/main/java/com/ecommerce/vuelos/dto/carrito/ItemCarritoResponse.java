@@ -25,6 +25,8 @@ public class ItemCarritoResponse {
     private String origen;
     private String destino;
     private LocalDateTime fechaSalida;
+    private LocalDateTime fechaLlegada;
+    private Integer duracionMinutos;
     private String claseNombre;
     private TipoPasajero tipoPasajero;
     private BigDecimal precioUnitario;
@@ -47,6 +49,8 @@ public class ItemCarritoResponse {
                 .origen(vuelo.getOrigen().getCiudad())
                 .destino(vuelo.getDestino().getCiudad())
                 .fechaSalida(vuelo.getFechaSalida())
+                .fechaLlegada(vuelo.getFechaLlegada())
+                .duracionMinutos(vuelo.getDuracionMinutos())
                 .claseNombre(disponibilidad.getClase().getNombre())
                 .tipoPasajero(item.getTipoPasajero())
                 .precioUnitario(precioUnitario)

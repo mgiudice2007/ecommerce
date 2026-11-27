@@ -5,6 +5,7 @@ import com.ecommerce.vuelos.entity.TipoPasajero;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -22,6 +23,25 @@ final class TextoOrden {
             return "Gratis";
         }
         return NumberFormat.getCurrencyInstance(ARGENTINA).format(monto);
+    }
+
+    /** "2h 20m", o "3h" si no sobran minutos. */
+    static String duracion(Integer minutos) {
+        if (minutos == null) {
+            return "-";
+        }
+        int horas = minutos / 60;
+        int resto = minutos % 60;
+        return resto == 0 ? horas + "h" : horas + "h " + resto + "m";
+    }
+
+    /** "Sale el 04/12/2026 07:15 hs · llega el 04/12/2026 09:35 hs · 2h 20m de vuelo" */
+    static String horario(LocalDateTime salida, LocalDateTime llegada, Integer minutos) {
+        String texto = "Sale el " + FECHA.format(salida) + " hs";
+        if (llegada != null) {
+            texto += " · llega el " + FECHA.format(llegada) + " hs · " + duracion(minutos) + " de vuelo";
+        }
+        return texto;
     }
 
     static String tipoPasajero(TipoPasajero tipo) {
