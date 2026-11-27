@@ -289,6 +289,9 @@ Se calculan en el backend con el precio real de cada compra; nada está fijo por
 - `GET /api/ordenes` — historial, solo las del usuario del token
 - `GET /api/ordenes/{id}` — la orden de otro usuario da `404` (no `403`, para no confirmar que
   ese id existe)
+- `GET /api/ordenes/{id}/pdf` — la orden de compra en PDF (`application/pdf`, se baja como
+  `orden-de-compra-{id}.pdf`), la misma que va adjunta en el mail. Mismo `404` para órdenes ajenas.
+  El front la baja con el botón «Descargar PDF» del detalle de la compra
 - `POST /api/ordenes/{id}/cancelar` — devuelve los asientos a la `Disponibilidad` correspondiente,
   libera los asientos elegidos y ajusta las millas del usuario
 

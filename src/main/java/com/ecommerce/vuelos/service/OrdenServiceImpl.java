@@ -28,6 +28,8 @@ public class OrdenServiceImpl implements OrdenService {
     private DisponibilidadRepository disponibilidadRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private OrdenPdfService ordenPdfService;
 
     // Hasta cuantas horas antes del vuelo se puede cancelar (application.properties)
     @Value("${ordenes.horas-para-cancelar}")
@@ -43,6 +45,14 @@ public class OrdenServiceImpl implements OrdenService {
     @Override
     public OrdenResponse obtener(Long usuarioId, Long ordenId) {
         return OrdenResponse.desde(buscarOrdenDelUsuario(usuarioId, ordenId), horasParaCancelar);
+    }
+
+    @Override
+    public byte[] ordenDeCompraPdf(Long usuarioId, Long ordenId) {
+        Orden orden = buscarOrdenDelUsuario(usuarioId, ordenId);
+        Usuario usuario = orden.getUsuario();
+        return ordenPdfService.ordenDeCompra(OrdenResponse.desde(orden, horasParaCancelar),
+                usuario.getNombre() + " " + usuario.getApellido(), usuario.getMail());
     }
 
     @Override

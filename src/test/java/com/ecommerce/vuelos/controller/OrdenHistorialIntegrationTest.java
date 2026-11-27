@@ -86,6 +86,27 @@ class OrdenHistorialIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void pdf_loBajaSoloElDuenoDeLaCompra() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);
+        String dueno = registrarYLoguearComprador("pasajeropdf");
+        agregarAlCarrito(dueno, cupoId, 1);
+        String ordenJson = mockMvc.perform(checkout(dueno))
+                .andReturn().getResponse().getContentAsString();
+        Long ordenId = objectMapper.readTree(ordenJson).get("id").asLong();
+
+        mockMvc.perform(get("/api/ordenes/" + ordenId + "/pdf").header("Authorization", "Bearer " + dueno))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"))
+                .andExpect(header().string("Content-Disposition",
+                        org.hamcrest.Matchers.containsString("orden-de-compra-" + ordenId + ".pdf")));
+
+        String otro = registrarYLoguearComprador("pasajeropdfotro");
+        mockMvc.perform(get("/api/ordenes/" + ordenId + "/pdf").header("Authorization", "Bearer " + otro))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void cancelarOrden_conMasDe24Horas_sePuedeCancelar() throws Exception {
         String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
         Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 100.0, 10);

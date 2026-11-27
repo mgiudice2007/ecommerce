@@ -11,4 +11,7 @@ public interface OrdenService {
     OrdenResponse obtener(Long usuarioId, Long ordenId);
 
     OrdenResponse cancelar(Long usuarioId, Long ordenId);
+
+    /** La orden de compra en PDF, la misma que viaja adjunta en el mail de confirmacion. */
+    byte[] ordenDeCompraPdf(Long usuarioId, Long ordenId);
 }
