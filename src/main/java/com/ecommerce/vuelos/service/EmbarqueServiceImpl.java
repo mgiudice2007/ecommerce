@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -22,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 public class EmbarqueServiceImpl implements EmbarqueService {
 
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final DateTimeFormatter DIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Autowired
     private PasajeRepository pasajeRepository;
@@ -43,6 +45,12 @@ public class EmbarqueServiceImpl implements EmbarqueService {
         if (estado != EstadoEmbarque.VALIDO) {
             throw new BadRequestException("No se puede embarcar: " + motivoDe(pasaje));
         }
+        // Como en los aeropuertos: el pasajero embarca el mismo dia que sale su vuelo
+        LocalDate diaDelVuelo = pasaje.getItemOrden().getDisponibilidad().getVuelo().getFechaSalida().toLocalDate();
+        if (!diaDelVuelo.equals(LocalDate.now())) {
+            throw new BadRequestException("No se puede embarcar: el embarque es el dia del vuelo ("
+                    + DIA.format(diaDelVuelo) + ")");
+        }
         pasaje.setEmbarcadoEn(LocalDateTime.now());
         pasajeRepository.save(pasaje);
         EmbarqueResponse respuesta = EmbarqueResponse.desde(pasaje, EstadoEmbarque.EMBARCADO, motivoDe(pasaje));
@@ -61,8 +69,9 @@ public class EmbarqueServiceImpl implements EmbarqueService {
     }
 
     private EstadoEmbarque estadoDe(Pasaje pasaje) {
+        EstadoVuelo estadoVuelo = pasaje.getItemOrden().getDisponibilidad().getVuelo().getEstado();
         if (pasaje.getItemOrden().getOrden().getEstado() == EstadoOrden.CANCELADA
-                || pasaje.getItemOrden().getDisponibilidad().getVuelo().getEstado() == EstadoVuelo.CANCELADO) {
+                || estadoVuelo == EstadoVuelo.CANCELADO || estadoVuelo == EstadoVuelo.ELIMINADO) {
             return EstadoEmbarque.ANULADO;
         }
         return pasaje.getEmbarcadoEn() != null ? EstadoEmbarque.EMBARCADO : EstadoEmbarque.VALIDO;

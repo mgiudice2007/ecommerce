@@ -60,7 +60,8 @@ Devuelve solo `{ "token": "..." }`. El `id`, `username` y `rol` viajan dentro de
 de los datos del usuario se piden con `GET /api/auth/me`.
 
 ### POST `/api/auth/logout`
-Requiere token. No-op del lado servidor (JWT stateless), devuelve `200` con `{ "mensaje": "Sesion cerrada correctamente" }`.
+Requiere token. Invalida ese token (después de cerrar sesión ya no sirve aunque no haya vencido) y
+devuelve `200` con `{ "mensaje": "Sesion cerrada correctamente" }`.
 
 ### GET `/api/auth/me`
 Requiere token.
@@ -104,12 +105,15 @@ Administración de cuentas y asignación de permisos (roles).
 - `GET /api/vuelos` — público, filtros opcionales combinables: `origen`, `destino`,
   `categoriaId`, `claseId`, `precioMin`, `precioMax`, `fechaDesde`, `fechaHasta` (días de salida,
   formato `2026-10-20`, ambos incluidos), `vendedorId`, más `page`/`size` para
-  paginar (respuesta `PaginaResponse<VueloResponse>`: `content`, `number`, `size`,
+  paginar (como máximo 100 por página; sin `size` se devuelven 100) (respuesta
+  `PaginaResponse<VueloResponse>`: `content`, `number`, `size`,
   `totalElements`, `totalPages`). **No lista los vuelos que ya salieron** (`fechaSalida` pasada)
   ni los eliminados. Si la página viene vacía, la respuesta suma un campo `mensaje` (por ejemplo
   `"No hay vuelos que coincidan con los filtros indicados"`); si hay resultados, el campo no aparece.
 - `GET /api/vuelos/{id}` — público, incluye `disponibilidades[]` y `hayStock`. Responde también
-  por vuelos que ya salieron (las compras viejas los necesitan para mostrar sus datos).
+  por vuelos que ya salieron (las compras viejas los necesitan para mostrar sus datos). Un vuelo
+  eliminado da `404`.
+- `GET /api/vuelos/resumen` — solo `ADMIN`: los totales del panel (vuelos, asientos vendidos y cargados).
 - `POST /api/vuelos` — requiere token con rol `ADMIN`. El vuelo nace **sin
   asientos** — el cupo se carga aparte con `Disponibilidad`.
   ```json
@@ -266,7 +270,8 @@ cancele. El mail de confirmación trae un pase con su QR por cada pasajero.
   "ya embarcó el …") o `ANULADO` (la compra o el vuelo fueron cancelados). `404` si el código no
   existe. Acepta el código en minúsculas.
 - `POST /api/embarque/{codigo}/embarcar` — marca al pasajero como embarcado (`embarcadoEn`).
-  `400` si ya embarcó o si el pase está anulado. Al comprador de la orden le llega un mail de
+  `400` si ya embarcó, si el pase está anulado (también si el vuelo fue eliminado) o si no es el
+  día del vuelo. Con un pasajero embarcado la compra ya no se puede cancelar. Al comprador de la orden le llega un mail de
   «¡Buen viaje!» avisando que se validó ese pase (ver «Mail de confirmación de compra» más abajo).
 
 ## Millas

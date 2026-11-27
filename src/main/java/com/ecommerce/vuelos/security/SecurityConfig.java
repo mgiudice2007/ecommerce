@@ -56,6 +56,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                       
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/registro").permitAll()
+                        // Los totales del panel son del administrador, aunque el resto de /api/vuelos sea publico
+                        .requestMatchers(HttpMethod.GET, "/api/vuelos/resumen").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/vuelos/**", "/api/categorias/**", "/api/aeropuertos/**",
                                 "/api/clases", "/api/disponibilidades/**", "/api/fotos/**", "/api/descuentos/**").permitAll()
                         

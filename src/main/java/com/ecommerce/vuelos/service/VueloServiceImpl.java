@@ -91,7 +91,12 @@ public class VueloServiceImpl implements VueloService {
 
     @Override
     public VueloResponse obtener(Long id) {
-        return VueloResponse.desde(buscarPorId(id));
+        Vuelo vuelo = buscarPorId(id);
+        // Un vuelo dado de baja ya no se muestra (las compras que lo tienen lo siguen viendo en su detalle)
+        if (vuelo.getEstado() == EstadoVuelo.ELIMINADO) {
+            throw new ResourceNotFoundException("Vuelo no encontrado: " + id);
+        }
+        return VueloResponse.desde(vuelo);
     }
 
     @Override
@@ -116,6 +121,7 @@ public class VueloServiceImpl implements VueloService {
                 .build();
 
         validarFechas(vuelo);
+        validarNumeroUnico(vuelo);
         return VueloResponse.desde(vueloRepository.save(vuelo));
     }
 
@@ -124,6 +130,13 @@ public class VueloServiceImpl implements VueloService {
     public VueloResponse actualizar(Long id, VueloRequest request, UsuarioPrincipal principal) {
         Vuelo vuelo = buscarPorId(id);
         validarPropiedad(vuelo, principal);
+
+        // Al que ya compro no se le puede cambiar adonde viaja: con pasajes vendidos la ruta queda fija
+        boolean cambiaRuta = !vuelo.getOrigen().getCodigoIata().equalsIgnoreCase(request.getOrigenIata())
+                || !vuelo.getDestino().getCodigoIata().equalsIgnoreCase(request.getDestinoIata());
+        if (cambiaRuta && !usuarioRepository.compradoresDelVuelo(id).isEmpty()) {
+            throw new BadRequestException("El vuelo ya tiene pasajes vendidos: no se le puede cambiar el origen ni el destino");
+        }
 
         vuelo.setCategoria(buscarCategoria(request.getCategoriaId()));
         vuelo.setOrigen(buscarAeropuerto(request.getOrigenIata()));
@@ -141,6 +154,7 @@ public class VueloServiceImpl implements VueloService {
         }
 
         validarFechas(vuelo);
+        validarNumeroUnico(vuelo);
         Vuelo guardado = vueloRepository.save(vuelo);
 
         boolean reprogramado = !salidaAnterior.equals(vuelo.getFechaSalida())
@@ -293,6 +307,15 @@ public class VueloServiceImpl implements VueloService {
     }
 
     private static final List<String> AEROPUERTOS_BUENOS_AIRES = List.of("AEP", "EZE");
+
+    /** Como en las aerolineas: dos vuelos que salen el mismo dia no pueden tener el mismo numero. */
+    private void validarNumeroUnico(Vuelo vuelo) {
+        LocalDateTime inicioDelDia = vuelo.getFechaSalida().toLocalDate().atStartOfDay();
+        Long id = vuelo.getId() != null ? vuelo.getId() : 0L;
+        if (vueloRepository.existeOtroEseDia(vuelo.getNumeroVuelo(), inicioDelDia, inicioDelDia.plusDays(1), id)) {
+            throw new BadRequestException("Ya hay un vuelo " + vuelo.getNumeroVuelo() + " que sale ese dia");
+        }
+    }
 
     private Vuelo buscarPorId(Long id) {
         return vueloRepository.findById(id)

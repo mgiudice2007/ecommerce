@@ -52,7 +52,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<MensajeResponse> logout() {
+    public ResponseEntity<MensajeResponse> logout(@RequestHeader("Authorization") String header) {
+        jwtService.invalidar(header.substring(7));
         return ResponseEntity.ok(new MensajeResponse("Sesion cerrada correctamente"));
     }
 

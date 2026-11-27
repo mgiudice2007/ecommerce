@@ -147,6 +147,11 @@ public class CarritoServiceImpl implements CarritoService {
             for (ItemCarrito item : itemsConAsiento(actualizado, disponibilidad)) {
                 todos.addAll(item.getAsientos());
             }
+            for (String codigo : request.getAsientos()) {
+                if (todos.contains(codigo)) {
+                    throw new BadRequestException("El asiento " + codigo + " ya lo tenés en el carrito, elegí otro");
+                }
+            }
             todos.addAll(request.getAsientos());
             carrito = elegirAsientos(usuarioId, new AsientosRequest(request.getDisponibilidadId(), todos));
         }
@@ -348,6 +353,9 @@ public class CarritoServiceImpl implements CarritoService {
             throw new BadRequestException("Las millas no alcanzan para pagar todo: elegí otro medio para el resto");
         }
         String ultimosDigitos = medioPago != null && medioPago.esTarjeta() ? request.getUltimosDigitos() : null;
+        if (medioPago != null && medioPago.esTarjeta() && ultimosDigitos == null) {
+            throw new BadRequestException("Faltan los ultimos 4 digitos de la tarjeta");
+        }
 
         usuario.setMillas(usuario.getMillas() - millasUsadas + millasGanadas);
         usuarioRepository.save(usuario);

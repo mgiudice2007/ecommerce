@@ -96,6 +96,14 @@ public abstract class IntegrationTestSupport {
         vueloRepository.saveAndFlush(vuelo);
     }
 
+    /** El embarque es solo el dia del vuelo: lo pasa a hoy a la noche. */
+    protected void hacerQueSalgaHoy(Long vueloId) {
+        Vuelo vuelo = vueloRepository.findById(vueloId).orElseThrow();
+        vuelo.setFechaSalida(LocalDate.now().atTime(23, 59));
+        vuelo.setFechaLlegada(LocalDate.now().plusDays(1).atTime(2, 59));
+        vueloRepository.saveAndFlush(vuelo);
+    }
+
     protected String loginAdmin() throws Exception {
         return login("admin", "admin123");
     }

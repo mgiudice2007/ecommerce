@@ -301,7 +301,7 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void logout_devuelveMensaje() throws Exception {
+    void logout_devuelveMensaje_yElTokenDejaDeServir() throws Exception {
         String token = registrarYLoguearComprador("logoutuser");
 
         mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
@@ -309,6 +309,6 @@ class AuthControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.mensaje").exists());
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -100,4 +100,16 @@ public class Orden {
         }
         return false;
     }
+
+    /** Si alguno de los pasajeros de la compra ya subio al avion: ahi la compra ya no se puede cancelar. */
+    public boolean tienePasajeroEmbarcado() {
+        for (ItemOrden item : items) {
+            for (Pasaje pasaje : item.getPasajes()) {
+                if (pasaje.getEmbarcadoEn() != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

@@ -370,7 +370,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
     @Test
     void resumenDelPanel_cuentaLosVuelosYLosAsientos() throws Exception {
         String vendedor = registrarYLoguearAdmin("vresumen");
-        String antes = mockMvc.perform(get("/api/vuelos/resumen"))
+        String antes = mockMvc.perform(get("/api/vuelos/resumen").header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         long vuelosAntes = objectMapper.readTree(antes).get("vuelos").asLong();
@@ -378,10 +378,14 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
 
         crearVueloConCupo(vendedor, "TST", "AEP", 300.0, 10);
 
-        mockMvc.perform(get("/api/vuelos/resumen"))
+        mockMvc.perform(get("/api/vuelos/resumen").header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.vuelos").value(vuelosAntes + 1))
                 .andExpect(jsonPath("$.asientosTotales").value(asientosAntes + 10));
+
+        // los totales del panel son solo para el administrador
+        mockMvc.perform(get("/api/vuelos/resumen"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -400,6 +404,43 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                         .header("Authorization", "Bearer " + vendedor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void mismoNumeroDeVueloElMismoDia_devuelve400() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vrepetido");
+        Map<String, Object> body = bodyVuelo(categoriaPorDefecto(), "TST", "AEP", 300.0);
+
+        mockMvc.perform(json(post("/api/vuelos").header("Authorization", "Bearer " + vendedor), body))
+                .andExpect(status().isCreated());
+        mockMvc.perform(json(post("/api/vuelos").header("Authorization", "Bearer " + vendedor), body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("ese dia")));
+    }
+
+    @Test
+    void conPasajesVendidos_noSeLeCambiaLaRuta() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vruta");
+        Long vueloId = crearVuelo(vendedor, "TST", "AEP", 300.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 300.0);
+        String comprador = registrarYLoguearComprador("cruta");
+        agregarAlCarrito(comprador, cupoId, 1);
+        mockMvc.perform(checkout(comprador)).andExpect(status().isCreated());
+
+        Map<String, Object> body = bodyVuelo(categoriaPorDefecto(), "AEP", "TST", 300.0);
+        mockMvc.perform(json(put("/api/vuelos/" + vueloId).header("Authorization", "Bearer " + vendedor), body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("pasajes vendidos")));
+    }
+
+    @Test
+    void parametrosConFormatoInvalido_devuelven400() throws Exception {
+        mockMvc.perform(get("/api/vuelos/abc"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/vuelos").param("fechaDesde", "14-12-2026"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/disponibilidades"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -485,8 +526,7 @@ class VueloControllerIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.mensaje").isNotEmpty());
 
         mockMvc.perform(get("/api/vuelos/" + vueloId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("ELIMINADO"));
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(get("/api/vuelos").param("origen", "TST").param("destino", "AEP"))
                 .andExpect(status().isOk())

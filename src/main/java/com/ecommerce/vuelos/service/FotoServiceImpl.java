@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
@@ -55,6 +56,7 @@ public class FotoServiceImpl implements FotoService {
         } catch (IOException e) {
             throw new BadRequestException("No se pudo leer el archivo: " + e.getMessage());
         }
+        validarContenidoDeImagen(datos);
 
         Foto foto = Foto.builder()
                 .vuelo(vuelo)
@@ -93,6 +95,21 @@ public class FotoServiceImpl implements FotoService {
         String tipo = archivo.getContentType();
         if (tipo == null || !tipo.startsWith("image/")) {
             throw new BadRequestException("El archivo tiene que ser una imagen, llego: " + tipo);
+        }
+    }
+
+    /**
+     * El tipo lo informa el navegador y se puede falsear, asi que tambien se mira como empieza el archivo:
+     * cada formato de imagen (JPG, PNG, GIF, WEBP) arranca con sus propios bytes.
+     */
+    private void validarContenidoDeImagen(byte[] datos) {
+        String inicio = new String(datos, 0, Math.min(datos.length, 12), StandardCharsets.ISO_8859_1);
+        boolean esImagen = inicio.startsWith("ÿØÿ")
+                || inicio.startsWith("\u0089PNG")
+                || inicio.startsWith("GIF8")
+                || (inicio.startsWith("RIFF") && inicio.startsWith("WEBP", 8));
+        if (!esImagen) {
+            throw new BadRequestException("El archivo no es una imagen valida (JPG, PNG, GIF o WEBP)");
         }
     }
 

@@ -63,6 +63,9 @@ public class OrdenServiceImpl implements OrdenService {
         if (orden.getEstado() == EstadoOrden.CANCELADA) {
             throw new BadRequestException("La orden ya se encuentra cancelada");
         }
+        if (orden.tienePasajeroEmbarcado()) {
+            throw new BadRequestException("No se puede cancelar la compra: uno de los pasajeros ya embarcó");
+        }
 
         // Como en las aerolineas: solo hasta 24 horas antes de que salga el primer vuelo, salvo que la
         // aerolinea haya cancelado alguno de los vuelos (ahi se puede cancelar siempre)

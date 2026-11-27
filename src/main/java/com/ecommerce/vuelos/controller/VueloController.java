@@ -34,6 +34,7 @@ public class VueloController {
     @Autowired
     private VueloService vueloService;
 
+    private static final int MAXIMO_POR_PAGINA = 100;
 
     @GetMapping
     public ResponseEntity<PaginaResponse<VueloResponse>> buscar(
@@ -50,9 +51,10 @@ public class VueloController {
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
 
-        PageRequest pageRequest = (page == null || size == null)
-                ? PageRequest.of(0, Integer.MAX_VALUE)
-                : PageRequest.of(page, size);
+        // Sin pagina se devuelve la primera, y nunca mas de MAXIMO_POR_PAGINA vuelos juntos
+        PageRequest pageRequest = PageRequest.of(
+                page == null ? 0 : Math.max(page, 0),
+                size == null ? MAXIMO_POR_PAGINA : Math.min(Math.max(size, 1), MAXIMO_POR_PAGINA));
 
         return ResponseEntity.ok(vueloService.buscar(
                 origen, destino, categoriaId, claseId, precioMin, precioMax, fechaDesde, fechaHasta, vendedorId,

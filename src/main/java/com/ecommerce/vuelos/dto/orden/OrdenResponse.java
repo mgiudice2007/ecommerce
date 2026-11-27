@@ -42,7 +42,7 @@ public class OrdenResponse {
                 ? null
                 : orden.primeraSalida().minusHours(horasParaCancelar);
         boolean vueloCancelado = orden.tieneVueloCancelado();
-        boolean sePuedeCancelar = orden.getEstado() != EstadoOrden.CANCELADA
+        boolean sePuedeCancelar = orden.getEstado() != EstadoOrden.CANCELADA && !orden.tienePasajeroEmbarcado()
                 && (vueloCancelado || (cancelableHasta != null && LocalDateTime.now().isBefore(cancelableHasta)));
 
         return OrdenResponse.builder()

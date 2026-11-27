@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -150,11 +151,12 @@ class PasajesEmbarqueIntegrationTest extends IntegrationTestSupport {
     @Test
     void validarYEmbarcar_flujoCompletoDelAdministrador() throws Exception {
         String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
-        Long cupoId = crearVueloConCupo(vendedor, "EZE", "MAD", 200.0, 10);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 200.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 200.0);
         String comprador = registrarYLoguearComprador("aembarcar");
         agregarAlCarrito(comprador, cupoId, 1);
-        String codigo = comprarConPasajeros(comprador).get("items").get(0).get("pasajes").get(0)
-                .get("codigoEmbarque").asText();
+        JsonNode orden = comprarConPasajeros(comprador);
+        String codigo = orden.get("items").get(0).get("pasajes").get(0).get("codigoEmbarque").asText();
 
         mockMvc.perform(get("/api/embarque/" + codigo.toLowerCase()).header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isOk())
@@ -162,6 +164,12 @@ class PasajesEmbarqueIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.codigoEmbarque").value(codigo))
                 .andExpect(jsonPath("$.nombre").value("Pasajero"));
 
+        // el vuelo sale en 10 dias: todavia no se puede embarcar
+        mockMvc.perform(post("/api/embarque/" + codigo + "/embarcar").header("Authorization", "Bearer " + vendedor))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("el dia del vuelo")));
+
+        hacerQueSalgaHoy(vueloId);
         mockMvc.perform(post("/api/embarque/" + codigo + "/embarcar").header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("EMBARCADO"));
@@ -177,6 +185,33 @@ class PasajesEmbarqueIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.motivo").value(org.hamcrest.Matchers.containsString("ya embarcó")));
 
         // no se puede embarcar dos veces
+        mockMvc.perform(post("/api/embarque/" + codigo + "/embarcar").header("Authorization", "Bearer " + vendedor))
+                .andExpect(status().isBadRequest());
+
+        // con el pasajero arriba del avion la compra ya no se puede cancelar
+        mockMvc.perform(post("/api/ordenes/" + orden.get("id").asLong() + "/cancelar")
+                        .header("Authorization", "Bearer " + comprador))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("ya embarcó")));
+    }
+
+    @Test
+    void vueloEliminado_dejaElPasajeAnulado_yNoSePuedeEmbarcar() throws Exception {
+        String vendedor = registrarYLoguearAdmin("vend" + System.nanoTime() % 100000);
+        Long vueloId = crearVuelo(vendedor, "EZE", "MAD", 200.0);
+        Long cupoId = crearDisponibilidad(vendedor, vueloId, clasePorDefecto(), 10, 200.0);
+        String comprador = registrarYLoguearComprador("vueloeliminado");
+        agregarAlCarrito(comprador, cupoId, 1);
+        String codigo = comprarConPasajeros(comprador).get("items").get(0).get("pasajes").get(0)
+                .get("codigoEmbarque").asText();
+
+        mockMvc.perform(json(patch("/api/vuelos/" + vueloId + "/estado").header("Authorization", "Bearer " + vendedor),
+                        Map.of("estado", "ELIMINADO")))
+                .andExpect(status().isOk());
+        hacerQueSalgaHoy(vueloId);
+
+        mockMvc.perform(get("/api/embarque/" + codigo).header("Authorization", "Bearer " + vendedor))
+                .andExpect(jsonPath("$.estado").value("ANULADO"));
         mockMvc.perform(post("/api/embarque/" + codigo + "/embarcar").header("Authorization", "Bearer " + vendedor))
                 .andExpect(status().isBadRequest());
     }
