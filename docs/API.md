@@ -304,6 +304,12 @@ Se manda **después del commit** y en otro hilo (`@Async` + `@TransactionalEvent
 checkout falla no sale nada, y si el mail falla (SMTP caído, credenciales mal) la compra queda
 confirmada igual y solo se loguea un aviso. Un checkout con el SMTP apagado no demora la respuesta.
 
+El mail arranca con el logo de BCA y un banner (`src/main/resources/mail/logo.png` y `banner.jpg`,
+que van dentro del mail como imágenes `cid:` porque Gmail no muestra SVG). Los HTML con los que se
+dibujaron están en `docs/imagenes-mail/`. Además lleva adjunta la **orden de compra en PDF**
+(`orden-de-compra-<id>.pdf`, armada con OpenPDF en `OrdenPdfServiceImpl`): cliente, vuelos, totales y
+pasajeros con su código de embarque. Si el PDF falla, el mail sale igual sin el adjunto.
+
 Se configura por variables de entorno, así las credenciales no entran al repo:
 
 | Variable | Default | Para qué |

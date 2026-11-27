@@ -3,8 +3,6 @@ package com.ecommerce.vuelos.service;
 import com.ecommerce.vuelos.dto.orden.ItemOrdenResponse;
 import com.ecommerce.vuelos.dto.orden.OrdenResponse;
 import com.ecommerce.vuelos.dto.orden.PasajeResponse;
-import com.ecommerce.vuelos.entity.MedioPago;
-import com.ecommerce.vuelos.entity.TipoPasajero;
 import com.ecommerce.vuelos.event.OrdenConfirmadaEvent;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -12,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -20,26 +19,20 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.util.HtmlUtils;
 
-import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 @Service
 public class MailServiceImpl implements MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailServiceImpl.class);
-    private static final Locale ARGENTINA = Locale.forLanguageTag("es-AR");
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final int LADO_QR = 120;
 
     // Los mails no cargan hojas de estilo: todo el diseño va en estilos en linea y con tablas
-    private static final String AZUL = "#0b3d6b";
+    private static final String AZUL = "#0057b8";
     private static final String CELESTE = "#e8f1f9";
     private static final String GRIS = "#5b6b7b";
     private static final String BORDE = "#dde3ea";
@@ -49,6 +42,8 @@ public class MailServiceImpl implements MailService {
     private JavaMailSender mailSender;
     @Autowired
     private QrService qrService;
+    @Autowired
+    private OrdenPdfService ordenPdfService;
 
     // Con mail.habilitado=false (por ejemplo en una demo sin SMTP) no se intenta mandar nada
     @Value("${mail.habilitado}")
@@ -70,11 +65,18 @@ public class MailServiceImpl implements MailService {
             helper.setFrom(remitente, "BCA Airlines");
             helper.setTo(evento.destinatario());
             helper.setSubject("BCA Airlines · Confirmación de tu compra #" + orden.getId());
-            // Los QR viajan como imagenes adjuntas dentro del mail (cid:): los clientes de mail no muestran SVG
+            byte[] pdf = armarPdf(evento);
+            // El logo, el banner y los QR viajan como imagenes dentro del mail (cid:): los clientes de
+            // mail no muestran SVG y muchos bloquean las imagenes que se cargan desde afuera
             Map<String, byte[]> codigosQr = new LinkedHashMap<>();
-            helper.setText(armarCuerpo(evento, codigosQr), true);
+            helper.setText(armarCuerpo(evento, codigosQr, pdf != null), true);
+            helper.addInline("logo", new ClassPathResource("mail/logo.png"), "image/png");
+            helper.addInline("banner", new ClassPathResource("mail/banner.jpg"), "image/jpeg");
             for (Map.Entry<String, byte[]> qr : codigosQr.entrySet()) {
                 helper.addInline(qr.getKey(), new ByteArrayResource(qr.getValue()), "image/png");
+            }
+            if (pdf != null) {
+                helper.addAttachment("orden-de-compra-" + orden.getId() + ".pdf", new ByteArrayResource(pdf), "application/pdf");
             }
             mailSender.send(mensaje);
             log.info("Mail de confirmacion de la compra #{} enviado", orden.getId());
@@ -84,7 +86,17 @@ public class MailServiceImpl implements MailService {
         }
     }
 
-    private String armarCuerpo(OrdenConfirmadaEvent evento, Map<String, byte[]> codigosQr) {
+    /** Si el PDF falla, el mail sale igual sin el adjunto. */
+    private byte[] armarPdf(OrdenConfirmadaEvent evento) {
+        try {
+            return ordenPdfService.ordenDeCompra(evento.orden(), evento.nombre(), evento.destinatario());
+        } catch (Exception e) {
+            log.warn("No se pudo armar el PDF de la compra #{}: {}", evento.orden().getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    private String armarCuerpo(OrdenConfirmadaEvent evento, Map<String, byte[]> codigosQr, boolean conPdf) {
         OrdenResponse orden = evento.orden();
         StringBuilder html = new StringBuilder();
         html.append("<div style=\"margin:0;padding:24px 12px;background:#eef2f6;").append(FUENTE).append("color:#1c2b3a\">");
@@ -94,10 +106,13 @@ public class MailServiceImpl implements MailService {
         html.append("<table role=\"presentation\" align=\"center\" width=\"100%\" ")
                 .append("style=\"max-width:600px;margin:0 auto;border-collapse:collapse\">");
 
-        html.append("<tr><td bgcolor=\"").append(AZUL).append("\" style=\"background:").append(AZUL)
-                .append(";padding:22px 28px;border-radius:10px 10px 0 0\">")
-                .append("<span style=\"font-size:22px;font-weight:bold;letter-spacing:3px;color:#ffffff\">BCA AIRLINES</span><br>")
-                .append("<span style=\"font-size:13px;color:#bcd3e8\">Confirmación de compra</span></td></tr>");
+        // Cabecera blanca con el logo y, abajo, el banner del atardecer (las dos imagenes estan en resources/mail)
+        html.append("<tr><td bgcolor=\"#ffffff\" style=\"background:#ffffff;padding:18px 28px;border-radius:10px 10px 0 0\">")
+                .append("<img src=\"cid:logo\" width=\"220\" height=\"44\" alt=\"BCA Airlines\" ")
+                .append("style=\"display:block;border:0\"></td></tr>");
+        html.append("<tr><td style=\"padding:0;line-height:0;font-size:0\">")
+                .append("<img src=\"cid:banner\" width=\"600\" alt=\"Compra confirmada. ¡Tu viaje está en marcha!\" ")
+                .append("style=\"display:block;width:100%;max-width:600px;height:auto;border:0\"></td></tr>");
 
         html.append("<tr><td bgcolor=\"#ffffff\" style=\"background:#ffffff;padding:28px;border-radius:0 0 10px 10px\">");
         html.append("<p style=\"font-size:19px;margin:0 0 18px\"><strong>Hola ").append(escapar(evento.nombre()))
@@ -113,10 +128,10 @@ public class MailServiceImpl implements MailService {
             html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">Vuelo ")
                     .append(escapar(item.getNumeroVuelo()));
             if (item.getFechaSalida() != null) {
-                html.append(" · sale el ").append(FECHA.format(item.getFechaSalida())).append(" hs");
+                html.append(" · sale el ").append(TextoOrden.FECHA.format(item.getFechaSalida())).append(" hs");
             }
             html.append("<br>Clase ").append(escapar(item.getClaseNombre())).append(" · ")
-                    .append(item.getCantidad()).append(" × ").append(nombreTipo(item.getTipoPasajero()));
+                    .append(item.getCantidad()).append(" × ").append(TextoOrden.tipoPasajero(item.getTipoPasajero()));
             List<String> asientos = item.getAsientos();
             if (asientos != null && !asientos.isEmpty()) {
                 html.append("<br>").append(asientos.size() == 1 ? "Asiento: " : "Asientos: ")
@@ -125,18 +140,18 @@ public class MailServiceImpl implements MailService {
             html.append("</span></td>");
             html.append("<td style=\"padding:12px 0;border-bottom:1px solid ").append(BORDE)
                     .append(";text-align:right;white-space:nowrap;vertical-align:top\">")
-                    .append(plata(item.getSubtotal())).append("</td></tr>");
+                    .append(TextoOrden.plata(item.getSubtotal())).append("</td></tr>");
         }
         html.append("</table>");
 
         html.append("<table role=\"presentation\" width=\"100%\" style=\"border-collapse:collapse;margin-top:12px\">");
         if (orden.getMillasUsadas() > 0) {
             html.append("<tr><td style=\"text-align:right;padding:2px 0;color:").append(GRIS).append("\">Millas usadas: ")
-                    .append(orden.getMillasUsadas()).append(" (−").append(plata(orden.getDescuentoMillas()))
+                    .append(orden.getMillasUsadas()).append(" (−").append(TextoOrden.plata(orden.getDescuentoMillas()))
                     .append(")</td></tr>");
         }
         html.append("<tr><td style=\"text-align:right;padding:6px 0;font-size:20px;color:").append(AZUL)
-                .append("\"><strong>Total: ").append(plata(orden.getTotal())).append("</strong></td></tr>");
+                .append("\"><strong>Total: ").append(TextoOrden.plata(orden.getTotal())).append("</strong></td></tr>");
         if (orden.getMillasGanadas() > 0) {
             html.append("<tr><td style=\"text-align:right;padding:2px 0;color:").append(GRIS)
                     .append(";font-size:13px\">Sumaste ").append(orden.getMillasGanadas())
@@ -146,10 +161,15 @@ public class MailServiceImpl implements MailService {
 
         agregarPasesDeEmbarque(html, orden, codigosQr);
 
+        if (conPdf) {
+            html.append("<p style=\"font-size:14px;margin:20px 0 0\">Te adjuntamos la <strong>orden de compra en PDF</strong> ")
+                    .append("por si la querés guardar o imprimir.</p>");
+        }
+
         LocalDateTime cancelableHasta = orden.getCancelableHasta();
         if (cancelableHasta != null) {
             html.append("<p style=\"color:").append(GRIS).append(";font-size:13px;margin:24px 0 0\">Podés cancelar la compra hasta el ")
-                    .append(FECHA.format(cancelableHasta)).append(" hs desde la sección «Mis compras».</p>");
+                    .append(TextoOrden.FECHA.format(cancelableHasta)).append(" hs desde la sección «Mis compras».</p>");
         }
         html.append("<p style=\"font-size:15px;margin:16px 0 0\"><strong>¡Gracias por volar con nosotros!</strong></p>");
         html.append("</td></tr>");
@@ -165,9 +185,9 @@ public class MailServiceImpl implements MailService {
         html.append("<table role=\"presentation\" width=\"100%\" bgcolor=\"").append(CELESTE)
                 .append("\" style=\"background:").append(CELESTE).append(";border-radius:8px;border-collapse:separate;border-spacing:0;margin-bottom:8px\"><tr>");
         html.append(celdaResumen("Compra", "#" + orden.getId()));
-        html.append(celdaResumen("Fecha", FECHA.format(orden.getFecha())));
+        html.append(celdaResumen("Fecha", TextoOrden.FECHA.format(orden.getFecha())));
         if (orden.getMedioPago() != null) {
-            html.append(celdaResumen("Medio de pago", textoMedioPago(orden)));
+            html.append(celdaResumen("Medio de pago", TextoOrden.medioPago(orden)));
         }
         html.append("</tr></table>");
     }
@@ -214,7 +234,7 @@ public class MailServiceImpl implements MailService {
                         .append("</strong><br>");
                 html.append("<span style=\"color:").append(GRIS).append(";font-size:13px;line-height:20px\">");
                 if (item.getFechaSalida() != null) {
-                    html.append("Sale el ").append(FECHA.format(item.getFechaSalida())).append(" hs<br>");
+                    html.append("Sale el ").append(TextoOrden.FECHA.format(item.getFechaSalida())).append(" hs<br>");
                 }
                 html.append("Clase ").append(escapar(item.getClaseNombre())).append(" · ")
                         .append(pasaje.getAsiento() == null ? "viaja en brazos (sin asiento)" : "Asiento <strong>" + escapar(pasaje.getAsiento()) + "</strong>");
@@ -243,33 +263,6 @@ public class MailServiceImpl implements MailService {
     private String etiqueta(String texto) {
         return "<span style=\"font-size:11px;letter-spacing:1px;text-transform:uppercase;color:" + GRIS + "\">"
                 + escapar(texto) + "</span>";
-    }
-
-    private String plata(BigDecimal monto) {
-        if (monto == null || monto.signum() == 0) {
-            return "Gratis";
-        }
-        return NumberFormat.getCurrencyInstance(ARGENTINA).format(monto);
-    }
-
-    private String nombreTipo(TipoPasajero tipo) {
-        return switch (tipo) {
-            case ADULTO -> "adulto";
-            case NINO -> "niño";
-            case BEBE -> "bebé";
-        };
-    }
-
-    private String textoMedioPago(OrdenResponse orden) {
-        MedioPago medio = orden.getMedioPago();
-        String nombre = switch (medio) {
-            case TARJETA_CREDITO -> "Tarjeta de crédito";
-            case TARJETA_DEBITO -> "Tarjeta de débito";
-            case TRANSFERENCIA -> "Transferencia";
-            case BILLETERA_VIRTUAL -> "Billetera virtual";
-            case MILLAS -> "Millas";
-        };
-        return orden.getUltimosDigitos() == null ? nombre : nombre + " terminada en " + orden.getUltimosDigitos();
     }
 
     private String escapar(String texto) {

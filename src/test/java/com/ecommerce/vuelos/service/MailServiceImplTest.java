@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -50,6 +51,9 @@ class MailServiceImplTest {
 
     @Mock
     private QrService qrService;
+
+    @Mock
+    private OrdenPdfService ordenPdfService;
 
     @InjectMocks
     private MailServiceImpl mailService;
@@ -85,40 +89,51 @@ class MailServiceImplTest {
         return new OrdenConfirmadaEvent("ana@test.com", "Ana <b>", orden);
     }
 
-    /** Recorre las partes del mail: devuelve el texto HTML y cuenta las imagenes adjuntas. */
-    private void recorrer(Part parte, StringBuilder html, List<String> imagenes) throws Exception {
+    /** Recorre las partes del mail: devuelve el texto HTML, las imagenes del cuerpo y los adjuntos. */
+    private void recorrer(Part parte, StringBuilder html, List<String> imagenes, List<String> adjuntos) throws Exception {
         if (parte.isMimeType("multipart/*")) {
             Multipart partes = (Multipart) parte.getContent();
             for (int i = 0; i < partes.getCount(); i++) {
                 BodyPart hija = partes.getBodyPart(i);
-                recorrer(hija, html, imagenes);
+                recorrer(hija, html, imagenes, adjuntos);
             }
         } else if (parte.isMimeType("text/html")) {
             html.append((String) parte.getContent());
-        } else if (parte.isMimeType("image/png")) {
+        } else if (parte.isMimeType("image/*")) {
             imagenes.add(((jakarta.mail.internet.MimeBodyPart) parte).getContentID());
+        } else if (parte.getFileName() != null) {
+            adjuntos.add(parte.getFileName());
         }
+    }
+
+    private MimeMessage enviar() throws Exception {
+        ArgumentCaptor<MimeMessage> enviado = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(enviado.capture());
+        MimeMessage mail = enviado.getValue();
+        mail.saveChanges();
+        return mail;
     }
 
     @Test
     void armaYEnviaElMailConElDetalleYLosPasesDeEmbarque() throws Exception {
         when(qrService.png(anyString(), anyInt())).thenReturn(new byte[] {1, 2, 3});
+        when(ordenPdfService.ordenDeCompra(any(), anyString(), anyString())).thenReturn(new byte[] {4, 5, 6});
         MimeMessage mensaje = new MimeMessage((Session) null);
         when(mailSender.createMimeMessage()).thenReturn(mensaje);
 
         mailService.enviarConfirmacionCompra(evento());
 
-        ArgumentCaptor<MimeMessage> enviado = ArgumentCaptor.forClass(MimeMessage.class);
-        verify(mailSender).send(enviado.capture());
-        MimeMessage mail = enviado.getValue();
-        mail.saveChanges();
+        MimeMessage mail = enviar();
         assertEquals("ana@test.com", mail.getRecipients(Message.RecipientType.TO)[0].toString());
         assertTrue(mail.getSubject().contains("#77"));
 
         StringBuilder html = new StringBuilder();
         List<String> imagenes = new ArrayList<>();
-        recorrer(mail, html, imagenes);
+        List<String> adjuntos = new ArrayList<>();
+        recorrer(mail, html, imagenes, adjuntos);
         String cuerpo = html.toString();
+        assertTrue(cuerpo.contains("cid:logo"));
+        assertTrue(cuerpo.contains("cid:banner"));
         assertTrue(cuerpo.contains("Buenos Aires"));
         assertTrue(cuerpo.contains("BCA-101"));
         assertTrue(cuerpo.contains("12A, 12B"));
@@ -130,9 +145,31 @@ class MailServiceImplTest {
         assertTrue(cuerpo.contains("Tus pases de embarque"));
         assertTrue(cuerpo.contains("BCA-AAAA2222"));
         assertTrue(cuerpo.contains("cid:qr-BCA-BBBB3333"));
-        assertEquals(2, imagenes.size());
+        // logo + banner + un QR por pasajero
+        assertEquals(4, imagenes.size());
         verify(qrService).png("BCA-AAAA2222", 120);
         verify(qrService).png("BCA-BBBB3333", 120);
+
+        // la orden de compra viaja adjunta en PDF
+        assertEquals(List.of("orden-de-compra-77.pdf"), adjuntos);
+        assertTrue(cuerpo.contains("orden de compra en PDF"));
+        verify(ordenPdfService).ordenDeCompra(any(), eq("Ana <b>"), eq("ana@test.com"));
+    }
+
+    @Test
+    void siElPdfFalla_elMailSaleIgualSinAdjunto() throws Exception {
+        when(qrService.png(anyString(), anyInt())).thenReturn(new byte[] {1});
+        when(ordenPdfService.ordenDeCompra(any(), anyString(), anyString())).thenThrow(new IllegalStateException("sin logo"));
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+
+        mailService.enviarConfirmacionCompra(evento());
+
+        MimeMessage mail = enviar();
+        StringBuilder html = new StringBuilder();
+        List<String> adjuntos = new ArrayList<>();
+        recorrer(mail, html, new ArrayList<>(), adjuntos);
+        assertTrue(adjuntos.isEmpty());
+        assertTrue(!html.toString().contains("orden de compra en PDF"));
     }
 
     @Test
